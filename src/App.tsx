@@ -43,6 +43,55 @@ export default function App() {
       setSelectedBlogPost(null);
     }
   }, [activeView]);
+
+  // Dynamic Title & Meta description for SEO
+  useEffect(() => {
+    // If we're on the blog view and have selected a single post, BlogView component manages its own SEO title/meta tags
+    if (activeView === "blog" && selectedBlogPost) {
+      return;
+    }
+
+    let title = "AbbrDex | Ultimate Abbreviation, Acronym & Slang Dictionary";
+    let desc = "Decode the world's abbreviations, modern chat acronyms, gaming shorthand, military codes, and business terminology. Take interactive quizzes and learn on AbbrDex.";
+
+    switch (activeView) {
+      case "home":
+        title = "AbbrDex | Home - Decode Chat, Gaming, Business & Military Slang";
+        desc = "Discover trending abbreviations and modern acronyms. Search our real-time slang dictionary and test your knowledge.";
+        break;
+      case "browse":
+        title = "Explore Dictionary | AbbrDex - Find Abbreviations & Meanings";
+        desc = "Browse through hundreds of curated acronyms, digital shorthand, and slang meanings. Filter by category or search terms instantly.";
+        break;
+      case "quiz":
+        title = "Interactive Acronym Quiz | AbbrDex - Test Your Slang Knowledge";
+        desc = "Think you know modern slang and business terminology? Challenge yourself with our challenging, adaptive abbreviation quizzes.";
+        break;
+      case "blog":
+        title = "Word Feed Blog | AbbrDex - Insightful Slang Articles & Trends";
+        desc = "Stay up to date with deep-dives into modern internet culture, business acronym origins, and the evolution of digital shorthand.";
+        break;
+      default:
+        break;
+    }
+
+    document.title = title;
+
+    const metaDescEl = document.querySelector('meta[name="description"]');
+    if (metaDescEl) {
+      metaDescEl.setAttribute("content", desc);
+    }
+    
+    const ogTitleEl = document.querySelector('meta[property="og:title"]');
+    if (ogTitleEl) {
+      ogTitleEl.setAttribute("content", title);
+    }
+
+    const ogDescEl = document.querySelector('meta[property="og:description"]');
+    if (ogDescEl) {
+      ogDescEl.setAttribute("content", desc);
+    }
+  }, [activeView, selectedBlogPost]);
   
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
