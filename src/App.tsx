@@ -97,7 +97,7 @@ export default function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // 1. Initial Seeding and Database Loading
   const loadDatabaseData = async () => {
@@ -291,7 +291,7 @@ export default function App() {
           <div className="max-w-[1080px] mx-auto px-6 space-y-2">
             <div className="font-display font-bold text-ink">AbbrDex — the complete abbreviation dictionary</div>
             <p className="max-w-md mx-auto text-[11px] leading-relaxed">
-              Explore every modern abbreviation, text acronym, and digital shorthand. Synchronized in real-time using Firebase Auth and Firestore.
+              Explore every modern abbreviation, text acronym, and digital shorthand.
             </p>
             <div className="pt-3 text-[10px] text-ink-soft">
               &copy; 2026 AbbrDex. All rights reserved. Created for educational and presentation purposes.

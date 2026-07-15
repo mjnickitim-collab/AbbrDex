@@ -159,7 +159,7 @@ export default function HomeView({ terms, onSearch, onSelectCategory, onSelectTe
       <section className="section py-12 px-6 max-w-[1080px] mx-auto border-t border-line font-sans">
         <div className="section-head flex items-baseline gap-2 mb-8">
           <BookOpen className="w-5 h-5 text-indigo" />
-          <h2 className="font-display font-bold text-2xl text-ink">Latest from the Blog</h2>
+          <h2 className="font-display font-bold text-2xl text-ink">Blog</h2>
         </div>
 
         {blogs.length === 0 ? (

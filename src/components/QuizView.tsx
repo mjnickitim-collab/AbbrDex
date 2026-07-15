@@ -199,7 +199,7 @@ export default function QuizView({ terms, currentUser }: QuizViewProps) {
 
           {currentUser && (
             <p className="text-[11px] text-ink-soft mt-4">
-              ✨ Logged in as <span className="font-semibold">{currentUser.name}</span>. Your scores will be recorded to Firestore database.
+              ✨ Logged in as <span className="font-semibold">{currentUser.name}</span>.
             </p>
           )}
         </div>
