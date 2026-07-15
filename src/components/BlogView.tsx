@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { BlogPost } from "../types";
 import { Calendar, ChevronLeft, BookOpen } from "lucide-react";
+import { renderBlogPostContent } from "../utils/blogParser";
+import { CATEGORIES } from "../data/seedData";
 
 interface BlogViewProps {
   posts: BlogPost[];
@@ -86,9 +88,15 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
         {/* Blog Post Header */}
         <article className="space-y-6">
           <div className="space-y-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{selectedPost.date}</span>
+            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-ink-soft">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{selectedPost.date}</span>
+              </div>
+              <span className="w-1 h-1 rounded-full bg-line" />
+              <span className="px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-indigo/5 text-indigo border border-indigo/10">
+                {CATEGORIES.find(c => c.id === selectedPost.cat)?.name || "Internet & chat"}
+              </span>
             </div>
             <h2 className="font-display font-bold text-3xl md:text-4xl text-ink leading-[1.2] tracking-tight">
               {selectedPost.title}
@@ -99,15 +107,11 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
           </div>
 
           {/* Full body with beautiful custom styling */}
-          <div className="text-ink leading-relaxed space-y-5 text-sm md:text-base pt-6 border-t border-line font-sans">
+          <div className="pt-6 border-t border-line">
             {selectedPost.body ? (
-              selectedPost.body.split("\n\n").map((para, i) => (
-                <p key={i} className="text-ink leading-relaxed">
-                  {para}
-                </p>
-              ))
+              renderBlogPostContent(selectedPost.body)
             ) : (
-              <p className="text-ink leading-relaxed">
+              <p className="text-ink leading-relaxed text-sm md:text-base font-sans">
                 No detailed body available. Check back soon for the full article!
               </p>
             )}
@@ -141,14 +145,18 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
             <button
               key={post.id || post.title}
               onClick={() => setSelectedPost(post)}
-              className="blog-card bg-card border-1.5 border-line rounded-2xl p-6 text-left transition hover:border-ink hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full"
+              className="blog-card bg-card border-1.5 border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full"
             >
               <div className="space-y-3">
-                <div className="date flex items-center gap-1 text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
+                <div className="date flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft">
                   <Calendar className="w-3 h-3" />
                   <span>{post.date}</span>
+                  <span className="w-1 h-1 rounded-full bg-line" />
+                  <span className="px-1.5 py-0.5 rounded font-bold text-[9px] bg-indigo/5 text-indigo border border-indigo/10">
+                    {CATEGORIES.find(c => c.id === post.cat)?.name || "Internet & chat"}
+                  </span>
                 </div>
-                <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] group-hover:text-indigo">
+                <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] hover:text-indigo transition">
                   {post.title}
                 </h3>
                 <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
@@ -156,7 +164,7 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
                 </p>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark">
+              <div className="pt-4 mt-4 border-t border-line flex items-center justify-between text-xs font-bold text-indigo hover:text-indigo-dark transition">
                 <span>Read Full Article</span>
                 <span className="text-base">→</span>
               </div>

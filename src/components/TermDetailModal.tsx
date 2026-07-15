@@ -87,7 +87,7 @@ export default function TermDetailModal({ term, onClose }: TermDetailModalProps)
 
         {/* Footer info */}
         <div className="text-[10px] text-center text-ink-soft pt-2">
-          AbbrDex live abbreviation database index
+          whatsthatmean live abbreviation database index
         </div>
       </div>
     </div>

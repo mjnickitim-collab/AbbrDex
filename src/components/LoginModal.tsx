@@ -175,7 +175,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
         </button>
         
         <h3 className="font-display text-2xl font-bold mb-2">
-          {isSignUp ? "Sign up for AbbrDex" : "Log in to AbbrDex"}
+          {isSignUp ? "Sign up for whatsthatmean" : "Log in to whatsthatmean"}
         </h3>
         
         <p className="text-xs text-ink-soft mb-6">
@@ -259,7 +259,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
         </button>
 
         <div className="mt-6 pt-6 border-t border-line text-center text-xs text-ink-soft">
-          <span>{isSignUp ? "Already have an account?" : "New to AbbrDex?"} </span>
+          <span>{isSignUp ? "Already have an account?" : "New to whatsthatmean?"} </span>
           <button 
             onClick={() => {
               setIsSignUp(!isSignUp);

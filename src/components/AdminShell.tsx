@@ -7,6 +7,7 @@ import {
   deleteTerm, 
   addBlogPost, 
   deleteBlogPost, 
+  updateBlogPost,
   updateAdSlotStatus, 
   updateAdSlot,
   resetTermsDatabase,
@@ -24,8 +25,17 @@ import {
   HelpCircle, 
   Grid,
   Download,
-  Upload
+  Upload,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  Bold,
+  Italic,
+  List,
+  Eye,
+  EyeOff,
+  Sparkles
 } from "lucide-react";
+import { renderBlogPostContent } from "../utils/blogParser";
 
 interface AdminShellProps {
   terms: Term[];
@@ -57,13 +67,103 @@ export default function AdminShell({
   const [termEx, setTermEx] = useState("");
 
   // State for blog form
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [blogTitle, setBlogTitle] = useState("");
-  const [blogCat, setBlogCat] = useState("Internet culture");
+  const [blogCat, setBlogCat] = useState("internet");
   const [blogExcerpt, setBlogExcerpt] = useState("");
   const [blogBody, setBlogBody] = useState("");
   const [blogSeoTitle, setBlogSeoTitle] = useState("");
   const [blogMetaDescription, setBlogMetaDescription] = useState("");
   const [blogKeywords, setBlogKeywords] = useState("");
+
+  const [showPreview, setShowPreview] = useState(false);
+  const bodyRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const handleInsertMarkup = (type: "bold" | "italic" | "link" | "image" | "list") => {
+    const textarea = bodyRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+
+    let replacement = "";
+    if (type === "bold") {
+      replacement = `**${selectedText || "bold text"}**`;
+    } else if (type === "italic") {
+      replacement = `*${selectedText || "italic text"}*`;
+    } else if (type === "link") {
+      const label = selectedText || prompt("Enter link label/text:", "whatsthatmean Link") || "whatsthatmean Link";
+      const url = prompt("Enter link URL:", "https://") || "https://";
+      if (!url) return;
+      replacement = `[${label}](${url})`;
+    } else if (type === "image") {
+      const alt = selectedText || prompt("Enter image caption/description:", "Creative Image") || "";
+      const url = prompt("Enter image URL:", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80") || "";
+      if (!url) return;
+      replacement = `![${alt}](${url})`;
+    } else if (type === "list") {
+      replacement = `\n- ${selectedText || "List item"}`;
+    }
+
+    const newValue = text.substring(0, start) + replacement + text.substring(end);
+    setBlogBody(newValue);
+
+    // Re-focus and restore cursor selection
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + replacement.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 50);
+  };
+
+  const handleInsertSampleTemplate = () => {
+    const sample = `In today's digital era, modern communication relies heavily on digital shorthand and acronyms.
+
+Check out our primary dictionary at [Explore whatsthatmean Dictionary](https://whatsthatmean.com/browse) to search and filter hundreds of curated slang terms!
+
+Here is an example visualization of digital workspace productivity:
+![Workspace Collaboration Infographic](https://images.unsplash.com/photo-1531535934027-667f6db87540?auto=format&fit=crop&w=600&q=80)
+
+Key advantages of adopting standardized communication shorthand:
+- Faster feedback loops in remote/hybrid workspaces
+- Maximized text efficiency on standard mobile interfaces
+- Dynamic community engagement using shared subculture slang
+
+Try writing your own content or edit this template using the helper buttons above!`;
+    setBlogBody(sample);
+  };
+
+  const handleStartEditPost = (post: BlogPost) => {
+    setEditingPost(post);
+    setBlogTitle(post.title);
+    setBlogCat(post.cat || "internet");
+    setBlogExcerpt(post.excerpt);
+    setBlogBody(post.body);
+    setBlogSeoTitle(post.seoTitle || "");
+    setBlogMetaDescription(post.metaDescription || "");
+    setBlogKeywords(post.keywords || "");
+    setShowPreview(false);
+
+    // Scroll smoothly to the form
+    const formElement = document.getElementById("blog-publisher-form");
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleCancelEditPost = () => {
+    setEditingPost(null);
+    setBlogTitle("");
+    setBlogExcerpt("");
+    setBlogBody("");
+    setBlogCat("internet");
+    setBlogSeoTitle("");
+    setBlogMetaDescription("");
+    setBlogKeywords("");
+    setShowPreview(false);
+  };
 
   // State for Ad slots inputs & db seeding tools
   const [adCodes, setAdCodes] = useState<Record<string, string>>({});
@@ -322,24 +422,39 @@ export default function AdminShell({
     }
 
     try {
-      await addBlogPost({
-        title: blogTitle.trim(),
-        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        excerpt: blogExcerpt.trim(),
-        body: blogBody.trim(),
-        seoTitle: blogSeoTitle.trim(),
-        metaDescription: blogMetaDescription.trim(),
-        keywords: blogKeywords.trim(),
-      });
+      if (editingPost && editingPost.id) {
+        await updateBlogPost(editingPost.id, {
+          title: blogTitle.trim(),
+          excerpt: blogExcerpt.trim(),
+          body: blogBody.trim(),
+          cat: blogCat,
+          seoTitle: blogSeoTitle.trim(),
+          metaDescription: blogMetaDescription.trim(),
+          keywords: blogKeywords.trim(),
+        });
+        setEditingPost(null);
+      } else {
+        await addBlogPost({
+          title: blogTitle.trim(),
+          date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          excerpt: blogExcerpt.trim(),
+          body: blogBody.trim(),
+          cat: blogCat,
+          seoTitle: blogSeoTitle.trim(),
+          metaDescription: blogMetaDescription.trim(),
+          keywords: blogKeywords.trim(),
+        });
+      }
       setBlogTitle("");
       setBlogExcerpt("");
       setBlogBody("");
+      setBlogCat("internet");
       setBlogSeoTitle("");
       setBlogMetaDescription("");
       setBlogKeywords("");
       onRefreshData();
     } catch (err) {
-      console.error("Error publishing blog post:", err);
+      console.error("Error publishing or updating blog post:", err);
     }
   };
 
@@ -429,7 +544,7 @@ export default function AdminShell({
       {/* Sidebar Admin Menu */}
       <div className="admin-side w-full md:w-[240px] md:flex-shrink-0 bg-ink text-white p-6 flex flex-col gap-1.5 md:sticky md:top-0 md:h-[100vh]">
         <div className="logo2 font-display font-bold text-lg mb-8 pb-4 border-b border-white/10 text-center md:text-left">
-          ⚡ SlangDex admin
+          ⚡ whatsthatmean admin
         </div>
 
         {[
@@ -766,8 +881,29 @@ export default function AdminShell({
 
             <div className="admin-two-col grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               {/* Publisher Form (Left) */}
-              <div className="admin-card bg-card border-1.5 border-line rounded-xl p-6 shadow-sm lg:col-span-7 space-y-4">
-                <div className="font-display font-bold text-lg text-ink border-b border-line pb-2">Publish a new post</div>
+              <div id="blog-publisher-form" className={`admin-card bg-card border-1.5 rounded-xl p-6 shadow-sm lg:col-span-7 space-y-4 transition-all duration-300
+                ${editingPost ? "border-indigo shadow-md ring-1 ring-indigo/20 bg-indigo/5" : "border-line"}`}>
+                <div className="flex items-center justify-between border-b border-line pb-2">
+                  <div className="font-display font-bold text-lg text-ink">
+                    {editingPost ? (
+                      <span className="text-indigo flex items-center gap-1.5">
+                        <Edit3 className="w-5 h-5 animate-pulse" />
+                        Edit Article
+                      </span>
+                    ) : (
+                      "Publish a new post"
+                    )}
+                  </div>
+                  {editingPost && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEditPost}
+                      className="text-xs font-bold text-coral hover:text-coral-dark flex items-center gap-1 transition cursor-pointer"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
                 <form onSubmit={handlePublishPost} className="space-y-4">
                   <div className="field flex flex-col">
                     <label className="text-xs font-semibold text-ink-soft mb-1">Title</label>
@@ -788,10 +924,11 @@ export default function AdminShell({
                       onChange={(e) => setBlogCat(e.target.value)}
                       className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo"
                     >
-                      <option>Internet culture</option>
-                      <option>Business</option>
-                      <option>Gaming</option>
-                      <option>Language trends</option>
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -807,16 +944,120 @@ export default function AdminShell({
                     />
                   </div>
 
-                  <div className="field flex flex-col">
-                    <label className="text-xs font-semibold text-ink-soft mb-1">Body Content</label>
-                    <textarea
-                      placeholder="Write the full body here... use double enter for paragraphs."
-                      value={blogBody}
-                      onChange={(e) => setBlogBody(e.target.value)}
-                      required
-                      rows={6}
-                      className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo resize-y"
-                    />
+                  <div className="field flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="text-xs font-semibold text-ink-soft">Body Content</label>
+                      <button
+                        type="button"
+                        onClick={handleInsertSampleTemplate}
+                        className="text-[11px] font-bold text-indigo hover:text-indigo-dark flex items-center gap-1 cursor-pointer"
+                        title="Load a complete, beautifully designed sample article with links and imagery"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Load Rich Template</span>
+                      </button>
+                    </div>
+
+                    {/* Rich Editor Toolbar */}
+                    <div className="flex flex-wrap items-center justify-between border border-line bg-paper/50 rounded-t-xl px-3 py-2 gap-2 border-b-0">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleInsertMarkup("bold")}
+                          className="p-1.5 rounded hover:bg-line text-ink-soft hover:text-ink transition flex items-center justify-center cursor-pointer"
+                          title="Bold Text (**text**)"
+                        >
+                          <Bold className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInsertMarkup("italic")}
+                          className="p-1.5 rounded hover:bg-line text-ink-soft hover:text-ink transition flex items-center justify-center cursor-pointer"
+                          title="Italic Text (*text*)"
+                        >
+                          <Italic className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInsertMarkup("list")}
+                          className="p-1.5 rounded hover:bg-line text-ink-soft hover:text-ink transition flex items-center justify-center cursor-pointer"
+                          title="Bullet List (- item)"
+                        >
+                          <List className="w-4 h-4" />
+                        </button>
+
+                        <div className="w-px h-5 bg-line mx-1" />
+
+                        {/* Link inserter */}
+                        <button
+                          type="button"
+                          onClick={() => handleInsertMarkup("link")}
+                          className="p-1.5 bg-indigo/5 text-indigo border border-indigo/10 rounded hover:bg-indigo hover:text-white transition flex items-center gap-1 text-xs font-bold px-2 cursor-pointer"
+                          title="Insert Web Hyperlink [label](url)"
+                        >
+                          <LinkIcon className="w-3.5 h-3.5" />
+                          <span>Link</span>
+                        </button>
+
+                        {/* Image inserter */}
+                        <button
+                          type="button"
+                          onClick={() => handleInsertMarkup("image")}
+                          className="p-1.5 bg-mint/10 text-mint-ink border border-mint/15 rounded hover:bg-mint hover:text-white transition flex items-center gap-1 text-xs font-bold px-2 cursor-pointer"
+                          title="Insert Image ![caption](url)"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span>Image</span>
+                        </button>
+                      </div>
+
+                      {/* Live Preview Toggle */}
+                      <button
+                        type="button"
+                        onClick={() => setShowPreview(!showPreview)}
+                        className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition cursor-pointer
+                          ${showPreview 
+                            ? "bg-indigo text-white border-indigo" 
+                            : "bg-card text-ink-soft border-line hover:bg-line/30"
+                          }`}
+                        title="Toggle Live Rich-Text Preview"
+                      >
+                        {showPreview ? (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5" />
+                            <span>Edit Code</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Live Preview</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Textarea or live preview block */}
+                    {showPreview ? (
+                      <div className="border border-line rounded-b-xl p-4 bg-paper/30 min-h-[150px] max-h-[350px] overflow-y-auto font-sans leading-relaxed text-left">
+                        {blogBody ? (
+                          renderBlogPostContent(blogBody)
+                        ) : (
+                          <div className="text-center text-xs text-ink-soft py-10">
+                            No content written yet. Type some text or click "Load Rich Template" to see the preview.
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <textarea
+                        ref={bodyRef}
+                        placeholder="Write the full body here... use double enter for paragraphs, or use formatting buttons above to add links, images, and styled text!"
+                        value={blogBody}
+                        onChange={(e) => setBlogBody(e.target.value)}
+                        required={!showPreview}
+                        rows={8}
+                        className="border border-line rounded-b-xl p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo resize-y w-full font-mono leading-relaxed"
+                      />
+                    )}
                   </div>
 
                   {/* SEO Optimization Section */}
@@ -859,9 +1100,20 @@ export default function AdminShell({
                     </div>
                   </div>
 
-                  <button type="submit" className="btn btn-solid w-full font-display font-bold p-3">
-                    Publish Post
-                  </button>
+                  <div className="flex gap-3">
+                    {editingPost && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditPost}
+                        className="btn btn-ghost border-line text-ink-soft hover:bg-line/40 py-3 font-display font-bold flex-1 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    <button type="submit" className="btn btn-solid font-display font-bold p-3 flex-1">
+                      {editingPost ? "Update Publication" : "Publish Post"}
+                    </button>
+                  </div>
                 </form>
               </div>
 
@@ -870,22 +1122,39 @@ export default function AdminShell({
                 <div className="font-display font-bold text-lg text-ink">Existing publications ({blogs.length})</div>
                 
                 <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1">
-                  {blogs.map((p) => (
-                    <div key={p.id || p.title} className="admin-card bg-card border-1.5 border-line rounded-xl p-5 shadow-sm space-y-3 flex flex-col justify-between">
-                      <div>
-                        <div className="font-display font-bold text-base text-ink line-clamp-1">{p.title}</div>
-                        <div className="text-[11px] font-semibold text-ink-soft mt-1">{p.date}</div>
-                        <p className="text-xs text-ink-soft mt-2 line-clamp-2">{p.excerpt}</p>
+                  {blogs.map((p) => {
+                    const postCategory = CATEGORIES.find(c => c.id === p.cat) || CATEGORIES.find(c => c.id === 'internet');
+                    return (
+                      <div key={p.id || p.title} className="admin-card bg-card border-1.5 border-line rounded-xl p-5 shadow-sm space-y-3 flex flex-col justify-between">
+                        <div>
+                          <div className="font-display font-bold text-base text-ink line-clamp-1">{p.title}</div>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                            <span className="text-[11px] font-semibold text-ink-soft">{p.date}</span>
+                            <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-indigo/5 text-indigo border border-indigo/10">
+                              {postCategory?.name || "Internet & chat"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-ink-soft mt-2 line-clamp-2">{p.excerpt}</p>
+                        </div>
+                        <div className="flex gap-2.5 mt-2.5">
+                          <button
+                            onClick={() => handleStartEditPost(p)}
+                            className="btn btn-ghost btn-sm font-semibold border-indigo text-indigo hover:bg-indigo hover:text-white py-1.5 flex items-center justify-center gap-1.5 flex-1 cursor-pointer"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => p.id && handleDeletePost(p.id)}
+                            className="btn btn-ghost btn-sm font-semibold border-coral text-coral hover:bg-coral hover:text-white py-1.5 flex items-center justify-center gap-1.5 flex-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => p.id && handleDeletePost(p.id)}
-                        className="btn btn-ghost btn-sm font-semibold border-coral text-coral hover:bg-coral hover:text-white py-1.5 flex items-center justify-center gap-1.5 mt-2"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete Article</span>
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

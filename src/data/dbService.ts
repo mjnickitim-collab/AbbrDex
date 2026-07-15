@@ -110,6 +110,41 @@ export async function seedDatabaseIfEmpty() {
         }
         console.log("Deduplication of terms complete!");
       }
+
+      // Sync missing seed terms that do not yet exist in Firestore
+      const currentDbKeys = new Set<string>();
+      termsSnapshot.docs.forEach(docSnap => {
+        if (!toDelete.includes(docSnap.id)) {
+          const data = docSnap.data();
+          const code = (data.code || "").toUpperCase().trim();
+          const cat = (data.cat || "").toLowerCase().trim();
+          currentDbKeys.add(`${code}_${cat}`);
+        }
+      });
+
+      const missingTerms = TERMS.filter(t => !currentDbKeys.has(`${t.code.toUpperCase().trim()}_${t.cat.toLowerCase().trim()}`));
+      if (missingTerms.length > 0) {
+        console.log(`Syncing ${missingTerms.length} newly added seed terms to Firestore...`);
+        let addBatch = writeBatch(db);
+        let aCount = 0;
+        for (const term of missingTerms) {
+          const docRef = doc(termsCol); // auto ID
+          addBatch.set(docRef, {
+            ...term,
+            trending: ["FOMO", "GG", "ASAP", "HMU", "SNAFU", "DM", "WFH", "POV"].includes(term.code),
+            createdAt: serverTimestamp()
+          });
+          aCount++;
+          if (aCount % 40 === 0) {
+            await addBatch.commit();
+            addBatch = writeBatch(db);
+          }
+        }
+        if (aCount % 40 !== 0) {
+          await addBatch.commit();
+        }
+        console.log(`Successfully synced ${missingTerms.length} new seed terms!`);
+      }
     }
 
     // 3. Seed Blog Posts
@@ -203,6 +238,7 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
       date: data.date || "Just now",
       excerpt: data.excerpt || "",
       body: data.body || "",
+      cat: data.cat || "internet",
       seoTitle: data.seoTitle || "",
       metaDescription: data.metaDescription || "",
       keywords: data.keywords || "",
@@ -222,6 +258,11 @@ export async function addBlogPost(post: Omit<BlogPost, "id">): Promise<string> {
 export async function deleteBlogPost(id: string): Promise<void> {
   const blogRef = doc(db, "blogs", id);
   await deleteDoc(blogRef);
+}
+
+export async function updateBlogPost(id: string, updates: Partial<BlogPost>): Promise<void> {
+  const blogRef = doc(db, "blogs", id);
+  await updateDoc(blogRef, updates);
 }
 
 // Ad Slots API

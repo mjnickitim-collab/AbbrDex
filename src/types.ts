@@ -20,6 +20,7 @@ export interface BlogPost {
   date: string;
   excerpt: string;
   body: string;
+  cat?: string; // category id
   createdAt?: any;
   seoTitle?: string;
   metaDescription?: string;

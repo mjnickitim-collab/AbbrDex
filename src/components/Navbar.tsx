@@ -50,7 +50,7 @@ export default function Navbar({
           className="logo display flex items-center gap-2 text-xl font-bold font-display cursor-pointer hover:opacity-90"
         >
           <span className="dot w-[10px] h-[10px] rounded-[3px] bg-indigo inline-block transform rotate-45" />
-          <span>AbbrDex</span>
+          <span>whatsthatmean</span>
         </button>
 
         {/* Navigation Links - Hidden on mobile, original layout had display:none on md */}
