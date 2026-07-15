@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { UserProfile } from "../types";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
+import { Menu, X } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 interface NavbarProps {
   activeView: string;
@@ -23,6 +25,7 @@ export default function Navbar({
   setIsAdminMode
 }: NavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -135,8 +138,56 @@ export default function Navbar({
               Log in
             </button>
           )}
+
+          {/* Hamburger Menu Button */}
+          {!isAdminMode && (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden flex items-center justify-center p-2 rounded-lg text-ink-soft hover:bg-line/60 hover:text-ink transition cursor-pointer"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-5.5 h-5.5" /> : <Menu className="w-5.5 h-5.5" />}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Mobile Menu Panel */}
+      <AnimatePresence>
+        {!isAdminMode && mobileMenuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden overflow-hidden border-t border-line bg-paper/95 backdrop-blur-md"
+          >
+            <div className="px-6 py-4 flex flex-col gap-1.5">
+              {[
+                { id: "home", label: "Home" },
+                { id: "browse", label: "Explore Dictionary" },
+                { id: "quiz", label: "Quiz" },
+                { id: "blog", label: "Blog" }
+              ].map((view) => (
+                <button
+                  key={view.id}
+                  onClick={() => {
+                    setActiveView(view.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-xl text-base font-semibold transition cursor-pointer
+                    ${activeView === view.id 
+                      ? "bg-indigo/10 text-indigo" 
+                      : "text-ink hover:bg-line/30"
+                    }`}
+                >
+                  {view.label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
