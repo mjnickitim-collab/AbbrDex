@@ -29,10 +29,21 @@ export async function seedDatabaseIfEmpty() {
         await addDoc(adSlotsCol, slot);
       }
     } else {
+      // Self-healing: Check if any of our standard slots from AD_SLOTS are missing, and add them
+      const existingNames = new Set(adSnapshot.docs.map(docSnap => (docSnap.data().name || "").toLowerCase().trim()));
+      for (const slot of AD_SLOTS) {
+        const slotNameLower = slot.name.toLowerCase().trim();
+        if (!existingNames.has(slotNameLower)) {
+          console.log(`Self-healing database: Adding missing ad slot: ${slot.name}`);
+          await addDoc(adSlotsCol, slot);
+        }
+      }
+
       // Deduplicate ad slots if any got duplicated
       const seenAd = new Set<string>();
       const toDeleteAd: string[] = [];
-      adSnapshot.docs.forEach(docSnap => {
+      const updatedAdSnapshot = await getDocs(adSlotsCol);
+      updatedAdSnapshot.docs.forEach(docSnap => {
         const name = (docSnap.data().name || "").toLowerCase().trim();
         if (seenAd.has(name)) {
           toDeleteAd.push(docSnap.id);

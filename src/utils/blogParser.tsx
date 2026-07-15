@@ -1,20 +1,31 @@
 import React from "react";
+import AdPlaceholder from "../components/AdPlaceholder";
+import { AdSlot } from "../types";
 
 /**
  * Parses blog body markdown-like syntax into beautiful React elements.
  * Supports:
  * - Double newline (\n\n) as paragraph separators
+ * - Headings: # (H1), ## (H2), ### (H3)
  * - Images: ![alt](url)
  * - Links: [text](url)
  * - Bold: **text**
  * - Italic: *text*
  * - Lists: lines starting with "- " or "* "
+ * - Custom Tag: [AD] or [ad] for explicit in-article ad slot placement
  */
-export function renderBlogPostContent(body: string): React.ReactNode {
+export function renderBlogPostContent(body: string, adSlots?: AdSlot[]): React.ReactNode {
   if (!body) return null;
 
   // Split content by double newlines for paragraphs
   const blocks = body.split(/\n\s*\n/);
+
+  // Determine if there is any explicit ad container
+  const hasExplicitAd = blocks.some(block => block.trim().toUpperCase() === "[AD]");
+  
+  // If no explicit ad tag is defined, we'll auto-insert the ad after the middle block
+  // (only if there are at least 3 blocks to keep a balanced read)
+  const adIndex = !hasExplicitAd && blocks.length >= 3 ? Math.floor(blocks.length / 2) - 1 : -1;
 
   return (
     <div className="space-y-5 text-ink leading-relaxed font-sans text-sm md:text-base">
@@ -22,12 +33,26 @@ export function renderBlogPostContent(body: string): React.ReactNode {
         const trimmedBlock = block.trim();
         if (!trimmedBlock) return null;
 
+        // 1. Explicit AD block
+        if (trimmedBlock.toUpperCase() === "[AD]") {
+          if (adSlots) {
+            return (
+              <div key={`ad-${blockIdx}`} className="my-6">
+                <AdPlaceholder slotName="In-article blog banner" adSlots={adSlots} />
+              </div>
+            );
+          }
+          return null;
+        }
+
         // Check if it's a list block (all lines start with "- " or "* ")
         const lines = trimmedBlock.split("\n");
         const isList = lines.every(line => line.trim().startsWith("- ") || line.trim().startsWith("* "));
 
+        let renderedElement: React.ReactNode = null;
+
         if (isList) {
-          return (
+          renderedElement = (
             <ul key={blockIdx} className="list-disc pl-6 space-y-2 my-4">
               {lines.map((line, lineIdx) => {
                 const cleanLine = line.trim().substring(2); // remove "- " or "* "
@@ -39,35 +64,70 @@ export function renderBlogPostContent(body: string): React.ReactNode {
               })}
             </ul>
           );
+        } else {
+          // Check if this block is just a single image block
+          const imgRegex = /^!\[([^\]]*?)\]\(([^)]+?)\)$/;
+          const imgMatch = trimmedBlock.match(imgRegex);
+          if (imgMatch) {
+            const alt = imgMatch[1];
+            const url = imgMatch[2];
+            renderedElement = (
+              <div key={blockIdx} className="my-6 max-w-full overflow-hidden rounded-xl border border-line bg-paper/50 p-1 flex flex-col items-center">
+                <img 
+                  src={url} 
+                  alt={alt} 
+                  referrerPolicy="no-referrer"
+                  className="w-full h-auto max-h-[420px] object-contain rounded-lg" 
+                />
+                {alt && (
+                  <span className="text-xs text-ink-soft mt-2 text-center italic">{alt}</span>
+                )}
+              </div>
+            );
+          } else if (trimmedBlock.startsWith("# ")) {
+            // Heading 1
+            renderedElement = (
+              <h3 key={blockIdx} className="font-display font-bold text-2xl text-ink pt-6 pb-1 border-b border-line mt-8 mb-2">
+                {parseInlineStyles(trimmedBlock.substring(2))}
+              </h3>
+            );
+          } else if (trimmedBlock.startsWith("## ")) {
+            // Heading 2
+            renderedElement = (
+              <h4 key={blockIdx} className="font-display font-bold text-xl text-ink pt-4 mt-6 mb-1">
+                {parseInlineStyles(trimmedBlock.substring(3))}
+              </h4>
+            );
+          } else if (trimmedBlock.startsWith("### ")) {
+            // Heading 3
+            renderedElement = (
+              <h5 key={blockIdx} className="font-display font-bold text-lg text-ink pt-2 mt-4">
+                {parseInlineStyles(trimmedBlock.substring(4))}
+              </h5>
+            );
+          } else {
+            // Standard paragraph
+            renderedElement = (
+              <p key={blockIdx} className="text-ink leading-relaxed">
+                {parseInlineStyles(trimmedBlock)}
+              </p>
+            );
+          }
         }
 
-        // Check if this block is just a single image block
-        const imgRegex = /^!\[([^\]]*?)\]\(([^)]+?)\)$/;
-        const imgMatch = trimmedBlock.match(imgRegex);
-        if (imgMatch) {
-          const alt = imgMatch[1];
-          const url = imgMatch[2];
+        // If this is the index for automatic ad injection, render the block and follow with an ad banner
+        if (blockIdx === adIndex && adSlots) {
           return (
-            <div key={blockIdx} className="my-6 max-w-full overflow-hidden rounded-xl border border-line bg-paper/50 p-1 flex flex-col items-center">
-              <img 
-                src={url} 
-                alt={alt} 
-                referrerPolicy="no-referrer"
-                className="w-full h-auto max-h-[420px] object-contain rounded-lg" 
-              />
-              {alt && (
-                <span className="text-xs text-ink-soft mt-2 text-center italic">{alt}</span>
-              )}
-            </div>
+            <React.Fragment key={blockIdx}>
+              {renderedElement}
+              <div className="my-6">
+                <AdPlaceholder slotName="In-article blog banner" adSlots={adSlots} />
+              </div>
+            </React.Fragment>
           );
         }
 
-        // Standard paragraph
-        return (
-          <p key={blockIdx} className="text-ink leading-relaxed">
-            {parseInlineStyles(trimmedBlock)}
-          </p>
-        );
+        return renderedElement;
       })}
     </div>
   );

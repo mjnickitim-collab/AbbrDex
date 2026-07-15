@@ -97,15 +97,17 @@ export default function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // 1. Initial Seeding and Database Loading
   const loadDatabaseData = async () => {
     try {
-      // Fetch public lists
-      const fetchedTerms = await fetchTerms();
-      const fetchedBlogs = await fetchBlogPosts();
-      const fetchedAdSlots = await fetchAdSlots();
+      // Fetch public lists concurrently to dramatically reduce latency and parallelize database queries
+      const [fetchedTerms, fetchedBlogs, fetchedAdSlots] = await Promise.all([
+        fetchTerms(),
+        fetchBlogPosts(),
+        fetchAdSlots()
+      ]);
       
       setTerms(fetchedTerms);
       setBlogs(fetchedBlogs);
@@ -117,12 +119,25 @@ export default function App() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      // Seed Firestore with initial records if collections are empty
-      await seedDatabaseIfEmpty();
-      
-      // Load and set React State
-      await loadDatabaseData();
-      setLoading(false);
+      setLoading(true);
+      try {
+        // Load vital front-end data concurrently first so that pages render instantly
+        await loadDatabaseData();
+      } catch (err) {
+        console.error("Failed initial load:", err);
+      } finally {
+        setLoading(false);
+      }
+
+      // Perform background seeding & self-healing asynchronously without blocking layout load
+      seedDatabaseIfEmpty()
+        .then(() => {
+          // If the collections were completely empty, trigger a silent reload
+          if (terms.length === 0 || blogs.length === 0) {
+            loadDatabaseData();
+          }
+        })
+        .catch(err => console.error("Async background seeding check failed:", err));
     };
     initializeApp();
   }, []);

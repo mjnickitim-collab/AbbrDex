@@ -31,6 +31,8 @@ import {
   Bold,
   Italic,
   List,
+  ListOrdered,
+  Quote,
   Eye,
   EyeOff,
   Sparkles
@@ -79,7 +81,9 @@ export default function AdminShell({
   const [showPreview, setShowPreview] = useState(false);
   const bodyRef = React.useRef<HTMLTextAreaElement>(null);
 
-  const handleInsertMarkup = (type: "bold" | "italic" | "link" | "image" | "list") => {
+  const handleInsertMarkup = (
+    type: "bold" | "italic" | "link" | "image" | "list" | "numlist" | "quote" | "h1" | "h2" | "h3" | "p" | "ad"
+  ) => {
     const textarea = bodyRef.current;
     if (!textarea) return;
 
@@ -105,6 +109,20 @@ export default function AdminShell({
       replacement = `![${alt}](${url})`;
     } else if (type === "list") {
       replacement = `\n- ${selectedText || "List item"}`;
+    } else if (type === "numlist") {
+      replacement = `\n1. ${selectedText || "Numbered list item"}`;
+    } else if (type === "quote") {
+      replacement = `\n> ${selectedText || "Blockquote content"}`;
+    } else if (type === "h1") {
+      replacement = `\n# ${selectedText || "Heading 1"}\n`;
+    } else if (type === "h2") {
+      replacement = `\n## ${selectedText || "Heading 2"}\n`;
+    } else if (type === "h3") {
+      replacement = `\n### ${selectedText || "Heading 3"}\n`;
+    } else if (type === "p") {
+      replacement = `\n${selectedText || "Paragraph text"}\n`;
+    } else if (type === "ad") {
+      replacement = `\n[AD]\n`;
     }
 
     const newValue = text.substring(0, start) + replacement + text.substring(end);
@@ -505,6 +523,61 @@ Try writing your own content or edit this template using the helper buttons abov
     }
   };
 
+  const handleGenerateSitemap = () => {
+    try {
+      const domain = "https://whatsthatmean.com";
+      const dateStr = new Date().toISOString().split("T")[0];
+      
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+      
+      // Core routes
+      const routes = ["", "/browse", "/quiz", "/blog"];
+      routes.forEach(route => {
+        xml += `  <url>\n`;
+        xml += `    <loc>${domain}${route}</loc>\n`;
+        xml += `    <lastmod>${dateStr}</lastmod>\n`;
+        xml += `    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n`;
+        xml += `    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n`;
+        xml += `  </url>\n`;
+      });
+      
+      // Blog routes
+      blogs.forEach(blog => {
+        const slug = (blog.title || "")
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-");
+        
+        xml += `  <url>\n`;
+        xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
+        xml += `    <lastmod>${dateStr}</lastmod>\n`;
+        xml += `    <changefreq>monthly</changefreq>\n`;
+        xml += `    <priority>0.6</priority>\n`;
+        xml += `  </url>\n`;
+      });
+      
+      xml += `</urlset>\n`;
+      
+      const blob = new Blob([xml], { type: "application/xml;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "sitemap.xml");
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert("sitemap.xml generated and downloaded successfully! Place this file in your website's root public directory to serve it under /sitemap.xml.");
+    } catch (err) {
+      console.error("Error generating sitemap:", err);
+      alert("Failed to generate sitemap.");
+    }
+  };
+
   // User Suspension and role change helpers
   const handleToggleUserBan = async (user: UserProfile) => {
     if (user.uid === currentUser?.uid) {
@@ -627,6 +700,45 @@ Try writing your own content or edit this template using the helper buttons abov
               >
                 {isSeeding ? "Seeding Database..." : "Force Seed 300 Terms (50 per category)"}
               </button>
+            </div>
+
+            {/* Google Search Console Sitemap Generator */}
+            <div className="bg-card border-1.5 border-line rounded-xl p-6 shadow-sm space-y-4">
+              <div className="font-display font-bold text-lg text-ink">Google Search Console Sitemap Generator</div>
+              <p className="text-xs text-ink-soft leading-relaxed">
+                Generate a fully populated, standard SEO XML sitemap containing your homepage, browse views, quiz modules, and all <strong>{blogs.length} published blog articles</strong> to maximize your Google indexing score.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleGenerateSitemap}
+                  className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-5 py-3 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download sitemap.xml</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const domain = "https://whatsthatmean.com";
+                    const dateStr = new Date().toISOString().split("T")[0];
+                    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+                    ["", "/browse", "/quiz", "/blog"].forEach(route => {
+                      xml += `  <url>\n    <loc>${domain}${route}</loc>\n    <lastmod>${dateStr}</lastmod>\n    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n  </url>\n`;
+                    });
+                    blogs.forEach(blog => {
+                      const slug = (blog.title || "").toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
+                      xml += `  <url>\n    <loc>${domain}/blog/${slug}</loc>\n    <lastmod>${dateStr}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+                    });
+                    xml += `</urlset>\n`;
+                    
+                    navigator.clipboard.writeText(xml);
+                    alert("Sitemap XML copied to clipboard!");
+                  }}
+                  className="btn btn-ghost border-line text-ink-soft hover:bg-line/40 px-5 py-3 font-semibold text-xs flex items-center gap-2 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Copy to Clipboard</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -958,9 +1070,60 @@ Try writing your own content or edit this template using the helper buttons abov
                       </button>
                     </div>
 
+                    {/* "Add Media" row on top of the toolbar */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <button
+                        type="button"
+                        onClick={() => handleInsertMarkup("image")}
+                        className="px-3 py-1.5 text-xs font-bold border border-indigo/40 text-indigo rounded bg-white hover:bg-indigo/5 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <ImageIcon className="w-3.5 h-3.5" />
+                        <span>Add Media</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleInsertMarkup("ad")}
+                        className="px-3 py-1.5 text-xs font-bold border border-mint/40 text-mint-ink rounded bg-white hover:bg-mint/5 transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        title="Insert Google Ad Slot placeholder at current cursor position"
+                      >
+                        <Radio className="w-3.5 h-3.5" />
+                        <span>Insert Ad Code</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="text-ink-soft hover:text-ink cursor-help p-1"
+                        title="Help: Use the formatting toolbar to design heading blocks, numbered lists, blockquotes, inline links, and images."
+                      >
+                        <HelpCircle className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
                     {/* Rich Editor Toolbar */}
                     <div className="flex flex-wrap items-center justify-between border border-line bg-paper/50 rounded-t-xl px-3 py-2 gap-2 border-b-0">
                       <div className="flex flex-wrap items-center gap-1">
+                        {/* Heading selector dropdown */}
+                        <select
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "h1") handleInsertMarkup("h1");
+                            else if (val === "h2") handleInsertMarkup("h2");
+                            else if (val === "h3") handleInsertMarkup("h3");
+                            else if (val === "p") handleInsertMarkup("p");
+                            e.target.value = ""; // reset dropdown selection
+                          }}
+                          defaultValue=""
+                          className="border border-line rounded px-2.5 py-1 text-xs bg-paper text-ink focus:outline-none focus:border-indigo mr-1 font-semibold"
+                          title="Format Block Type"
+                        >
+                          <option value="" disabled>Format...</option>
+                          <option value="p">Paragraph</option>
+                          <option value="h1">Heading 1</option>
+                          <option value="h2">Heading 2</option>
+                          <option value="h3">Heading 3</option>
+                        </select>
+
+                        <div className="w-px h-5 bg-line mx-1" />
+
                         <button
                           type="button"
                           onClick={() => handleInsertMarkup("bold")}
@@ -977,6 +1140,9 @@ Try writing your own content or edit this template using the helper buttons abov
                         >
                           <Italic className="w-4 h-4" />
                         </button>
+                        
+                        <div className="w-px h-5 bg-line mx-1" />
+
                         <button
                           type="button"
                           onClick={() => handleInsertMarkup("list")}
@@ -984,6 +1150,24 @@ Try writing your own content or edit this template using the helper buttons abov
                           title="Bullet List (- item)"
                         >
                           <List className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleInsertMarkup("numlist")}
+                          className="p-1.5 rounded hover:bg-line text-ink-soft hover:text-ink transition flex items-center justify-center cursor-pointer"
+                          title="Numbered List (1. item)"
+                        >
+                          <ListOrdered className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleInsertMarkup("quote")}
+                          className="p-1.5 rounded hover:bg-line text-ink-soft hover:text-ink transition flex items-center justify-center cursor-pointer"
+                          title="Blockquote (> Quote)"
+                        >
+                          <Quote className="w-4 h-4" />
                         </button>
 
                         <div className="w-px h-5 bg-line mx-1" />
@@ -997,17 +1181,6 @@ Try writing your own content or edit this template using the helper buttons abov
                         >
                           <LinkIcon className="w-3.5 h-3.5" />
                           <span>Link</span>
-                        </button>
-
-                        {/* Image inserter */}
-                        <button
-                          type="button"
-                          onClick={() => handleInsertMarkup("image")}
-                          className="p-1.5 bg-mint/10 text-mint-ink border border-mint/15 rounded hover:bg-mint hover:text-white transition flex items-center gap-1 text-xs font-bold px-2 cursor-pointer"
-                          title="Insert Image ![caption](url)"
-                        >
-                          <ImageIcon className="w-3.5 h-3.5" />
-                          <span>Image</span>
                         </button>
                       </div>
 
@@ -1040,7 +1213,7 @@ Try writing your own content or edit this template using the helper buttons abov
                     {showPreview ? (
                       <div className="border border-line rounded-b-xl p-4 bg-paper/30 min-h-[150px] max-h-[350px] overflow-y-auto font-sans leading-relaxed text-left">
                         {blogBody ? (
-                          renderBlogPostContent(blogBody)
+                          renderBlogPostContent(blogBody, adSlots)
                         ) : (
                           <div className="text-center text-xs text-ink-soft py-10">
                             No content written yet. Type some text or click "Load Rich Template" to see the preview.
@@ -1050,7 +1223,7 @@ Try writing your own content or edit this template using the helper buttons abov
                     ) : (
                       <textarea
                         ref={bodyRef}
-                        placeholder="Write the full body here... use double enter for paragraphs, or use formatting buttons above to add links, images, and styled text!"
+                        placeholder="Write the full body here... Use heading format selection, bullet lists, blockquotes, or enter custom [AD] tags where you want adsense slots!"
                         value={blogBody}
                         onChange={(e) => setBlogBody(e.target.value)}
                         required={!showPreview}

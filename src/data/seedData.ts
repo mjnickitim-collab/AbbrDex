@@ -669,5 +669,6 @@ export const AD_SLOTS: AdSlot[] = [
   { name: "In-content — after hero", desc: "336x280 rectangle, homepage only", on: true, network: "AdSense" },
   { name: "Sidebar", desc: "300x600 skyscraper, browse and blog pages", on: false, network: "AdSense" },
   { name: "Between quiz questions", desc: "320x50 mobile banner", on: true, network: "AdSense" },
+  { name: "In-article blog banner", desc: "728x90 leaderboard, inside blog body", on: true, network: "AdSense" },
   { name: "Footer", desc: "728x90 leaderboard, all pages", on: false, network: "AdSense" }
 ];

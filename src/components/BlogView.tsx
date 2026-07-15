@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BlogPost } from "../types";
+import { BlogPost, AdSlot } from "../types";
 import { Calendar, ChevronLeft, BookOpen } from "lucide-react";
 import { renderBlogPostContent } from "../utils/blogParser";
 import { CATEGORIES } from "../data/seedData";
@@ -8,9 +8,10 @@ interface BlogViewProps {
   posts: BlogPost[];
   initialSelectedPost?: BlogPost | null;
   onCloseSelectedPost?: () => void;
+  adSlots?: AdSlot[];
 }
 
-export default function BlogView({ posts, initialSelectedPost = null, onCloseSelectedPost }: BlogViewProps) {
+export default function BlogView({ posts, initialSelectedPost = null, onCloseSelectedPost, adSlots }: BlogViewProps) {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(initialSelectedPost);
 
   React.useEffect(() => {
@@ -109,7 +110,7 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
           {/* Full body with beautiful custom styling */}
           <div className="pt-6 border-t border-line">
             {selectedPost.body ? (
-              renderBlogPostContent(selectedPost.body)
+              renderBlogPostContent(selectedPost.body, adSlots)
             ) : (
               <p className="text-ink leading-relaxed text-sm md:text-base font-sans">
                 No detailed body available. Check back soon for the full article!
