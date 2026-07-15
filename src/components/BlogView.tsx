@@ -29,7 +29,7 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
       if (selectedPost.seoTitle) {
         document.title = selectedPost.seoTitle;
       } else {
-        document.title = `${selectedPost.title} | SlangDex`;
+        document.title = `${selectedPost.title} | whatsthatmean`;
       }
 
       if (selectedPost.metaDescription) {

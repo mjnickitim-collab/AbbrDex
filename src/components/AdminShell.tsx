@@ -205,7 +205,7 @@ Try writing your own content or edit this template using the helper buttons abov
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `SlangDex_Terms_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `whatsthatmean_Terms_Export_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -1070,7 +1070,7 @@ Try writing your own content or edit this template using the helper buttons abov
                       <label className="text-xs font-semibold text-ink-soft mb-1">SEO Title Override</label>
                       <input
                         type="text"
-                        placeholder="e.g. Master Internet Slang | SlangDex Guide"
+                        placeholder="e.g. Master Internet Slang | whatsthatmean Guide"
                         value={blogSeoTitle}
                         onChange={(e) => setBlogSeoTitle(e.target.value)}
                         className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo"

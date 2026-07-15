@@ -147,7 +147,7 @@ export async function seedDatabaseIfEmpty() {
       }
     }
 
-    // 3. Seed Blog Posts
+    // 3. Seed Blog Posts / Sanitize old data
     const blogsCol = collection(db, "blogs");
     const blogsSnapshot = await getDocs(blogsCol);
     if (blogsSnapshot.empty) {
@@ -177,6 +177,56 @@ export async function seedDatabaseIfEmpty() {
           deleteBatch.delete(doc(db, "blogs", id));
         }
         await deleteBatch.commit();
+      }
+
+      // Sanitize old names from existing blogs
+      const sanitizeText = (txt: any): any => {
+        if (typeof txt !== "string") return txt;
+        return txt
+          .replace(/abbrdex/gi, "whatsthatmean")
+          .replace(/slangdex/gi, "whatsthatmean")
+          .replace(/abbrtex/gi, "whatsthatmean");
+      };
+
+      const updateBatch = writeBatch(db);
+      let hasUpdates = false;
+      blogsSnapshot.docs.forEach(docSnap => {
+        if (!toDeleteBlog.includes(docSnap.id)) {
+          const data = docSnap.data();
+          const originalTitle = data.title || "";
+          const originalExcerpt = data.excerpt || "";
+          const originalBody = data.body || "";
+          const originalSeoTitle = data.seoTitle || "";
+          const originalMetaDescription = data.metaDescription || "";
+
+          const newTitle = sanitizeText(originalTitle);
+          const newExcerpt = sanitizeText(originalExcerpt);
+          const newBody = sanitizeText(originalBody);
+          const newSeoTitle = sanitizeText(originalSeoTitle);
+          const newMetaDescription = sanitizeText(originalMetaDescription);
+
+          if (
+            newTitle !== originalTitle ||
+            newExcerpt !== originalExcerpt ||
+            newBody !== originalBody ||
+            newSeoTitle !== originalSeoTitle ||
+            newMetaDescription !== originalMetaDescription
+          ) {
+            updateBatch.update(doc(db, "blogs", docSnap.id), {
+              title: newTitle,
+              excerpt: newExcerpt,
+              body: newBody,
+              seoTitle: newSeoTitle,
+              metaDescription: newMetaDescription
+            });
+            hasUpdates = true;
+          }
+        }
+      });
+
+      if (hasUpdates) {
+        console.log("Updating blog posts with 'whatsthatmean' branding in Firestore...");
+        await updateBatch.commit();
       }
     }
 

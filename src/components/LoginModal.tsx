@@ -159,7 +159,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
 
   // Helper buttons to easily test
   const handleQuickDemo = async (role: "User" | "Admin") => {
-    setEmail(role === "Admin" ? "admin@slangdex.com" : "user@slangdex.com");
+    setEmail(role === "Admin" ? "admin@whatsthatmean.com" : "user@whatsthatmean.com");
     setPassword("password123");
     setIsSignUp(false);
   };
