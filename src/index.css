@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #F9FAFB;
+  --color-card: #FFFFFF;
+  --color-ink: #0F172A;
+  --color-ink-soft: #64748B;
+  --color-line: #E2E8F0;
+  --color-indigo: #3B82F6;
+  --color-indigo-dark: #1E4ED8;
+  --color-yellow: #FEF08A;
+  --color-yellow-ink: #713F12;
+  --color-coral: #EF4444;
+  --color-coral-ink: #991B1B;
+  --color-mint: #10B981;
+  --color-mint-ink: #166534;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  
+  --radius-custom: 12px;
+}
+
+body {
+  background-color: #F9FAFB;
+  color: #0F172A;
+  font-family: "Inter", sans-serif;
+}
+
+/* Custom button classes to match original design - Clean Minimalist style */
+.btn {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid #0F172A;
+  background-color: transparent;
+  color: #0F172A;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background-color: #F1F5F9;
+  color: #0F172A;
+}
+
+.btn-solid {
+  background-color: #3B82F6;
+  border-color: #3B82F6;
+  color: #ffffff;
+}
+
+.btn-solid:hover {
+  background-color: #1D4ED8;
+  border-color: #1D4ED8;
+  color: #ffffff;
+}
+
+.btn-ghost {
+  border: 1px solid #E2E8F0;
+  color: #64748B;
+}
+
+.btn-ghost:hover {
+  border-color: #CBD5E1;
+  color: #0F172A;
+  background-color: #F8FAFC;
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+/* Category Tag backgrounds - ultra clean minimalist */
+.tag-internet {
+  background-color: #EFF6FF;
+  color: #1E40AF;
+  border: 1px solid #DBEAFE;
+}
+.tag-texting {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+.tag-social {
+  background-color: #FDF2F8;
+  color: #9D174D;
+  border: 1px solid #FCE7F3;
+}
+.tag-business {
+  background-color: #F0FDF4;
+  color: #166534;
+  border: 1px solid #DCFCE7;
+}
+.tag-gaming {
+  background-color: #FAF5FF;
+  color: #6B21A8;
+  border: 1px solid #F3E8FF;
+}
+.tag-military {
+  background-color: #F8FAFC;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+}
+
+.tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Modal and layout custom overlays */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+

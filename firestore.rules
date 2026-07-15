@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if the user is an Admin or Editor
+    function isStaff() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Admin" ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "Editor");
+    }
+
+    // Slang terms
+    match /terms/{termId} {
+      allow read: if true;
+      allow write: if isStaff() || request.auth == null; // allow default initialize seeding
+    }
+
+    // Blog posts
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow write: if isStaff() || request.auth == null; // allow default initialize seeding
+    }
+
+    // Ad placements
+    match /ad_slots/{slotId} {
+      allow read: if true;
+      allow write: if isStaff() || request.auth == null; // allow default initialize seeding
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if (request.auth != null && request.auth.uid == userId) || isStaff() || request.auth == null;
+      allow delete: if isStaff();
+    }
+
+    // Quiz records
+    match /quiz_scores/{scoreId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if isStaff();
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "AbbrDex",
+  "description": "Decode the world's abbreviations, acronyms, and shorthand. Practice with interactive quizzes, read insightful blogs, and stay updated with an offline-first experience synchronized to Firebase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
