@@ -47,10 +47,15 @@ export default function Navbar({
             setIsAdminMode(false);
             setActiveView("home");
           }}
-          className="logo display flex items-center gap-2 text-xl font-bold font-display cursor-pointer hover:opacity-90"
+          className="logo display flex items-center gap-2 text-xl font-display cursor-pointer hover:opacity-90 select-none group"
         >
-          <span className="dot w-[10px] h-[10px] rounded-[3px] bg-indigo inline-block transform rotate-45" />
-          <span>whatsthatmean</span>
+          <span className="dot w-3.5 h-3.5 rounded-[4px] bg-indigo inline-block transform rotate-45 shadow-sm shadow-indigo/25 transition-transform duration-500 group-hover:rotate-90" />
+          <span className="tracking-tight leading-none">
+            <span className="text-ink-soft font-normal">whats</span>
+            <span className="text-indigo font-black">That</span>
+            <span className="text-ink font-extrabold">Mean</span>
+            <span className="text-indigo font-black ml-0.5 inline-block group-hover:translate-y-[-2px] transition-transform duration-200">?</span>
+          </span>
         </button>
 
         {/* Navigation Links - Hidden on mobile, original layout had display:none on md */}

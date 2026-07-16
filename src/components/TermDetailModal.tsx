@@ -16,6 +16,7 @@ export default function TermDetailModal({ term, onClose }: TermDetailModalProps)
   const triggerTTS = () => {
     try {
       const utterance = new SpeechSynthesisUtterance(term.code);
+      utterance.lang = "en-US"; // 영어 약어를 올바르게 발음하도록 언어를 영어로 명시
       utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     } catch (e) {
