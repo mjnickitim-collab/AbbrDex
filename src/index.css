@@ -107,6 +107,11 @@ body {
   color: #475569;
   border: 1px solid #E2E8F0;
 }
+.tag-emoji {
+  background-color: #FFF1F2;
+  color: #BE123C;
+  border: 1px solid #FFE4E6;
+}
 
 .tag {
   font-size: 10px;

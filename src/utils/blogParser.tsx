@@ -170,12 +170,29 @@ function parseInlineStyles(text: string): React.ReactNode {
           </span>
         );
       } else {
+        const isInternal = url.startsWith("/") || url.startsWith("https://whatsthatmean.com") || (!url.includes("://") && !url.startsWith("mailto:") && !url.startsWith("tel:"));
+        let finalUrl = url;
+        if (url.startsWith("https://whatsthatmean.com")) {
+          finalUrl = url.substring("https://whatsthatmean.com".length);
+          if (!finalUrl.startsWith("/")) finalUrl = "/" + finalUrl;
+        }
+
+        const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+          if (isInternal) {
+            e.preventDefault();
+            // Dispatch custom SPA navigation event
+            const navEvent = new CustomEvent("spa-navigate", { detail: { path: finalUrl } });
+            window.dispatchEvent(navEvent);
+          }
+        };
+
         elements.push(
           <a 
             key={`link-${key++}`} 
             href={url} 
-            target="_blank" 
-            rel="noopener noreferrer"
+            target={isInternal ? "_self" : "_blank"} 
+            rel={isInternal ? "" : "noopener noreferrer"}
+            onClick={handleClick}
             className="text-indigo hover:text-indigo-dark underline font-semibold transition"
           >
             {label}

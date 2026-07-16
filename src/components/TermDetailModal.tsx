@@ -15,9 +15,14 @@ export default function TermDetailModal({ term, onClose }: TermDetailModalProps)
 
   const triggerTTS = () => {
     try {
-      const utterance = new SpeechSynthesisUtterance(term.code);
-      utterance.lang = "en-US"; // 영어 약어를 올바르게 발음하도록 언어를 영어로 명시
-      utterance.rate = 0.9;
+      const isEmoji = term.cat === "emoji";
+      const textToSpeak = isEmoji ? term.full : term.code;
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      
+      // Use browser's current language for emojis to pronounce meanings correctly, 
+      // and keep standard English pronunciations for acronyms
+      utterance.lang = isEmoji ? (navigator.language || "ko-KR") : "en-US";
+      utterance.rate = 0.95;
       window.speechSynthesis.speak(utterance);
     } catch (e) {
       console.warn("TTS is not supported in this frame context.", e);
@@ -53,13 +58,13 @@ export default function TermDetailModal({ term, onClose }: TermDetailModalProps)
 
         {/* Term Title & Pronounce */}
         <div className="flex items-center justify-between border-b border-line pb-4 pt-1">
-          <h3 className="font-mono font-bold text-4xl text-indigo tracking-wider">
+          <h3 className={term.cat === "emoji" ? "text-6xl select-none" : "font-mono font-bold text-4xl text-indigo tracking-wider"}>
             {term.code}
           </h3>
           <button
             onClick={triggerTTS}
             className="p-2.5 bg-indigo/5 text-indigo hover:bg-indigo hover:text-white rounded-xl transition cursor-pointer"
-            title="Listen to abbreviation pronunciation"
+            title="Listen to pronunciation"
           >
             <Volume2 className="w-4.5 h-4.5" />
           </button>

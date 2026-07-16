@@ -18,7 +18,8 @@ import { Term, BlogPost, AdSlot, UserProfile } from "../types";
 import { TERMS, BLOG_SEED, AD_SLOTS, MOCK_USERS } from "./seedData";
 
 // Helper to seed database if empty
-export async function seedDatabaseIfEmpty() {
+export async function seedDatabaseIfEmpty(): Promise<boolean> {
+  let didChange = false;
   try {
     // 1. Seed Ad Slots
     const adSlotsCol = collection(db, "ad_slots");
@@ -28,6 +29,7 @@ export async function seedDatabaseIfEmpty() {
       for (const slot of AD_SLOTS) {
         await addDoc(adSlotsCol, slot);
       }
+      didChange = true;
     } else {
       // Self-healing: Check if any of our standard slots from AD_SLOTS are missing, and add them
       const existingNames = new Set(adSnapshot.docs.map(docSnap => (docSnap.data().name || "").toLowerCase().trim()));
@@ -36,6 +38,7 @@ export async function seedDatabaseIfEmpty() {
         if (!existingNames.has(slotNameLower)) {
           console.log(`Self-healing database: Adding missing ad slot: ${slot.name}`);
           await addDoc(adSlotsCol, slot);
+          didChange = true;
         }
       }
 
@@ -58,6 +61,7 @@ export async function seedDatabaseIfEmpty() {
           deleteBatch.delete(doc(db, "ad_slots", id));
         }
         await deleteBatch.commit();
+        didChange = true;
       }
     }
 
@@ -85,6 +89,7 @@ export async function seedDatabaseIfEmpty() {
       if (count % 40 !== 0) {
         await batch.commit();
       }
+      didChange = true;
     } else {
       // Deduplicate existing terms to clean up live database
       const seen = new Set<string>();
@@ -94,8 +99,7 @@ export async function seedDatabaseIfEmpty() {
         const data = docSnap.data();
         const code = (data.code || "").toUpperCase().trim();
         const cat = (data.cat || "").toLowerCase().trim();
-        const full = (data.full || "").toLowerCase().trim();
-        const key = `${code}_${cat}_${full}`;
+        const key = `${code}_${cat}`;
         
         if (seen.has(key)) {
           toDelete.push(docSnap.id);
@@ -120,6 +124,7 @@ export async function seedDatabaseIfEmpty() {
           await deleteBatch.commit();
         }
         console.log("Deduplication of terms complete!");
+        didChange = true;
       }
 
       // Sync missing seed terms that do not yet exist in Firestore
@@ -155,6 +160,7 @@ export async function seedDatabaseIfEmpty() {
           await addBatch.commit();
         }
         console.log(`Successfully synced ${missingTerms.length} new seed terms!`);
+        didChange = true;
       }
     }
 
@@ -169,6 +175,7 @@ export async function seedDatabaseIfEmpty() {
           createdAt: serverTimestamp()
         });
       }
+      didChange = true;
     } else {
       // Deduplicate blogs if any got duplicated
       const seenBlog = new Set<string>();
@@ -188,6 +195,7 @@ export async function seedDatabaseIfEmpty() {
           deleteBatch.delete(doc(db, "blogs", id));
         }
         await deleteBatch.commit();
+        didChange = true;
       }
 
       // Sanitize old names from existing blogs
@@ -238,6 +246,7 @@ export async function seedDatabaseIfEmpty() {
       if (hasUpdates) {
         console.log("Updating blog posts with 'whatsthatmean' branding in Firestore...");
         await updateBatch.commit();
+        didChange = true;
       }
     }
 
@@ -249,10 +258,13 @@ export async function seedDatabaseIfEmpty() {
       for (const u of MOCK_USERS) {
         await setDoc(doc(db, "users", u.uid), u);
       }
+      didChange = true;
     }
     console.log("Seeding and deduplication checks complete!");
+    return didChange;
   } catch (error) {
     console.error("Error checking/seeding database:", error);
+    return false;
   }
 }
 

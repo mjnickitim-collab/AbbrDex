@@ -54,6 +54,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
+  const [quizMode, setQuizMode] = useState<"abbreviation" | "emoji">("abbreviation");
 
   useEffect(() => {
     if (activeView !== "blog") {
@@ -145,9 +146,9 @@ export default function App() {
 
       // Perform background seeding & self-healing asynchronously without blocking layout load
       seedDatabaseIfEmpty()
-        .then(() => {
-          // If the collections were completely empty, trigger a silent reload
-          if (terms.length === 0 || blogs.length === 0) {
+        .then((didChange) => {
+          // If the collections were completely empty or any changes occurred during self-healing, trigger a reload
+          if (didChange || terms.length === 0 || blogs.length === 0) {
             loadDatabaseData();
           }
         })
@@ -191,6 +192,68 @@ export default function App() {
     loadUsers();
   }, [currentUser]);
 
+  // Listen to custom SPA navigation events from internal markdown links
+  useEffect(() => {
+    const handleSpaNavigate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ path: string }>;
+      if (!customEvent.detail || !customEvent.detail.path) return;
+      
+      const path = customEvent.detail.path;
+      
+      if (path === "/") {
+        setActiveView("home");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (path.startsWith("/browse")) {
+        // e.g. /browse?search=FOMO
+        let search = "";
+        try {
+          const urlObj = new URL(path, window.location.origin);
+          search = urlObj.searchParams.get("search") || "";
+        } catch (err) {
+          const match = path.match(/[?&]search=([^&]+)/);
+          if (match) search = decodeURIComponent(match[1]);
+        }
+        setSearchQuery(search);
+        setSelectedCategory(null);
+        setActiveView("browse");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (path.startsWith("/quiz")) {
+        setActiveView("quiz");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (path.startsWith("/blog")) {
+        // e.g. /blog or /blog/some-slug
+        const urlParts = path.split("/");
+        if (urlParts.length > 2 && urlParts[2]) {
+          const slug = urlParts[2];
+          // Find the blog with matching slug
+          const foundBlog = blogs.find(b => {
+            const s = (b.title || "")
+              .toLowerCase()
+              .trim()
+              .replace(/[^a-z0-9\s-]/g, "")
+              .replace(/\s+/g, "-")
+              .replace(/-+/g, "-");
+            return s === slug;
+          });
+          if (foundBlog) {
+            setSelectedBlogPost(foundBlog);
+            setActiveView("blog");
+          } else {
+            setSelectedBlogPost(null);
+            setActiveView("blog");
+          }
+        } else {
+          setSelectedBlogPost(null);
+          setActiveView("blog");
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    };
+    
+    window.addEventListener("spa-navigate", handleSpaNavigate);
+    return () => window.removeEventListener("spa-navigate", handleSpaNavigate);
+  }, [blogs]);
+
   // Handle Home Searches
   const handleHomeSearch = (query: string) => {
     setSearchQuery(query);
@@ -225,8 +288,21 @@ export default function App() {
 
       {/* Main Navigation */}
       <Navbar 
-        activeView={activeView}
-        setActiveView={setActiveView}
+        activeView={activeView === "browse" && selectedCategory === "emoji" ? "emoji" : activeView}
+        setActiveView={(view) => {
+          if (view === "emoji") {
+            setSelectedCategory("emoji");
+            setSearchQuery("");
+            setActiveView("browse");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } else {
+            if (view === "browse") {
+              setSelectedCategory(null);
+              setSearchQuery("");
+            }
+            setActiveView(view);
+          }
+        }}
         currentUser={currentUser}
         onLogout={() => setCurrentUser(null)}
         onOpenLogin={() => setIsLoginOpen(true)}
@@ -261,6 +337,17 @@ export default function App() {
                       setSelectedBlogPost(post);
                       setActiveView("blog");
                     }}
+                    onSelectEmojiQuiz={() => {
+                      setQuizMode("emoji");
+                      setActiveView("quiz");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    onSelectEmojiDict={() => {
+                      setSelectedCategory("emoji");
+                      setSearchQuery("");
+                      setActiveView("browse");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
                   />
                   {/* Homepage Ad Slot */}
                   <AdPlaceholder slotName="In-content — after hero" adSlots={adSlots} />
@@ -287,6 +374,7 @@ export default function App() {
                   <QuizView 
                     terms={terms}
                     currentUser={currentUser}
+                    initialMode={quizMode}
                   />
                   {/* Quiz Ad Placement (Shown during quiz questions if toggled on) */}
                   <AdPlaceholder slotName="Between quiz questions" adSlots={adSlots} />

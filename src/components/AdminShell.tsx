@@ -35,7 +35,13 @@ import {
   Quote,
   Eye,
   EyeOff,
-  Sparkles
+  Sparkles,
+  Globe,
+  FileText,
+  Check,
+  Search,
+  Smile,
+  X
 } from "lucide-react";
 import { renderBlogPostContent } from "../utils/blogParser";
 
@@ -48,7 +54,7 @@ interface AdminShellProps {
   currentUser: UserProfile | null;
 }
 
-type AdminTab = "overview" | "terms" | "users" | "ads" | "blog";
+type AdminTab = "overview" | "terms" | "emojis" | "users" | "ads" | "blog";
 
 export default function AdminShell({
   terms,
@@ -78,8 +84,40 @@ export default function AdminShell({
   const [blogMetaDescription, setBlogMetaDescription] = useState("");
   const [blogKeywords, setBlogKeywords] = useState("");
 
+  // Link Insertion Modal States
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [linkModalLabel, setLinkModalLabel] = useState("");
+  const [linkModalType, setLinkModalType] = useState<"internal" | "external">("internal");
+  const [linkModalUrl, setLinkModalUrl] = useState("");
+  const [linkModalInternalType, setLinkModalInternalType] = useState<"route" | "term" | "blog">("term");
+  const [linkModalSelectedRoute, setLinkModalSelectedRoute] = useState("/");
+  const [linkModalSearchQuery, setLinkModalSearchQuery] = useState("");
+  const [textareaSelection, setTextareaSelection] = useState<{ start: number; end: number } | null>(null);
+
   const [showPreview, setShowPreview] = useState(false);
   const bodyRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const handleInsertLinkSubmit = (label: string, url: string) => {
+    const textarea = bodyRef.current;
+    if (!textarea || !textareaSelection) return;
+
+    const { start, end } = textareaSelection;
+    const text = textarea.value;
+
+    const finalLabel = label.trim() || "Link";
+    const replacement = `[${finalLabel}](${url})`;
+
+    const newValue = text.substring(0, start) + replacement + text.substring(end);
+    setBlogBody(newValue);
+    setIsLinkModalOpen(false);
+
+    // Re-focus and restore cursor selection
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + replacement.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 50);
+  };
 
   const handleInsertMarkup = (
     type: "bold" | "italic" | "link" | "image" | "list" | "numlist" | "quote" | "h1" | "h2" | "h3" | "p" | "ad"
@@ -98,14 +136,16 @@ export default function AdminShell({
     } else if (type === "italic") {
       replacement = `*${selectedText || "italic text"}*`;
     } else if (type === "link") {
-      let label = selectedText;
-      if (!label) {
-        label = prompt("Enter link label/text:", "") || "";
-        if (!label) return; // cancel
-      }
-      const url = prompt(`Enter the URL to connect with "${label}":`, "https://") || "";
-      if (!url || url === "https://") return; // cancel or empty
-      replacement = `[${label}](${url})`;
+      // Open our rich Link Insertion Modal instead of raw prompts!
+      setLinkModalLabel(selectedText || "");
+      setLinkModalType("internal"); // default to internal
+      setLinkModalUrl("https://");
+      setLinkModalSearchQuery(selectedText || ""); // pre-fill search with selected text
+      setLinkModalInternalType("term");
+      setLinkModalSelectedRoute("/");
+      setTextareaSelection({ start, end });
+      setIsLinkModalOpen(true);
+      return; // Do not insert yet, we will insert when the modal form is submitted!
     } else if (type === "image") {
       const alt = selectedText || prompt("Enter image caption/description:", "Creative Image") || "";
       const url = prompt("Enter image URL:", "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80") || "";
@@ -369,6 +409,123 @@ Try writing your own content or edit this template using the helper buttons abov
     reader.readAsText(file);
   };
 
+  // Emoji CSV Export helper
+  const handleExportEmojiCSV = () => {
+    const emojis = terms.filter(t => t.cat === "emoji");
+    if (emojis.length === 0) {
+      alert("No emojis available to export.");
+      return;
+    }
+
+    const headers = ["Emoji", "Meaning", "Example Usage"];
+    const rows = emojis.map(t => [
+      t.code,
+      t.full,
+      t.ex
+    ]);
+
+    const formatCell = (val: string) => {
+      const clean = (val || "").replace(/"/g, '""');
+      if (clean.includes(",") || clean.includes('"') || clean.includes("\n") || clean.includes("\r")) {
+        return `"${clean}"`;
+      }
+      return clean;
+    };
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(formatCell).join(","))
+    ].join("\r\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `whatsthatmean_Emoji_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Emoji CSV Import helper
+  const handleImportEmojiCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      if (!text) {
+        alert("Failed to read the file.");
+        return;
+      }
+
+      try {
+        const parsed = parseCSV(text);
+        if (parsed.length === 0) {
+          throw new Error("No data found in the CSV file.");
+        }
+
+        let startIndex = 0;
+        const firstRow = parsed[0];
+        if (
+          firstRow &&
+          (firstRow[0]?.toLowerCase().includes("emoji") ||
+            firstRow[1]?.toLowerCase().includes("mean") ||
+            firstRow[2]?.toLowerCase().includes("ex"))
+        ) {
+          startIndex = 1;
+        }
+
+        const validRows = parsed.slice(startIndex).filter(row => row.length >= 2 && row[0] && row[1]);
+
+        if (validRows.length === 0) {
+          alert("No valid emoji rows found. Format must be: Emoji, Meaning, Example Usage");
+          return;
+        }
+
+        const mode = window.confirm(
+          `Found ${validRows.length} emojis in CSV.\n\nClick [OK] to APPEND these to the current emoji database.\nClick [Cancel] to cancel.`
+        );
+
+        if (!mode) return;
+
+        setIsSeeding(true);
+
+        const emojisToUpload = validRows.map(row => {
+          const code = row[0].trim();
+          const full = row[1].trim();
+          const ex = row[2] ? row[2].trim() : `Usage of ${code}`;
+          
+          return {
+            code,
+            full,
+            cat: "emoji",
+            ex,
+            trending: false
+          };
+        });
+
+        let count = 0;
+        for (const em of emojisToUpload) {
+          await addTerm(em);
+          count++;
+        }
+        alert(`Successfully appended ${count} emojis from CSV!`);
+        onRefreshData();
+      } catch (err: any) {
+        console.error("Error importing Emoji CSV:", err);
+        alert(`Failed to import Emoji CSV: ${err.message || err}`);
+      } finally {
+        setIsSeeding(false);
+        e.target.value = "";
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
   useEffect(() => {
     const codes: Record<string, string> = {};
     adSlots.forEach(s => {
@@ -402,16 +559,17 @@ Try writing your own content or edit this template using the helper buttons abov
     if (!termCode.trim() || !termFull.trim()) return;
 
     try {
+      const codeValue = termCat === "emoji" ? termCode.trim() : termCode.toUpperCase().trim();
       if (editingTerm && editingTerm.id) {
         await updateTerm(editingTerm.id, {
-          code: termCode.toUpperCase().trim(),
+          code: codeValue,
           full: termFull.trim(),
           cat: termCat,
           ex: termEx.trim()
         });
       } else {
         await addTerm({
-          code: termCode.toUpperCase().trim(),
+          code: codeValue,
           full: termFull.trim(),
           cat: termCat,
           ex: termEx.trim(),
@@ -627,6 +785,7 @@ Try writing your own content or edit this template using the helper buttons abov
         {[
           { id: "overview", label: "Overview", icon: BarChart },
           { id: "terms", label: "Terms Database", icon: Grid },
+          { id: "emojis", label: "Emoji Database", icon: Smile },
           { id: "users", label: "Users & Access", icon: Users },
           { id: "ads", label: "Ad placements", icon: Radio },
           { id: "blog", label: "Blog Publisher", icon: BookOpen }
@@ -841,6 +1000,136 @@ Try writing your own content or edit this template using the helper buttons abov
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* EMOJI DATABASE TAB (Full CRUD!) */}
+        {activeTab === "emojis" && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="font-display font-bold text-3xl text-ink">Manage Emojis</h2>
+                <p className="sub text-sm text-ink-soft mt-1">Add, modify, and delete emoji meanings from the interactive dictionary.</p>
+              </div>
+              <button
+                type="button"
+                id="admin-btn-add-emoji"
+                onClick={() => {
+                  setEditingTerm(null);
+                  setTermCode("");
+                  setTermFull("");
+                  setTermCat("emoji");
+                  setTermEx("");
+                  setIsTermModalOpen(true);
+                }}
+                className="btn btn-solid bg-rose-600 hover:bg-rose-700 border-rose-600 text-white flex items-center gap-2 px-5 py-3 shadow-md transition cursor-pointer"
+              >
+                <PlusCircle className="w-4.5 h-4.5" />
+                <span>Add New Emoji</span>
+              </button>
+            </div>
+
+            {/* CSV Portability Tools */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-paper/60 border border-line rounded-xl">
+              <div className="text-xs text-ink-soft font-semibold font-mono tracking-wider">
+                EMOJI CSV PORTABILITY CONTROLS
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="admin-btn-download-emoji-csv"
+                  onClick={handleExportEmojiCSV}
+                  className="btn border border-line hover:bg-paper font-semibold text-xs py-2 px-3.5 flex items-center gap-2 cursor-pointer bg-card transition shadow-sm"
+                  title="Export live emojis list as a CSV file"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Emoji CSV</span>
+                </button>
+                
+                <label 
+                  id="admin-btn-upload-emoji-csv-label"
+                  className="btn border border-line hover:bg-paper font-semibold text-xs py-2 px-3.5 flex items-center gap-2 cursor-pointer bg-card transition shadow-sm"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload Emoji CSV</span>
+                  <input
+                    type="file"
+                    id="admin-input-upload-emoji-csv"
+                    accept=".csv"
+                    onChange={handleImportEmojiCSV}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Emoji List Table */}
+            <div className="bg-card border-1.5 border-line rounded-xl overflow-hidden shadow-sm">
+              <table id="admin-table-emoji-list" className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-paper border-b-1.5 border-line">
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft w-28">Emoji</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft w-56">Meaning</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft w-32">Category</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft hidden md:table-cell">Example Usage</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft text-right w-28">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {terms.filter(t => t.cat === "emoji").map((t) => {
+                    const identifier = t.id || t.code;
+                    return (
+                      <tr key={identifier} className="hover:bg-paper/40 transition">
+                        <td className="p-4 text-3xl font-bold select-none">{t.code}</td>
+                        <td className="p-4 text-sm font-semibold text-ink truncate max-w-xs">{t.full}</td>
+                        <td className="p-4">
+                          <span className="tag tag-emoji text-[9.5px] font-bold px-2.5 py-1 rounded-full uppercase shadow-xs">
+                            Emoji
+                          </span>
+                        </td>
+                        <td className="p-4 text-xs text-ink-soft hidden md:table-cell truncate max-w-sm">
+                          "{t.ex}"
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end gap-1.5">
+                            <button
+                              id={`admin-btn-edit-emoji-${identifier}`}
+                              onClick={() => {
+                                setEditingTerm(t);
+                                setTermCode(t.code);
+                                setTermFull(t.full);
+                                setTermCat("emoji");
+                                setTermEx(t.ex);
+                                setIsTermModalOpen(true);
+                              }}
+                              className="p-2 hover:bg-indigo/10 text-indigo rounded-lg transition cursor-pointer"
+                              title="Edit"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              id={`admin-btn-delete-emoji-${identifier}`}
+                              onClick={() => t.id && handleDeleteTerm(t.id)}
+                              className="p-2 hover:bg-coral/10 text-coral rounded-lg transition cursor-pointer"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {terms.filter(t => t.cat === "emoji").length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="p-12 text-center text-ink-soft text-sm italic">
+                        No emoji definitions found in database. Click "Add New Emoji" or Upload an Emoji CSV file to seed.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1351,23 +1640,29 @@ Try writing your own content or edit this template using the helper buttons abov
             </button>
 
             <h3 className="font-display text-2xl font-bold mb-1">
-              {editingTerm ? "Edit Slang Term" : "Add New Term"}
+              {editingTerm 
+                ? (termCat === "emoji" ? "Edit Emoji Definition" : "Edit Slang Term") 
+                : (termCat === "emoji" ? "Add New Emoji" : "Add New Term")}
             </h3>
             <p className="text-xs text-ink-soft mb-6">
-              Write abbreviation code, meanings, category and live examples.
+              {termCat === "emoji" 
+                ? "Configure the emoji character, its emotional meaning, and standard examples." 
+                : "Write abbreviation code, meanings, category and live examples."}
             </p>
 
             <form onSubmit={handleSaveTerm} className="space-y-4">
               <div className="field flex flex-col">
-                <label className="text-xs font-semibold text-ink-soft mb-1">Slang Abbreviation (Code)</label>
+                <label className="text-xs font-semibold text-ink-soft mb-1">
+                  {termCat === "emoji" ? "Emoji Glyph / Symbol" : "Slang Abbreviation (Code)"}
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. YOLO, IYKYK"
+                  placeholder={termCat === "emoji" ? "e.g. 💀, 🤔, ✨" : "e.g. YOLO, IYKYK"}
                   value={termCode}
                   onChange={(e) => setTermCode(e.target.value)}
                   required
                   disabled={!!editingTerm}
-                  className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo disabled:opacity-50 font-mono font-bold"
+                  className={`border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo disabled:opacity-50 ${termCat === "emoji" ? "text-2xl text-center select-none" : "font-mono font-bold"}`}
                 />
               </div>
 
@@ -1426,6 +1721,317 @@ Try writing your own content or edit this template using the helper buttons abov
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Link Insertion Modal (Intuitive Internal/External Link Creator) */}
+      {isLinkModalOpen && (
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4">
+          <div className="modal-content bg-card border-1.5 border-line rounded-2xl w-full max-w-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="p-5 border-b border-line flex items-center justify-between bg-paper/30">
+              <div className="flex items-center gap-2">
+                <LinkIcon className="w-5 h-5 text-indigo" />
+                <h3 className="font-display font-bold text-lg text-ink">Insert Link</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLinkModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-line text-ink-soft hover:text-ink transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content body */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-1 text-left">
+              {/* Text label field */}
+              <div className="flex flex-col">
+                <label className="text-xs font-semibold text-ink-soft mb-1.5">Link Text</label>
+                <input
+                  type="text"
+                  placeholder="e.g. FOMO"
+                  value={linkModalLabel}
+                  onChange={(e) => setLinkModalLabel(e.target.value)}
+                  className="border border-line rounded-lg p-2.5 text-sm bg-paper text-ink focus:outline-none focus:border-indigo font-medium"
+                />
+              </div>
+
+              {/* Toggle Tab */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-ink-soft">Link Type</label>
+                <div className="grid grid-cols-2 p-1 bg-paper/50 rounded-xl border border-line">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLinkModalType("internal");
+                      setLinkModalUrl("");
+                    }}
+                    className={`py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer
+                      ${linkModalType === "internal" 
+                        ? "bg-white text-indigo border border-line shadow-sm" 
+                        : "text-ink-soft hover:text-ink"}`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Internal</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLinkModalType("external");
+                      setLinkModalUrl("https://");
+                    }}
+                    className={`py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer
+                      ${linkModalType === "external" 
+                        ? "bg-white text-indigo border border-line shadow-sm" 
+                        : "text-ink-soft hover:text-ink"}`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>External</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* EXTERNAL VIEW */}
+              {linkModalType === "external" ? (
+                <div className="flex flex-col space-y-1">
+                  <label className="text-xs font-semibold text-ink-soft mb-1">External URL Address</label>
+                  <input
+                    type="url"
+                    placeholder="e.g. https://google.com"
+                    value={linkModalUrl}
+                    onChange={(e) => setLinkModalUrl(e.target.value)}
+                    className="border border-line rounded-lg p-2.5 text-sm bg-paper text-ink focus:outline-none focus:border-indigo font-mono"
+                  />
+                  <span className="text-[10px] text-ink-soft">Enter any valid web protocol starting with http:// or https://</span>
+                </div>
+              ) : (
+                /* INTERNAL VIEW */
+                <div className="space-y-4">
+                  {/* Internal type subtabs */}
+                  <div className="flex items-center gap-2 border-b border-line pb-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLinkModalInternalType("term");
+                        setLinkModalUrl("");
+                      }}
+                      className={`pb-1 px-1 font-bold transition border-b-2 cursor-pointer
+                        ${linkModalInternalType === "term" 
+                          ? "border-indigo text-indigo" 
+                          : "border-transparent text-ink-soft hover:text-ink"}`}
+                    >
+                      Dictionary Terms
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLinkModalInternalType("blog");
+                        setLinkModalUrl("");
+                      }}
+                      className={`pb-1 px-1 font-bold transition border-b-2 cursor-pointer
+                        ${linkModalInternalType === "blog" 
+                          ? "border-indigo text-indigo" 
+                          : "border-transparent text-ink-soft hover:text-ink"}`}
+                    >
+                      Blog Articles
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLinkModalInternalType("route");
+                        setLinkModalUrl("/");
+                        setLinkModalSelectedRoute("/");
+                      }}
+                      className={`pb-1 px-1 font-bold transition border-b-2 cursor-pointer
+                        ${linkModalInternalType === "route" 
+                          ? "border-indigo text-indigo" 
+                          : "border-transparent text-ink-soft hover:text-ink"}`}
+                    >
+                      Main Pages
+                    </button>
+                  </div>
+
+                  {/* Rendering based on internal type */}
+                  {linkModalInternalType === "route" && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-ink-soft">Select Destination Page</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { name: "Home Page", path: "/" },
+                          { name: "Browse Dictionary", path: "/browse" },
+                          { name: "Slang Quiz", path: "/quiz" },
+                          { name: "Word Feed Blog", path: "/blog" }
+                        ].map((route) => (
+                          <button
+                            key={route.path}
+                            type="button"
+                            onClick={() => {
+                              setLinkModalSelectedRoute(route.path);
+                              setLinkModalUrl(route.path);
+                            }}
+                            className={`p-3 rounded-xl border text-left text-xs font-bold transition cursor-pointer flex justify-between items-center
+                              ${linkModalSelectedRoute === route.path 
+                                ? "bg-indigo/5 text-indigo border-indigo/40 ring-1 ring-indigo/15" 
+                                : "bg-paper/40 text-ink border-line hover:border-ink"}`}
+                          >
+                            <div className="flex flex-col">
+                              <span>{route.name}</span>
+                              <span className="font-mono text-[10px] text-ink-soft font-normal mt-0.5">{route.path}</span>
+                            </div>
+                            {linkModalSelectedRoute === route.path && <Check className="w-4 h-4 text-indigo" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {linkModalInternalType === "term" && (
+                    <div className="space-y-3">
+                      {/* Search Bar for terms */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-soft" />
+                        <input
+                          type="text"
+                          placeholder="Search dictionary terms..."
+                          value={linkModalSearchQuery}
+                          onChange={(e) => setLinkModalSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 border border-line rounded-lg bg-paper text-xs text-ink focus:outline-none focus:border-indigo"
+                        />
+                      </div>
+
+                      {/* Terms result list */}
+                      <div className="border border-line rounded-lg bg-paper/20 max-h-[160px] overflow-y-auto divide-y divide-line text-xs">
+                        {terms
+                          .filter(t => 
+                            !linkModalSearchQuery || 
+                            t.code.toLowerCase().includes(linkModalSearchQuery.toLowerCase()) ||
+                            t.full.toLowerCase().includes(linkModalSearchQuery.toLowerCase())
+                          )
+                          .slice(0, 15) // Limit list size
+                          .map((term) => {
+                            const termPath = `/browse?search=${term.code}`;
+                            const isSelected = linkModalUrl === termPath;
+                            return (
+                              <button
+                                key={term.id || term.code}
+                                type="button"
+                                onClick={() => {
+                                  setLinkModalUrl(termPath);
+                                  if (!linkModalLabel) setLinkModalLabel(term.code);
+                                }}
+                                className={`w-full p-2.5 text-left transition flex items-center justify-between hover:bg-paper/60 cursor-pointer
+                                  ${isSelected ? "bg-indigo/5 text-indigo font-semibold" : "text-ink"}`}
+                              >
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono font-bold bg-line/40 px-1 rounded text-[10px] text-indigo">{term.code}</span>
+                                    <span className="font-medium text-ink/90">{term.full}</span>
+                                  </div>
+                                  <span className="font-mono text-[9px] text-ink-soft mt-0.5">Address: {termPath}</span>
+                                </div>
+                                {isSelected && <Check className="w-4 h-4 text-indigo shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        {terms.filter(t => 
+                          !linkModalSearchQuery || 
+                          t.code.toLowerCase().includes(linkModalSearchQuery.toLowerCase()) ||
+                          t.full.toLowerCase().includes(linkModalSearchQuery.toLowerCase())
+                        ).length === 0 && (
+                          <div className="p-4 text-center text-ink-soft italic">No matching terms found.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {linkModalInternalType === "blog" && (
+                    <div className="space-y-3">
+                      {/* Search Bar for blogs */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-soft" />
+                        <input
+                          type="text"
+                          placeholder="Search published articles..."
+                          value={linkModalSearchQuery}
+                          onChange={(e) => setLinkModalSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 border border-line rounded-lg bg-paper text-xs text-ink focus:outline-none focus:border-indigo"
+                        />
+                      </div>
+
+                      {/* Blogs result list */}
+                      <div className="border border-line rounded-lg bg-paper/20 max-h-[160px] overflow-y-auto divide-y divide-line text-xs">
+                        {blogs
+                          .filter(b => 
+                            !linkModalSearchQuery || 
+                            b.title.toLowerCase().includes(linkModalSearchQuery.toLowerCase())
+                          )
+                          .map((blog) => {
+                            const slug = (blog.title || "")
+                              .toLowerCase()
+                              .trim()
+                              .replace(/[^a-z0-9\s-]/g, "")
+                              .replace(/\s+/g, "-")
+                              .replace(/-+/g, "-");
+                            const blogPath = `/blog/${slug}`;
+                            const isSelected = linkModalUrl === blogPath;
+                            return (
+                              <button
+                                key={blog.id}
+                                type="button"
+                                onClick={() => {
+                                  setLinkModalUrl(blogPath);
+                                  if (!linkModalLabel) setLinkModalLabel(blog.title);
+                                }}
+                                className={`w-full p-2.5 text-left transition flex items-center justify-between hover:bg-paper/60 cursor-pointer
+                                  ${isSelected ? "bg-indigo/5 text-indigo font-semibold" : "text-ink"}`}
+                              >
+                                <div className="flex flex-col pr-4">
+                                  <span className="font-medium truncate max-w-[320px]">{blog.title}</span>
+                                  <span className="font-mono text-[9px] text-ink-soft mt-0.5">Address: {blogPath}</span>
+                                </div>
+                                {isSelected && <Check className="w-4 h-4 text-indigo shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        {blogs.filter(b => 
+                          !linkModalSearchQuery || 
+                          b.title.toLowerCase().includes(linkModalSearchQuery.toLowerCase())
+                        ).length === 0 && (
+                          <div className="p-4 text-center text-ink-soft italic">No matching blog posts found.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Generated target info display */}
+                  <div className="bg-paper p-3 rounded-xl border border-line text-xs flex flex-col gap-0.5 font-mono">
+                    <span className="text-[10px] text-ink-soft font-bold uppercase tracking-wide">Target Path to Insert</span>
+                    <span className="text-indigo font-bold break-all">{linkModalUrl || "No path selected yet"}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions Footer */}
+            <div className="p-5 border-t border-line bg-paper/30 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsLinkModalOpen(false)}
+                className="btn btn-ghost flex-1 py-2.5 font-semibold text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!linkModalUrl || linkModalUrl === "https://"}
+                onClick={() => handleInsertLinkSubmit(linkModalLabel, linkModalUrl)}
+                className="btn btn-solid flex-1 py-2.5 font-semibold text-xs bg-indigo hover:bg-indigo-dark text-white cursor-pointer disabled:opacity-50"
+              >
+                Insert Link
+              </button>
+            </div>
           </div>
         </div>
       )}

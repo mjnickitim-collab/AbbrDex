@@ -144,7 +144,7 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
                 >
                   <div>
                     <div className="top flex items-center justify-between gap-2 border-b border-line pb-2 mb-3">
-                      <span className="code mono font-mono font-bold text-lg text-ink group-hover:text-indigo">
+                      <span className={`code font-bold text-ink group-hover:text-indigo ${t.cat === "emoji" ? "text-2xl select-none" : "mono font-mono text-lg"}`}>
                         {t.code}
                       </span>
                       <span className={`tag ${catMeta.tag} text-[9.5px]`}>

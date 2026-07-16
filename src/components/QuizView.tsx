@@ -7,22 +7,32 @@ import { Trophy, Flame, Play, RefreshCw, CheckCircle, XCircle } from "lucide-rea
 interface QuizViewProps {
   terms: Term[];
   currentUser: UserProfile | null;
+  initialMode?: "abbreviation" | "emoji";
 }
 
-export default function QuizView({ terms, currentUser }: QuizViewProps) {
+export default function QuizView({ terms, currentUser, initialMode = "abbreviation" }: QuizViewProps) {
   const [quiz, setQuiz] = useState<QuizState | null>(null);
   const [bestStreakGlobal, setBestStreakGlobal] = useState(0);
+  const [selectedMode, setSelectedMode] = useState<"abbreviation" | "emoji">(initialMode);
+
+  useEffect(() => {
+    setSelectedMode(initialMode);
+  }, [initialMode]);
 
   // Pick questions from TERMS
-  const generateQuestions = (n = 5): QuizQuestion[] => {
-    if (terms.length < 5) return [];
+  const generateQuestions = (n = 5, mode: "abbreviation" | "emoji" = "abbreviation"): QuizQuestion[] => {
+    const poolTerms = mode === "emoji" 
+      ? terms.filter(t => t.cat === "emoji")
+      : terms.filter(t => t.cat !== "emoji");
+
+    if (poolTerms.length < 5) return [];
     
     // Shuffle and pick n terms
-    const pool = [...terms].sort(() => Math.random() - 0.5).slice(0, n);
+    const pool = [...poolTerms].sort(() => Math.random() - 0.5).slice(0, n);
     
     return pool.map((t) => {
       // Calculate a similarity score for all other terms in the database
-      const candidates = terms.filter(
+      const candidates = poolTerms.filter(
         (x) => x.code !== t.code && x.full.toLowerCase() !== t.full.toLowerCase()
       );
 
@@ -113,7 +123,7 @@ export default function QuizView({ terms, currentUser }: QuizViewProps) {
   };
 
   const startQuiz = () => {
-    const qs = generateQuestions(5);
+    const qs = generateQuestions(5, selectedMode);
     setQuiz({
       qs,
       idx: 0,
@@ -148,7 +158,7 @@ export default function QuizView({ terms, currentUser }: QuizViewProps) {
     const isLastQuestion = quiz.idx === quiz.qs.length - 1;
     if (isLastQuestion && currentUser) {
       try {
-        await recordQuizScore(currentUser.uid, newScore, newBestStreak, "all");
+        await recordQuizScore(currentUser.uid, newScore, newBestStreak, selectedMode);
       } catch (err) {
         console.error("Failed to record score in Firebase:", err);
       }
@@ -177,16 +187,48 @@ export default function QuizView({ terms, currentUser }: QuizViewProps) {
 
   // If not started, show landing state
   if (!quiz) {
+    const isEmoji = selectedMode === "emoji";
     return (
       <div className="max-w-lg mx-auto px-6 py-16 text-center">
         <div className="bg-card border border-line rounded-2xl p-10 shadow-sm flex flex-col items-center">
+          {/* Custom Switch Tab */}
+          <div className="grid grid-cols-2 p-1 bg-paper/60 rounded-xl border border-line mb-8 w-full max-w-sm">
+            <button
+              type="button"
+              onClick={() => setSelectedMode("abbreviation")}
+              className={`py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer
+                ${selectedMode === "abbreviation" 
+                  ? "bg-white text-indigo border border-line shadow-sm" 
+                  : "text-ink-soft hover:text-ink"}`}
+            >
+              <span>🔤 Abbreviation Quiz</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMode("emoji")}
+              className={`py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer
+                ${selectedMode === "emoji" 
+                  ? "bg-white text-indigo border border-line shadow-sm" 
+                  : "text-ink-soft hover:text-ink"}`}
+            >
+              <span>😊 Emoji Quiz</span>
+            </button>
+          </div>
+
           <div className="w-16 h-16 bg-yellow/15 text-yellow-ink rounded-full flex items-center justify-center mb-6">
-            <Trophy className="w-8 h-8 text-yellow" />
+            <Trophy className="w-8 h-8 text-yellow animate-pulse" />
           </div>
           
-          <h2 className="font-display font-bold text-3xl text-ink">Abbreviation Quiz Master</h2>
+          <h2 className="font-display font-bold text-3xl text-ink">
+            {isEmoji ? "Guess the Emoji Meaning" : "Abbreviation Quiz Master"}
+          </h2>
+          <h4 className="text-xs font-bold text-indigo/80 mt-1 uppercase tracking-wide">
+            {isEmoji ? "Emoji Meaning Quiz" : "Internet Slang Master Quiz"}
+          </h4>
           <p className="text-sm text-ink-soft max-w-sm mt-3 mb-8 leading-relaxed">
-            Test your skills on texting acronyms, internet shorthand, and business abbreviations. Answer 5 random questions and try to keep your streak!
+            {isEmoji 
+              ? "Do you know the real meanings of trendy emojis like 💅, 💀, 🧢, 🫠 used in chats and SNS? Answer 5 random emoji questions and test your skills!"
+              : "Answer 5 random abbreviation questions about chat slangs, neologisms, and business acronyms to test your score and show your expertise!"}
           </p>
 
           <button 
@@ -194,7 +236,7 @@ export default function QuizView({ terms, currentUser }: QuizViewProps) {
             className="btn btn-solid font-display font-bold px-8 py-3.5 flex items-center gap-2 shadow-md hover:scale-[1.02] active:scale-95 transition"
           >
             <Play className="w-4 h-4 fill-white" />
-            <span>Start Abbreviation Quiz</span>
+            <span>{isEmoji ? "Start Emoji Quiz" : "Start Abbreviation Quiz"}</span>
           </button>
 
           {currentUser && (
@@ -243,13 +285,14 @@ export default function QuizView({ terms, currentUser }: QuizViewProps) {
   }
 
   const cur = quiz.qs[quiz.idx];
+  const isEmojiActive = selectedMode === "emoji";
 
   return (
     <div className="max-w-lg mx-auto px-6 py-12">
       {/* Quiz Top bar */}
       <div className="quiz-top flex justify-between items-center mb-6">
         <span className="quiz-progress text-xs font-semibold text-ink-soft">
-          Question {quiz.idx + 1} of {quiz.qs.length}
+          Question {quiz.idx + 1} of {quiz.qs.length} ({isEmojiActive ? "Emoji Quiz" : "Abbreviation Quiz"})
         </span>
         <div className="streak flex items-center gap-1.5 text-xs font-bold text-coral-ink bg-coral/10 border border-coral/15 rounded-full px-3 py-1">
           <Flame className="w-4 h-4 text-coral fill-coral/10" />
@@ -258,12 +301,12 @@ export default function QuizView({ terms, currentUser }: QuizViewProps) {
       </div>
 
       {/* Quiz Question Card */}
-      <div className="quiz-card bg-card border-1.5 border-line rounded-2xl p-8 shadow-sm text-center flex flex-col items-center">
-        <div className="qcode mono font-mono font-bold text-5xl text-indigo mb-3 tracking-wide">
+      <div className="quiz-card bg-card border-1.5 border-line rounded-2xl p-8 shadow-sm text-center flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className={`qcode font-bold mb-3 ${isEmojiActive ? "text-7xl drop-shadow-sm select-none" : "mono font-mono text-5xl text-indigo tracking-wide"}`}>
           {cur.code}
         </div>
         <div className="qprompt text-sm font-semibold text-ink-soft mb-8">
-          What does this abbreviation stand for?
+          {isEmojiActive ? "What does this emoji mean?" : "What does this abbreviation stand for?"}
         </div>
 
         <div className="choiceList w-full space-y-3">

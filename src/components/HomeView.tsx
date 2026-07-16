@@ -11,14 +11,26 @@ interface HomeViewProps {
   onSelectTerm: (term: Term) => void;
   blogs: BlogPost[];
   onSelectBlogPost: (post: BlogPost) => void;
+  onSelectEmojiQuiz: () => void;
+  onSelectEmojiDict: () => void;
 }
 
 // Sliding reel order
 const REEL_ORDER = ["FYI", "GG", "ASAP", "FOMO", "SNAFU", "HMU", "WFH", "TBH"];
 
-export default function HomeView({ terms, onSearch, onSelectCategory, onSelectTerm, blogs, onSelectBlogPost }: HomeViewProps) {
+export default function HomeView({ 
+  terms, 
+  onSearch, 
+  onSelectCategory, 
+  onSelectTerm, 
+  blogs, 
+  onSelectBlogPost,
+  onSelectEmojiQuiz,
+  onSelectEmojiDict
+}: HomeViewProps) {
   const [searchVal, setSearchVal] = useState("");
   const [reelIdx, setReelIdx] = useState(0);
+  const [dailyTerm, setDailyTerm] = useState<Term | null>(null);
 
   // Interval for sliding reel
   useEffect(() => {
@@ -27,6 +39,28 @@ export default function HomeView({ terms, onSearch, onSelectCategory, onSelectTe
     }, 2800);
     return () => clearInterval(timer);
   }, []);
+
+  // Compute Abbreviation of the Day deterministically based on date
+  useEffect(() => {
+    const nonEmojiTerms = terms.filter(t => t.cat !== "emoji");
+    if (nonEmojiTerms.length > 0) {
+      const todayStr = new Date().toISOString().split("T")[0]; // stable day index
+      let hash = 0;
+      for (let i = 0; i < todayStr.length; i++) {
+        hash = todayStr.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const index = Math.abs(hash) % nonEmojiTerms.length;
+      setDailyTerm(nonEmojiTerms[index]);
+    }
+  }, [terms]);
+
+  const handleShuffleDailyTerm = () => {
+    const nonEmojiTerms = terms.filter(t => t.cat !== "emoji");
+    if (nonEmojiTerms.length > 0) {
+      const randomIndex = Math.floor(Math.random() * nonEmojiTerms.length);
+      setDailyTerm(nonEmojiTerms[randomIndex]);
+    }
+  };
 
   // Find active reel term details
   const activeReelCode = REEL_ORDER[reelIdx];
@@ -121,6 +155,58 @@ export default function HomeView({ terms, onSearch, onSelectCategory, onSelectTe
               <span className="w-1.5 h-1.5 bg-indigo rounded-full animate-ping" />
               <span>LIVE DECODER REEL</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Abbreviation of the Day */}
+      <section className="py-6 px-6 max-w-[1080px] mx-auto animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+          {dailyTerm ? (
+            <div className="space-y-3 flex-1 text-center md:text-left">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                <span className="inline-block text-[10px] font-bold text-indigo-700 bg-indigo-100/70 border border-indigo-200/50 px-2.5 py-1 rounded-full uppercase tracking-widest">
+                  💡 Abbreviation of the Day
+                </span>
+                <span className="inline-block text-[9.5px] font-bold text-blue-700 bg-blue-100/60 border border-blue-200/40 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                  {CATEGORIES.find(c => c.id === dailyTerm.cat)?.name || dailyTerm.cat}
+                </span>
+              </div>
+              <h3 className="font-mono font-black text-3xl text-indigo-950 flex items-center justify-center md:justify-start gap-2">
+                {dailyTerm.code}
+              </h3>
+              <p className="text-sm font-display text-indigo-900 leading-relaxed font-semibold">
+                {dailyTerm.full}
+              </p>
+              {dailyTerm.ex && (
+                <p className="text-xs text-ink-soft/90 italic leading-relaxed max-w-2xl bg-white/45 p-3 rounded-lg border border-indigo-100/30">
+                  Example: "{dailyTerm.ex}"
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2 flex-1 text-center md:text-left animate-pulse">
+              <div className="h-4 bg-indigo-200 rounded w-1/4"></div>
+              <div className="h-8 bg-indigo-200 rounded w-1/3"></div>
+              <div className="h-4 bg-indigo-200 rounded w-2/3"></div>
+            </div>
+          )}
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+            {dailyTerm && (
+              <button
+                onClick={() => onSelectTerm(dailyTerm)}
+                className="px-5 py-3 rounded-xl bg-indigo-600 text-white font-display font-bold text-xs hover:bg-indigo-700 transition cursor-pointer flex items-center justify-center gap-2 shadow-sm shadow-indigo-600/15 active:scale-95 duration-100"
+              >
+                <span>View Details</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              onClick={handleShuffleDailyTerm}
+              className="px-5 py-3 rounded-xl bg-white text-indigo-950 border border-indigo-200 font-display font-bold text-xs hover:bg-indigo-50 hover:border-indigo-300 transition cursor-pointer flex items-center justify-center gap-2 active:scale-95 duration-100"
+            >
+              <span>Show Another</span>
+            </button>
           </div>
         </div>
       </section>

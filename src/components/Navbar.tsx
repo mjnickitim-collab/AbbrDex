@@ -64,6 +64,7 @@ export default function Navbar({
             {[
               { id: "home", label: "Home" },
               { id: "browse", label: "Explore Dictionary" },
+              { id: "emoji", label: "Emoji" },
               { id: "quiz", label: "Quiz" },
               { id: "blog", label: "Blog" }
             ].map((view) => (
@@ -171,6 +172,7 @@ export default function Navbar({
               {[
                 { id: "home", label: "Home" },
                 { id: "browse", label: "Explore Dictionary" },
+                { id: "emoji", label: "Emoji" },
                 { id: "quiz", label: "Quiz" },
                 { id: "blog", label: "Blog" }
               ].map((view) => (
