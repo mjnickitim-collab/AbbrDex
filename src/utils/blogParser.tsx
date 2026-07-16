@@ -170,11 +170,29 @@ function parseInlineStyles(text: string): React.ReactNode {
           </span>
         );
       } else {
-        const isInternal = url.startsWith("/") || url.startsWith("https://whatsthatmean.com") || (!url.includes("://") && !url.startsWith("mailto:") && !url.startsWith("tel:"));
+        const isInternal = 
+          url.startsWith("/") || 
+          url.startsWith("https://whatsthatmean.com") || 
+          url.startsWith("https://www.whatsthatmean.com") ||
+          url.startsWith("http://whatsthatmean.com") ||
+          url.startsWith("http://www.whatsthatmean.com") ||
+          (!url.includes("://") && !url.startsWith("mailto:") && !url.startsWith("tel:"));
+
         let finalUrl = url;
-        if (url.startsWith("https://whatsthatmean.com")) {
-          finalUrl = url.substring("https://whatsthatmean.com".length);
-          if (!finalUrl.startsWith("/")) finalUrl = "/" + finalUrl;
+        const domains = [
+          "https://whatsthatmean.com",
+          "https://www.whatsthatmean.com",
+          "http://whatsthatmean.com",
+          "http://www.whatsthatmean.com"
+        ];
+        for (const dom of domains) {
+          if (url.startsWith(dom)) {
+            finalUrl = url.substring(dom.length);
+            break;
+          }
+        }
+        if (isInternal && !finalUrl.startsWith("/") && !finalUrl.startsWith("mailto:") && !finalUrl.startsWith("tel:")) {
+          finalUrl = "/" + finalUrl;
         }
 
         const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
