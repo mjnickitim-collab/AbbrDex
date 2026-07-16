@@ -129,10 +129,10 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
       <div className="mb-10 text-center md:text-left">
         <h2 className="font-display font-bold text-3xl text-ink flex items-center justify-center md:justify-start gap-2">
           <BookOpen className="w-7 h-7 text-indigo" />
-          <span>From the Blog</span>
+          <span>Blog</span>
         </h2>
         <p className="text-sm text-ink-soft mt-1.5">
-          Read deep dives into abbreviation origins, workspace corporate language shifts, and digital linguistics.
+          Explore comprehensive guides and insights on the evolution of internet slang, business jargon, and digital communication patterns.
         </p>
       </div>
 

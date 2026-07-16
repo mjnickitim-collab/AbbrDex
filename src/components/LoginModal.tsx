@@ -174,13 +174,9 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
           &times;
         </button>
         
-        <h3 className="font-display text-2xl font-bold mb-2">
+        <h3 className="font-display text-2xl font-bold mb-6">
           {isSignUp ? "Sign up for whatsthatmean" : "Log in to whatsthatmean"}
         </h3>
-        
-        <p className="text-xs text-ink-soft mb-6">
-          Connect to Firebase Auth. Register a new account or sign in with your credentials.
-        </p>
 
         {error && (
           <div className="bg-coral/10 text-coral-ink border border-coral/20 rounded-lg p-3 text-sm mb-4">
@@ -269,30 +265,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginMod
           >
             {isSignUp ? "Log in here" : "Sign up here"}
           </button>
-        </div>
-
-        {/* Demo Fast Account Setup */}
-        <div className="mt-6 pt-4 border-t border-line bg-paper/40 p-3 rounded-lg text-center">
-          <div className="text-[11px] font-bold text-ink-soft mb-2 uppercase tracking-wide">Demo Accounts (Firebase Mock)</div>
-          <div className="flex gap-2">
-            <button 
-              type="button" 
-              onClick={() => handleQuickDemo("User")} 
-              className="flex-1 bg-white hover:bg-line/40 border border-line text-xs font-medium py-1.5 px-2 rounded transition text-ink"
-            >
-              Fill User
-            </button>
-            <button 
-              type="button" 
-              onClick={() => handleQuickDemo("Admin")} 
-              className="flex-1 bg-white hover:bg-line/40 border border-line text-xs font-medium py-1.5 px-2 rounded transition text-ink"
-            >
-              Fill Admin
-            </button>
-          </div>
-          <p className="text-[10px] text-ink-soft mt-2">
-            Click to autofill. Passwords are `password123`. Users can create actual accounts too!
-          </p>
         </div>
       </div>
     </div>
