@@ -11,7 +11,8 @@ import {
   updateAdSlotStatus, 
   updateAdSlot,
   resetTermsDatabase,
-  updateUserProfile 
+  updateUserProfile,
+  deleteUserProfile 
 } from "../data/dbService";
 import { 
   BarChart, 
@@ -774,6 +775,20 @@ Try writing your own content or edit this template using the helper buttons abov
     }
   };
 
+  const handleDeleteUser = async (user: UserProfile) => {
+    if (user.uid === currentUser?.uid) {
+      alert("You cannot delete your own account!");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to permanently delete user ${user.name || user.email}? This action is irreversible.`)) return;
+    try {
+      await deleteUserProfile(user.uid);
+      onRefreshData();
+    } catch (err) {
+      console.error("Error deleting user profile:", err);
+    }
+  };
+
   return (
     <div className="admin-shell flex flex-col md:flex-row min-h-[100vh] bg-paper">
       {/* Sidebar Admin Menu */}
@@ -1154,7 +1169,7 @@ Try writing your own content or edit this template using the helper buttons abov
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft">Role</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft">Status</th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft">Joined</th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft text-right w-44">Access Control</th>
+                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-ink-soft text-right w-64">Access Control</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -1196,6 +1211,15 @@ Try writing your own content or edit this template using the helper buttons abov
                               }`}
                           >
                             {u.status === "active" ? "Suspend" : "Reinstate"}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(u)}
+                            disabled={u.uid === currentUser?.uid}
+                            className="btn btn-sm font-semibold border-coral text-coral hover:bg-coral hover:text-white flex items-center gap-1 bg-transparent disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-coral"
+                            title={u.uid === currentUser?.uid ? "You cannot delete your own account" : "Delete user profile permanently"}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </td>

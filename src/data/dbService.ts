@@ -448,6 +448,11 @@ export async function createUserProfile(uid: string, profile: Omit<UserProfile, 
   });
 }
 
+export async function deleteUserProfile(uid: string): Promise<void> {
+  const userRef = doc(db, "users", uid);
+  await deleteDoc(userRef);
+}
+
 // Quiz records
 export async function recordQuizScore(uid: string, score: number, streak: number, categoryId: string): Promise<void> {
   const scoresCol = collection(db, "quiz_scores");
