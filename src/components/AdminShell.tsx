@@ -98,9 +98,13 @@ export default function AdminShell({
     } else if (type === "italic") {
       replacement = `*${selectedText || "italic text"}*`;
     } else if (type === "link") {
-      const label = selectedText || prompt("Enter link label/text:", "whatsthatmean Link") || "whatsthatmean Link";
-      const url = prompt("Enter link URL:", "https://") || "https://";
-      if (!url) return;
+      let label = selectedText;
+      if (!label) {
+        label = prompt("Enter link label/text:", "") || "";
+        if (!label) return; // cancel
+      }
+      const url = prompt(`Enter the URL to connect with "${label}":`, "https://") || "";
+      if (!url || url === "https://") return; // cancel or empty
       replacement = `[${label}](${url})`;
     } else if (type === "image") {
       const alt = selectedText || prompt("Enter image caption/description:", "Creative Image") || "";

@@ -10,6 +10,23 @@ import {
   fetchUserProfile 
 } from "./data/dbService";
 import { Term, BlogPost, AdSlot, UserProfile } from "./types";
+import { TERMS, BLOG_SEED, AD_SLOTS } from "./data/seedData";
+
+const initialTerms: Term[] = TERMS.map((t, idx) => ({
+  id: `seed-term-${idx}`,
+  ...t,
+  trending: ["FOMO", "GG", "ASAP", "HMU", "SNAFU", "DM", "WFH", "POV"].includes(t.code)
+}));
+
+const initialBlogs: BlogPost[] = BLOG_SEED.map((b, idx) => ({
+  id: `seed-blog-${idx}`,
+  ...b
+}));
+
+const initialAdSlots: AdSlot[] = AD_SLOTS.map((a, idx) => ({
+  id: `seed-ad-${idx}`,
+  ...a
+}));
 
 // Components
 import Navbar from "./components/Navbar";
@@ -26,9 +43,9 @@ import { Loader2, Sparkles, BookOpen } from "lucide-react";
 
 export default function App() {
   // Application Data States
-  const [terms, setTerms] = useState<Term[]>([]);
-  const [blogs, setBlogs] = useState<BlogPost[]>([]);
-  const [adSlots, setAdSlots] = useState<AdSlot[]>([]);
+  const [terms, setTerms] = useState<Term[]>(initialTerms);
+  const [blogs, setBlogs] = useState<BlogPost[]>(initialBlogs);
+  const [adSlots, setAdSlots] = useState<AdSlot[]>(initialAdSlots);
   const [users, setUsers] = useState<UserProfile[]>([]);
   
   // Navigation & UI States
@@ -97,7 +114,7 @@ export default function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // 1. Initial Seeding and Database Loading
   const loadDatabaseData = async () => {
@@ -119,14 +136,11 @@ export default function App() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      setLoading(true);
+      // Fetch public lists asynchronously in the background so that pages render instantly
       try {
-        // Load vital front-end data concurrently first so that pages render instantly
         await loadDatabaseData();
       } catch (err) {
-        console.error("Failed initial load:", err);
-      } finally {
-        setLoading(false);
+        console.error("Failed background database sync:", err);
       }
 
       // Perform background seeding & self-healing asynchronously without blocking layout load
