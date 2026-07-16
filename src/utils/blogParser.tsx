@@ -213,7 +213,7 @@ function parseInlineStyles(text: string): React.ReactNode {
             onClick={handleClick}
             className="text-indigo hover:text-indigo-dark underline font-semibold transition"
           >
-            {label}
+            {parseInlineStyles(label)}
           </a>
         );
       }
@@ -221,14 +221,14 @@ function parseInlineStyles(text: string): React.ReactNode {
       // It's bold: [5] is the text
       elements.push(
         <strong key={`bold-${key++}`} className="font-bold text-ink">
-          {match[5]}
+          {parseInlineStyles(match[5])}
         </strong>
       );
     } else if (match[6] !== undefined) {
       // It's italic: [7] is the text
       elements.push(
         <em key={`italic-${key++}`} className="italic text-ink">
-          {match[7]}
+          {parseInlineStyles(match[7])}
         </em>
       );
     }
