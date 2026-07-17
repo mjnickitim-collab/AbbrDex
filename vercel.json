@@ -1,17 +1,6 @@
 {
-  "version": 2,
+  "cleanUrls": true,
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api"
-    },
-    {
-      "source": "/sitemap.xml",
-      "destination": "/api"
-    },
-    {
-      "source": "/((?!assets/|favicon.svg|robots.txt).*).*",
-      "destination": "/api"
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
