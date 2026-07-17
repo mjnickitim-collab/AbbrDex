@@ -156,30 +156,38 @@ async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa",
+      appType: "custom",
     });
     
-    // Inject Google site verification meta tag during dev HTML serving
-    app.use(async (req, res, next) => {
-      if (req.url === "/" || req.url.endsWith(".html")) {
-        try {
-          const indexHtmlPath = path.join(process.cwd(), "index.html");
-          let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
-          const verificationCode = await getGoogleSiteVerification();
-          if (verificationCode) {
-            const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
-            html = html.replace("<head>", `<head>\n    ${metaTag}`);
-          }
-          return res.send(html);
-        } catch (err) {
-          next();
+    // Serve static assets and run Vite middleware first
+    app.use(vite.middlewares);
+
+    // Fallback for all other GET requests (SPA client-side routing)
+    app.get("*", async (req, res, next) => {
+      // Skip API routes and sitemap
+      if (req.url.startsWith("/api/") || req.url === "/sitemap.xml") {
+        return next();
+      }
+      try {
+        const url = req.originalUrl || req.url;
+        const indexHtmlPath = path.join(process.cwd(), "index.html");
+        let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
+        
+        // Inject Google site verification meta tag
+        const verificationCode = await getGoogleSiteVerification();
+        if (verificationCode) {
+          const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
+          html = html.replace("<head>", `<head>\n    ${metaTag}`);
         }
-      } else {
-        next();
+
+        // Transform index.html through Vite to inject HMR and module resolution scripts
+        html = await vite.transformIndexHtml(url, html);
+        
+        return res.status(200).set({ "Content-Type": "text/html" }).send(html);
+      } catch (err) {
+        return next(err);
       }
     });
-
-    app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, { index: false })); // don't serve index.html directly
