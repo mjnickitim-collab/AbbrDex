@@ -192,6 +192,100 @@ export default function App() {
     loadUsers();
   }, [currentUser]);
 
+  // Helper to convert blog title to slug
+  const getBlogSlug = (title: string) => {
+    return (title || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+  };
+
+  const syncStateFromUrl = (availableBlogs: BlogPost[]) => {
+    const pathname = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    if (pathname === "/" || pathname === "") {
+      setActiveView("home");
+    } else if (pathname.startsWith("/browse")) {
+      setActiveView("browse");
+      const search = searchParams.get("search") || "";
+      if (search) {
+        setSearchQuery(search);
+      }
+      if (searchParams.get("category") === "emoji") {
+        setSelectedCategory("emoji");
+      } else {
+        setSelectedCategory(null);
+      }
+    } else if (pathname.startsWith("/quiz")) {
+      setActiveView("quiz");
+    } else if (pathname.startsWith("/blog")) {
+      setActiveView("blog");
+      const parts = pathname.split("/");
+      if (parts.length > 2 && parts[2]) {
+        const slug = parts[2];
+        const found = availableBlogs.find(b => getBlogSlug(b.title) === slug);
+        if (found) {
+          setSelectedBlogPost(found);
+        } else {
+          setSelectedBlogPost(null);
+        }
+      } else {
+        setSelectedBlogPost(null);
+      }
+    }
+  };
+
+  // Run on mount and when blogs list changes to parse initial URL and match slug
+  useEffect(() => {
+    syncStateFromUrl(blogs);
+  }, [blogs]);
+
+  // Handle popstate for browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      syncStateFromUrl(blogs);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [blogs]);
+
+  // Synchronize state changes to the browser URL
+  useEffect(() => {
+    let targetPath = "/";
+    const params = new URLSearchParams();
+
+    if (activeView === "home") {
+      targetPath = "/";
+    } else if (activeView === "browse") {
+      targetPath = "/browse";
+      if (searchQuery) {
+        params.set("search", searchQuery);
+      }
+      if (selectedCategory === "emoji") {
+        params.set("category", "emoji");
+      }
+    } else if (activeView === "quiz") {
+      targetPath = "/quiz";
+    } else if (activeView === "blog") {
+      if (selectedBlogPost) {
+        targetPath = `/blog/${getBlogSlug(selectedBlogPost.title)}`;
+      } else {
+        targetPath = "/blog";
+      }
+    }
+
+    const queryStr = params.toString();
+    const targetUrl = targetPath + (queryStr ? `?${queryStr}` : "");
+    const currentUrl = window.location.pathname + window.location.search;
+
+    if (currentUrl !== targetUrl) {
+      window.history.pushState({ activeView, selectedBlogPostId: selectedBlogPost?.id }, "", targetUrl);
+    }
+  }, [activeView, selectedBlogPost, selectedCategory, searchQuery]);
+
   // Listen to custom SPA navigation events from internal markdown links
   useEffect(() => {
     const handleSpaNavigate = (e: Event) => {
@@ -388,6 +482,7 @@ export default function App() {
                       posts={blogs.filter(b => !b.draft)} 
                       initialSelectedPost={selectedBlogPost}
                       onCloseSelectedPost={() => setSelectedBlogPost(null)}
+                      onSelectPost={setSelectedBlogPost}
                     />
                   </div>
                   {/* Sidebar Ad Placement (Shown in blog section if toggled on) */}

@@ -8,10 +8,11 @@ interface BlogViewProps {
   posts: BlogPost[];
   initialSelectedPost?: BlogPost | null;
   onCloseSelectedPost?: () => void;
+  onSelectPost?: (post: BlogPost | null) => void;
   adSlots?: AdSlot[];
 }
 
-export default function BlogView({ posts, initialSelectedPost = null, onCloseSelectedPost, adSlots }: BlogViewProps) {
+export default function BlogView({ posts, initialSelectedPost = null, onCloseSelectedPost, onSelectPost, adSlots }: BlogViewProps) {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(initialSelectedPost);
 
   React.useEffect(() => {
@@ -79,6 +80,7 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
           onClick={() => {
             setSelectedPost(null);
             onCloseSelectedPost?.();
+            onSelectPost?.(null);
           }}
           className="flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition mb-8 group cursor-pointer"
         >
@@ -145,7 +147,10 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
           {posts.map((post) => (
             <button
               key={post.id || post.title}
-              onClick={() => setSelectedPost(post)}
+              onClick={() => {
+                setSelectedPost(post);
+                onSelectPost?.(post);
+              }}
               className="blog-card bg-card border-1.5 border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full"
             >
               <div className="space-y-3">
