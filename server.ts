@@ -4,8 +4,6 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, doc, getDoc } from "firebase/firestore";
 
 dotenv.config();
 
@@ -24,46 +22,35 @@ const ai = new GoogleGenAI({
   }
 });
 
-// Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyBrYD4DhTBLEDblWXXzPyLEUlyOkMRyS4w",
-  authDomain: "ai-studio-applet-webapp-f78e7.firebaseapp.com",
-  projectId: "ai-studio-applet-webapp-f78e7",
-  storageBucket: "ai-studio-applet-webapp-f78e7.firebasestorage.app",
-  messagingSenderId: "717940026511",
-  appId: "1:717940026511:web:f4aecc4e9a0132257914fa"
-};
-
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp, "ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109");
-
-// Helper to fetch blogs from Firestore SDK
+// Helper to fetch blogs from Firestore REST API
 async function getBlogsFromFirestore() {
   try {
-    const querySnapshot = await getDocs(collection(db, "blogs"));
-    const list: any[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      list.push({
-        title: data.title || "",
-        draft: data.draft || false,
-      });
+    const res = await fetch("https://firestore.googleapis.com/v1/projects/ai-studio-applet-webapp-f78e7/databases/ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109/documents/blogs?pageSize=100");
+    if (!res.ok) {
+      console.error(`Firestore REST API returned status ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    if (!data.documents) return [];
+    return data.documents.map((doc: any) => {
+      const fields = doc.fields || {};
+      const title = fields.title?.stringValue || "";
+      const draft = fields.draft?.booleanValue || false;
+      return { title, draft };
     });
-    return list;
   } catch (err) {
     console.error("Error fetching blogs for sitemap:", err);
     return [];
   }
 }
 
-// Helper to fetch Google Site Verification code from Firestore SDK
+// Helper to fetch Google Site Verification code from Firestore REST API
 async function getGoogleSiteVerification() {
   try {
-    const docSnap = await getDoc(doc(db, "site_settings", "global"));
-    if (docSnap.exists()) {
-      return docSnap.data()?.googleSiteVerification || "";
-    }
-    return "";
+    const res = await fetch("https://firestore.googleapis.com/v1/projects/ai-studio-applet-webapp-f78e7/databases/ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109/documents/site_settings/global");
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data.fields?.googleSiteVerification?.stringValue || "";
   } catch (err) {
     console.error("Error fetching google-site-verification:", err);
     return "";
@@ -172,30 +159,27 @@ async function startServer() {
       appType: "spa",
     });
     
-    app.use(vite.middlewares);
-
-    // Wildcard route for SPA fallback in development mode
-    app.get("*", async (req, res, next) => {
-      // Exclude API routes and files with extensions (like .js, .css, etc)
-      if (req.path.startsWith("/api") || req.path.includes(".")) {
-        return next();
-      }
-
-      try {
-        const indexHtmlPath = path.join(process.cwd(), "index.html");
-        let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
-        const verificationCode = await getGoogleSiteVerification();
-        if (verificationCode) {
-          const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
-          html = html.replace("<head>", `<head>\n    ${metaTag}`);
+    // Inject Google site verification meta tag during dev HTML serving
+    app.use(async (req, res, next) => {
+      if (req.url === "/" || req.url.endsWith(".html")) {
+        try {
+          const indexHtmlPath = path.join(process.cwd(), "index.html");
+          let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
+          const verificationCode = await getGoogleSiteVerification();
+          if (verificationCode) {
+            const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
+            html = html.replace("<head>", `<head>\n    ${metaTag}`);
+          }
+          return res.send(html);
+        } catch (err) {
+          next();
         }
-        const transformedHtml = await vite.transformIndexHtml(req.originalUrl, html);
-        res.status(200).set({ "Content-Type": "text/html" }).send(transformedHtml);
-      } catch (err: any) {
-        vite.ssrFixStacktrace(err);
-        next(err);
+      } else {
+        next();
       }
     });
+
+    app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, { index: false })); // don't serve index.html directly
@@ -216,13 +200,9 @@ async function startServer() {
     });
   }
 
-  if (!process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  }
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 }
 
 startServer();
-
-export default app;
