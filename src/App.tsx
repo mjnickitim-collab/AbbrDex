@@ -332,7 +332,7 @@ export default function App() {
                     onSearch={handleHomeSearch}
                     onSelectCategory={handleHomeCategorySelect}
                     onSelectTerm={setSelectedTerm}
-                    blogs={blogs}
+                    blogs={blogs.filter(b => !b.draft)}
                     onSelectBlogPost={(post) => {
                       setSelectedBlogPost(post);
                       setActiveView("blog");
@@ -385,7 +385,7 @@ export default function App() {
                 <div className="flex gap-6 max-w-[1080px] mx-auto">
                   <div className="flex-1">
                     <BlogView 
-                      posts={blogs} 
+                      posts={blogs.filter(b => !b.draft)} 
                       initialSelectedPost={selectedBlogPost}
                       onCloseSelectedPost={() => setSelectedBlogPost(null)}
                     />

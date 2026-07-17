@@ -315,6 +315,7 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
       seoTitle: data.seoTitle || "",
       metaDescription: data.metaDescription || "",
       keywords: data.keywords || "",
+      draft: data.draft || false,
     };
   }) as BlogPost[];
 }
@@ -463,4 +464,24 @@ export async function recordQuizScore(uid: string, score: number, streak: number
     categoryId,
     timestamp: serverTimestamp()
   });
+}
+
+// Global Site Settings for SEO/Google Search Console
+export async function getSiteSettings(): Promise<{ googleSiteVerification?: string }> {
+  try {
+    const docRef = doc(db, "site_settings", "global");
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data() as { googleSiteVerification?: string };
+    }
+    return {};
+  } catch (err) {
+    console.error("Error fetching site settings:", err);
+    return {};
+  }
+}
+
+export async function updateSiteSettings(settings: { googleSiteVerification: string }): Promise<void> {
+  const docRef = doc(db, "site_settings", "global");
+  await setDoc(docRef, settings, { merge: true });
 }

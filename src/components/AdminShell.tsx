@@ -12,7 +12,9 @@ import {
   updateAdSlot,
   resetTermsDatabase,
   updateUserProfile,
-  deleteUserProfile 
+  deleteUserProfile,
+  getSiteSettings,
+  updateSiteSettings
 } from "../data/dbService";
 import { 
   BarChart, 
@@ -84,6 +86,9 @@ export default function AdminShell({
   const [blogSeoTitle, setBlogSeoTitle] = useState("");
   const [blogMetaDescription, setBlogMetaDescription] = useState("");
   const [blogKeywords, setBlogKeywords] = useState("");
+  const [blogDraft, setBlogDraft] = useState(false);
+  const [aiKeyword, setAiKeyword] = useState("");
+  const [generatingArticle, setGeneratingArticle] = useState(false);
 
   // Link Insertion Modal States
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -207,6 +212,7 @@ Try writing your own content or edit this template using the helper buttons abov
     setBlogSeoTitle(post.seoTitle || "");
     setBlogMetaDescription(post.metaDescription || "");
     setBlogKeywords(post.keywords || "");
+    setBlogDraft(post.draft || false);
     setShowPreview(false);
 
     // Scroll smoothly to the form
@@ -225,12 +231,15 @@ Try writing your own content or edit this template using the helper buttons abov
     setBlogSeoTitle("");
     setBlogMetaDescription("");
     setBlogKeywords("");
+    setBlogDraft(false);
     setShowPreview(false);
   };
 
   // State for Ad slots inputs & db seeding tools
   const [adCodes, setAdCodes] = useState<Record<string, string>>({});
   const [isSeeding, setIsSeeding] = useState(false);
+  const [googleSiteVerification, setGoogleSiteVerification] = useState("");
+  const [savingVerification, setSavingVerification] = useState(false);
 
   // CSV Export helper
   const handleExportCSV = () => {
@@ -537,6 +546,29 @@ Try writing your own content or edit this template using the helper buttons abov
     setAdCodes(codes);
   }, [adSlots]);
 
+  useEffect(() => {
+    const loadSettings = async () => {
+      const settings = await getSiteSettings();
+      if (settings.googleSiteVerification) {
+        setGoogleSiteVerification(settings.googleSiteVerification);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleSaveVerification = async () => {
+    setSavingVerification(true);
+    try {
+      await updateSiteSettings({ googleSiteVerification: googleSiteVerification.trim() });
+      alert("Google Search Console verification code saved successfully! It is now dynamically injected into the website header in real-time.");
+    } catch (err: any) {
+      console.error("Error saving site settings:", err);
+      alert("Failed to save verification settings.");
+    } finally {
+      setSavingVerification(false);
+    }
+  };
+
   // Term management helpers
   const handleOpenTermModal = (term: Term | null = null) => {
     if (term) {
@@ -612,6 +644,7 @@ Try writing your own content or edit this template using the helper buttons abov
           seoTitle: blogSeoTitle.trim(),
           metaDescription: blogMetaDescription.trim(),
           keywords: blogKeywords.trim(),
+          draft: blogDraft,
         });
         setEditingPost(null);
       } else {
@@ -624,6 +657,7 @@ Try writing your own content or edit this template using the helper buttons abov
           seoTitle: blogSeoTitle.trim(),
           metaDescription: blogMetaDescription.trim(),
           keywords: blogKeywords.trim(),
+          draft: blogDraft,
         });
       }
       setBlogTitle("");
@@ -633,6 +667,7 @@ Try writing your own content or edit this template using the helper buttons abov
       setBlogSeoTitle("");
       setBlogMetaDescription("");
       setBlogKeywords("");
+      setBlogDraft(false);
       onRefreshData();
     } catch (err) {
       console.error("Error publishing or updating blog post:", err);
@@ -646,6 +681,52 @@ Try writing your own content or edit this template using the helper buttons abov
       onRefreshData();
     } catch (err) {
       console.error("Error deleting blog post:", err);
+    }
+  };
+
+  const handleGenerateArticle = async () => {
+    if (!aiKeyword.trim()) {
+      alert("Please enter a keyword for article generation.");
+      return;
+    }
+    setGeneratingArticle(true);
+    try {
+      const response = await fetch("/api/generate-article", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ keyword: aiKeyword.trim() }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Failed to generate article");
+      }
+
+      const data = await response.json();
+      
+      // Pre-fill fields and set to Draft
+      setBlogTitle(data.title || "");
+      setBlogExcerpt(data.excerpt || "");
+      setBlogBody(data.body || "");
+      setBlogSeoTitle(data.seoTitle || "");
+      setBlogMetaDescription(data.metaDescription || "");
+      setBlogKeywords(data.keywords || "");
+      setBlogDraft(true);
+      setAiKeyword("");
+      
+      const formElement = document.getElementById("blog-publisher-form");
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: "smooth" });
+      }
+      
+      alert("Article successfully generated by Gemini AI and loaded into the publisher form below as a Draft! Please review, edit if necessary, and click publish.");
+    } catch (err: any) {
+      console.error("AI Generation Error:", err);
+      alert(`AI Article Generation failed: ${err.message || err}`);
+    } finally {
+      setGeneratingArticle(false);
     }
   };
 
@@ -880,42 +961,106 @@ Try writing your own content or edit this template using the helper buttons abov
               </button>
             </div>
 
-            {/* Google Search Console Sitemap Generator */}
-            <div className="bg-card border-1.5 border-line rounded-xl p-6 shadow-sm space-y-4">
-              <div className="font-display font-bold text-lg text-ink">Google Search Console Sitemap Generator</div>
-              <p className="text-xs text-ink-soft leading-relaxed">
-                Generate a fully populated, standard SEO XML sitemap containing your homepage, browse views, quiz modules, and all <strong>{blogs.length} published blog articles</strong> to maximize your Google indexing score.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handleGenerateSitemap}
-                  className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-5 py-3 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download sitemap.xml</span>
-                </button>
-                <button
-                  onClick={() => {
-                    const domain = "https://whatsthatmean.com";
-                    const dateStr = new Date().toISOString().split("T")[0];
-                    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-                    ["", "/browse", "/quiz", "/blog"].forEach(route => {
-                      xml += `  <url>\n    <loc>${domain}${route}</loc>\n    <lastmod>${dateStr}</lastmod>\n    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n  </url>\n`;
-                    });
-                    blogs.forEach(blog => {
-                      const slug = (blog.title || "").toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
-                      xml += `  <url>\n    <loc>${domain}/blog/${slug}</loc>\n    <lastmod>${dateStr}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
-                    });
-                    xml += `</urlset>\n`;
-                    
-                    navigator.clipboard.writeText(xml);
-                    alert("Sitemap XML copied to clipboard!");
-                  }}
-                  className="btn btn-ghost border-line text-ink-soft hover:bg-line/40 px-5 py-3 font-semibold text-xs flex items-center gap-2 cursor-pointer"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span>Copy to Clipboard</span>
-                </button>
+            {/* Google Search Console & Dynamic Sitemap Suite */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Dynamic Sitemap card */}
+              <div className="bg-card border-1.5 border-line rounded-xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-emerald/10 text-emerald rounded-lg">
+                    <Globe className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="font-display font-bold text-lg text-ink">Dynamic SEO XML Sitemap</div>
+                </div>
+                <p className="text-xs text-ink-soft leading-relaxed">
+                  이제 sitemap.xml을 수동으로 다운로드하고 업로드하실 필요가 없습니다! 블로그 글을 발행하거나 삭제할 때마다 실시간으로 반영되는 <strong>실시간 동적 Sitemap</strong> 기능이 서버에 적용되었습니다.
+                </p>
+                <div className="bg-paper p-3.5 rounded-lg border border-line text-xs font-mono break-all flex justify-between items-center gap-2 text-ink">
+                  <span>https://whatsthatmean.com/sitemap.xml</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText("https://whatsthatmean.com/sitemap.xml");
+                      alert("Sitemap URL copied to clipboard!");
+                    }}
+                    className="text-[10px] font-sans font-bold text-indigo hover:text-indigo-dark whitespace-nowrap cursor-pointer underline"
+                  >
+                    Copy URL
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <a
+                    href="/sitemap.xml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <span>Open Live Sitemap</span>
+                    <span>↗</span>
+                  </a>
+                  <button
+                    onClick={() => {
+                      const domain = "https://whatsthatmean.com";
+                      const dateStr = new Date().toISOString().split("T")[0];
+                      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+                      ["", "/browse", "/quiz", "/blog"].forEach(route => {
+                        xml += `  <url>\n    <loc>${domain}${route}</loc>\n    <lastmod>${dateStr}</lastmod>\n    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n  </url>\n`;
+                      });
+                      blogs.forEach(blog => {
+                        if (blog.draft) return;
+                        const slug = (blog.title || "").toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
+                        xml += `  <url>\n    <loc>${domain}/blog/${slug}</loc>\n    <lastmod>${dateStr}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+                      });
+                      xml += `</urlset>\n`;
+                      
+                      navigator.clipboard.writeText(xml);
+                      alert("Raw XML content copied to clipboard!");
+                    }}
+                    className="btn btn-ghost border-line text-ink-soft hover:bg-line/40 px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Copy Raw XML</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Google Search Console Verification Manager */}
+              <div className="bg-card border-1.5 border-line rounded-xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-indigo/10 text-indigo rounded-lg">
+                    <Settings className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div className="font-display font-bold text-lg text-ink">Google Search Console Verification</div>
+                </div>
+                <p className="text-xs text-ink-soft leading-relaxed">
+                  Google Search Console에 소유권을 간편하게 인증하세요. GSC에서 제공하는 <strong>HTML 태그 (meta name="google-site-verification" content="코드")</strong>의 <span className="underline font-semibold">콘텐츠 코드 값만</span> 아래 입력해 주시면 사이트 헤더에 실시간으로 반영됩니다.
+                </p>
+                <div className="space-y-3 pt-1">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-ink-soft uppercase font-mono">Verification Code</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="예: google-site-verification-123456789"
+                        value={googleSiteVerification}
+                        onChange={(e) => setGoogleSiteVerification(e.target.value)}
+                        className="flex-1 border border-line rounded-lg px-3 py-2 text-xs bg-paper text-ink focus:outline-none focus:border-indigo font-mono"
+                        disabled={savingVerification}
+                      />
+                      <button
+                        onClick={handleSaveVerification}
+                        disabled={savingVerification}
+                        className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-4 py-2 text-xs font-bold cursor-pointer disabled:opacity-50"
+                      >
+                        {savingVerification ? "Saving..." : "Save Code"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-paper/50 rounded-lg border border-line/60 text-[10px] text-ink-soft space-y-1">
+                    <div className="font-semibold text-ink">💡 GSC 연동 및 노출 가이드:</div>
+                    <div>1. Google Search Console 로그인 후 [속성 추가] ➜ URL 접두사 방식으로 도메인 입력</div>
+                    <div>2. 다른 인증 방법 중 <strong>HTML 태그</strong>를 선택하고 content="..." 안의 코드 복사 후 위에 입력/저장</div>
+                    <div>3. Google Search Console에서 [인증] 클릭! 이후 [Sitemaps] 메뉴로 이동하여 <strong>sitemap.xml</strong> 제출</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1309,9 +1454,58 @@ Try writing your own content or edit this template using the helper buttons abov
             </div>
 
             <div className="admin-two-col grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Publisher Form (Left) */}
-              <div id="blog-publisher-form" className={`admin-card bg-card border-1.5 rounded-xl p-6 shadow-sm lg:col-span-7 space-y-4 transition-all duration-300
-                ${editingPost ? "border-indigo shadow-md ring-1 ring-indigo/20 bg-indigo/5" : "border-line"}`}>
+              {/* Left Column (AI Generator + Publisher Form) */}
+              <div className="lg:col-span-7 space-y-6">
+                
+                {/* AI Blog Article Generator */}
+                <div className="admin-card bg-card border border-line rounded-xl p-6 shadow-sm space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo animate-pulse" />
+                    <div className="font-display font-bold text-lg text-ink">AI Blog Article Generator (Gemini 3.5)</div>
+                  </div>
+                  <p className="text-xs text-ink-soft leading-relaxed">
+                    원하는 키워드 또는 주제를 입력하고 생성 버튼을 누르시면, 구글 검색(SEO) 최적화에 특화된 고품질 블로그 기사가 자동으로 생성됩니다. 
+                    생성된 글은 아래 작성 양식에 자동으로 로드되며 기본적으로 <strong>임시저장(Draft)</strong> 상태로 설정됩니다.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="예: 'Gen Z slang words', '어쩔티비 뜻', '직장인 비즈니스 영어'"
+                      value={aiKeyword}
+                      onChange={(e) => setAiKeyword(e.target.value)}
+                      className="flex-1 border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo"
+                      disabled={generatingArticle}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleGenerateArticle();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGenerateArticle}
+                      disabled={generatingArticle}
+                      className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-5 py-3 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                    >
+                      {generatingArticle ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>생성 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          <span>Article Generate</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Publisher Form */}
+                <div id="blog-publisher-form" className={`admin-card bg-card border-1.5 rounded-xl p-6 shadow-sm space-y-4 transition-all duration-300
+                  ${editingPost ? "border-indigo shadow-md ring-1 ring-indigo/20 bg-indigo/5" : "border-line"}`}>
                 <div className="flex items-center justify-between border-b border-line pb-2">
                   <div className="font-display font-bold text-lg text-ink">
                     {editingPost ? (
@@ -1588,6 +1782,19 @@ Try writing your own content or edit this template using the helper buttons abov
                         className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo font-mono text-xs"
                       />
                     </div>
+
+                    <div className="field flex items-center gap-2 pt-2">
+                      <input
+                        type="checkbox"
+                        id="blog-draft-checkbox"
+                        checked={blogDraft}
+                        onChange={(e) => setBlogDraft(e.target.checked)}
+                        className="w-4 h-4 rounded border-line text-indigo focus:ring-indigo cursor-pointer"
+                      />
+                      <label htmlFor="blog-draft-checkbox" className="text-xs font-semibold text-ink-soft cursor-pointer select-none">
+                        Save as Draft (임시저장 - 사용자에게 노출되지 않습니다)
+                      </label>
+                    </div>
                   </div>
 
                   <div className="flex gap-3">
@@ -1606,6 +1813,7 @@ Try writing your own content or edit this template using the helper buttons abov
                   </div>
                 </form>
               </div>
+              </div>
 
               {/* Published Articles List (Right) */}
               <div className="lg:col-span-5 space-y-4">
@@ -1623,6 +1831,15 @@ Try writing your own content or edit this template using the helper buttons abov
                             <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-indigo/5 text-indigo border border-indigo/10">
                               {postCategory?.name || "Internet & chat"}
                             </span>
+                            {p.draft ? (
+                              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                Draft (임시저장)
+                              </span>
+                            ) : (
+                              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Published (발행됨)
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs text-ink-soft mt-2 line-clamp-2">{p.excerpt}</p>
                         </div>

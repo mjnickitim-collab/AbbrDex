@@ -25,6 +25,7 @@ export interface BlogPost {
   seoTitle?: string;
   metaDescription?: string;
   keywords?: string;
+  draft?: boolean;
 }
 
 export interface AdSlot {
