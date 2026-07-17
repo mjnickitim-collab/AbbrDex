@@ -110,8 +110,6 @@ app.get("/sitemap.xml", async (req, res) => {
   const domain = "https://whatsthatmean.com";
   const dateStr = new Date().toISOString().split("T")[0];
   
-  const blogs = await getBlogsFromFirestore();
-  
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   
@@ -123,25 +121,6 @@ app.get("/sitemap.xml", async (req, res) => {
     xml += `    <lastmod>${dateStr}</lastmod>\n`;
     xml += `    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n`;
     xml += `    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n`;
-    xml += `  </url>\n`;
-  });
-  
-  // Blog routes (excluding drafts)
-  blogs.forEach((blog: any) => {
-    if (blog.draft) return;
-    
-    const slug = (blog.title || "")
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
-    
-    xml += `  <url>\n`;
-    xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
-    xml += `    <lastmod>${dateStr}</lastmod>\n`;
-    xml += `    <changefreq>monthly</changefreq>\n`;
-    xml += `    <priority>0.6</priority>\n`;
     xml += `  </url>\n`;
   });
   
@@ -159,27 +138,30 @@ async function startServer() {
       appType: "spa",
     });
     
-    // Inject Google site verification meta tag during dev HTML serving
-    app.use(async (req, res, next) => {
-      if (req.url === "/" || req.url.endsWith(".html")) {
-        try {
-          const indexHtmlPath = path.join(process.cwd(), "index.html");
-          let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
-          const verificationCode = await getGoogleSiteVerification();
-          if (verificationCode) {
-            const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
-            html = html.replace("<head>", `<head>\n    ${metaTag}`);
-          }
-          return res.send(html);
-        } catch (err) {
-          next();
+    app.use(vite.middlewares);
+
+    // Wildcard route for SPA fallback in development mode
+    app.get("*", async (req, res, next) => {
+      // Exclude API routes and files with extensions (like .js, .css, .png, etc)
+      if (req.path.startsWith("/api") || req.path.includes(".")) {
+        return next();
+      }
+
+      try {
+        const indexHtmlPath = path.join(process.cwd(), "index.html");
+        let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
+        const verificationCode = await getGoogleSiteVerification();
+        if (verificationCode) {
+          const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
+          html = html.replace("<head>", `<head>\n    ${metaTag}`);
         }
-      } else {
-        next();
+        const transformedHtml = await vite.transformIndexHtml(req.originalUrl, html);
+        res.status(200).set({ "Content-Type": "text/html" }).send(transformedHtml);
+      } catch (err: any) {
+        vite.ssrFixStacktrace(err);
+        next(err);
       }
     });
-
-    app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, { index: false })); // don't serve index.html directly
