@@ -63,6 +63,8 @@ async function getGoogleSiteVerification() {
   }
 }
 
+export { getGoogleSiteVerification };
+
 // API endpoint to generate blog articles using Gemini
 app.post("/api/generate-article", async (req: any, res: any) => {
   const { keyword } = req.body;
@@ -158,71 +160,29 @@ app.get("/sitemap.xml", async (req, res) => {
   res.send(xml);
 });
 
-// Serve assets / static app
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "custom",
-    });
-    
-    // Serve static assets and run Vite middleware first
-    app.use(vite.middlewares);
-
-    // Fallback for all other GET requests (SPA client-side routing)
-    app.get("*", async (req, res, next) => {
-      // Skip API routes and sitemap
-      if (req.url.startsWith("/api/") || req.url === "/sitemap.xml") {
-        return next();
+// Serve assets / static app (Production container server only, not run on Vercel)
+if (!process.env.VERCEL && process.env.NODE_ENV === "production") {
+  const distPath = path.join(process.cwd(), "dist");
+  app.use(express.static(distPath, { index: false })); // don't serve index.html directly
+  
+  app.get("*", async (req, res) => {
+    try {
+      const indexHtmlPath = path.join(distPath, "index.html");
+      let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
+      const verificationCode = await getGoogleSiteVerification();
+      if (verificationCode) {
+        const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
+        html = html.replace("<head>", `<head>\n    ${metaTag}`);
       }
-      try {
-        const url = req.originalUrl || req.url;
-        const indexHtmlPath = path.join(process.cwd(), "index.html");
-        let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
-        
-        // Inject Google site verification meta tag
-        const verificationCode = await getGoogleSiteVerification();
-        if (verificationCode) {
-          const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
-          html = html.replace("<head>", `<head>\n    ${metaTag}`);
-        }
-
-        // Transform index.html through Vite to inject HMR and module resolution scripts
-        html = await vite.transformIndexHtml(url, html);
-        
-        return res.status(200).set({ "Content-Type": "text/html" }).send(html);
-      } catch (err) {
-        return next(err);
-      }
-    });
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath, { index: false })); // don't serve index.html directly
-    
-    app.get("*", async (req, res) => {
-      try {
-        const indexHtmlPath = path.join(distPath, "index.html");
-        let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
-        const verificationCode = await getGoogleSiteVerification();
-        if (verificationCode) {
-          const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
-          html = html.replace("<head>", `<head>\n    ${metaTag}`);
-        }
-        res.send(html);
-      } catch (err) {
-        res.sendFile(path.join(distPath, "index.html"));
-      }
-    });
-  }
+      res.send(html);
+    } catch (err) {
+      res.sendFile(path.join(distPath, "index.html"));
+    }
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Production server running on port ${PORT}`);
   });
-}
-
-if (!process.env.VERCEL) {
-  startServer();
 }
 
 export default app;
