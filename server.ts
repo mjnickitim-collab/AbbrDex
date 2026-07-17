@@ -12,15 +12,22 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Initialize Gemini SDK with telemetry User-Agent
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
+// Helper to lazily initialize Gemini SDK with telemetry User-Agent
+let aiClient: GoogleGenAI | null = null;
+function getGoogleGenAI() {
+  if (!aiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    aiClient = new GoogleGenAI({
+      apiKey: apiKey || "MISSING_KEY",
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
   }
-});
+  return aiClient;
+}
 
 // Helper to fetch blogs from Firestore REST API
 async function getBlogsFromFirestore() {
@@ -87,6 +94,7 @@ app.post("/api/generate-article", async (req: any, res: any) => {
     Make the body article extensive, structured, explaining the meaning, the origins, real-life examples of texting/social media dialogues, and a conclusion.
     Return ONLY a raw valid JSON object. Do not wrap it in markdown codeblocks.`;
 
+    const ai = getGoogleGenAI();
     const response = await ai.models.generateContent({
       model: "gemini-3.5-flash",
       contents: prompt,
@@ -213,4 +221,8 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
