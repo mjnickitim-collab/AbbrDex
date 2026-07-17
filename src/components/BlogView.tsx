@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BlogPost, AdSlot } from "../types";
-import { Calendar, ChevronLeft, BookOpen } from "lucide-react";
+import { Calendar, ChevronLeft, BookOpen, Share2, Check } from "lucide-react";
 import { renderBlogPostContent } from "../utils/blogParser";
 import { CATEGORIES } from "../data/seedData";
 
@@ -14,6 +14,25 @@ interface BlogViewProps {
 
 export default function BlogView({ posts, initialSelectedPost = null, onCloseSelectedPost, onSelectPost, adSlots }: BlogViewProps) {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(initialSelectedPost);
+  const [copied, setCopied] = useState(false);
+
+  const getBlogSlug = (title: string) => {
+    return (title || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+  };
+
+  const handleCopyUrl = () => {
+    if (!selectedPost) return;
+    const slug = getBlogSlug(selectedPost.title);
+    const fullUrl = `https://whatsthatmean.com/blog/${slug}`;
+    navigator.clipboard.writeText(fullUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   React.useEffect(() => {
     setSelectedPost(initialSelectedPost);
@@ -75,18 +94,38 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
   if (selectedPost) {
     return (
       <div className="max-w-[720px] mx-auto px-6 py-12">
-        {/* Back Button */}
-        <button
-          onClick={() => {
-            setSelectedPost(null);
-            onCloseSelectedPost?.();
-            onSelectPost?.(null);
-          }}
-          className="flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition mb-8 group cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition" />
-          <span>Back to Blog List</span>
-        </button>
+        {/* Back Button & Share Column */}
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => {
+              setSelectedPost(null);
+              onCloseSelectedPost?.();
+              onSelectPost?.(null);
+            }}
+            className="flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition group cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition" />
+            <span>Back to Blog List</span>
+          </button>
+
+          <button
+            onClick={handleCopyUrl}
+            className="flex items-center gap-1.5 text-xs font-bold bg-indigo/5 text-indigo hover:bg-indigo/10 border border-indigo/10 rounded-lg px-3 py-1.5 transition cursor-pointer"
+            title="구글 서치콘솔 제출용 글 전용 URL 복사"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald" />
+                <span className="text-emerald">Copied URL!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Copy Post URL</span>
+              </>
+            )}
+          </button>
+        </div>
 
         {/* Blog Post Header */}
         <article className="space-y-6">
