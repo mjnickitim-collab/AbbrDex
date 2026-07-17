@@ -135,13 +135,6 @@ export default function App() {
     }
   };
 
-  // Revert to original URL state: if pathname is not "/", reset it to "/"
-  useEffect(() => {
-    if (window.location.pathname !== "/") {
-      window.history.replaceState({}, "", "/");
-    }
-  }, []);
-
   useEffect(() => {
     const initializeApp = async () => {
       // Fetch public lists asynchronously in the background so that pages render instantly
