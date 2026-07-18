@@ -4,9 +4,12 @@ import { AdSlot } from "../types";
 interface AdPlaceholderProps {
   slotName: string;
   adSlots: AdSlot[];
+  isDbLoaded?: boolean;
 }
 
-export default function AdPlaceholder({ slotName, adSlots }: AdPlaceholderProps) {
+export default function AdPlaceholder({ slotName, adSlots, isDbLoaded = true }: AdPlaceholderProps) {
+  if (!isDbLoaded) return null;
+
   const slot = adSlots.find((s) => s.name.toLowerCase() === slotName.toLowerCase());
   const containerRef = useRef<HTMLDivElement>(null);
 

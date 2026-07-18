@@ -84,17 +84,27 @@ export default function Navbar({
         )}
 
         {/* Right Side Buttons */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           {currentUser && (currentUser.role === "Admin" || currentUser.role === "Editor") && (
             <button
               onClick={() => setIsAdminMode(!isAdminMode)}
-              className={`btn btn-sm cursor-pointer border-1.5 transition font-display font-semibold px-4
+              className={`btn btn-sm cursor-pointer border-1.5 transition font-display font-semibold px-2 sm:px-4 py-1.5 text-xs sm:text-sm whitespace-nowrap
                 ${isAdminMode 
                   ? "bg-ink text-paper border-ink hover:bg-ink-soft hover:border-ink-soft" 
                   : "btn-ghost"
                 }`}
             >
-              {isAdminMode ? "← Back to Site" : "Admin Panel"}
+              {isAdminMode ? (
+                <>
+                  <span className="sm:hidden">← Site</span>
+                  <span className="hidden sm:inline">← Back to Site</span>
+                </>
+              ) : (
+                <>
+                  <span className="sm:hidden">Admin</span>
+                  <span className="hidden sm:inline">Admin Panel</span>
+                </>
+              )}
             </button>
           )}
 
@@ -102,10 +112,10 @@ export default function Navbar({
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="btn btn-solid btn-sm font-display font-semibold px-4 flex items-center gap-1.5"
+                className="btn btn-solid btn-sm font-display font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 max-w-[95px] sm:max-w-[150px] overflow-hidden"
               >
-                <span>{currentUser.name}</span>
-                <span className="text-[10px]">▼</span>
+                <span className="truncate max-w-[50px] sm:max-w-[100px] block">{currentUser.name}</span>
+                <span className="text-[8px] sm:text-[10px] flex-shrink-0">▼</span>
               </button>
 
               {dropdownOpen && (

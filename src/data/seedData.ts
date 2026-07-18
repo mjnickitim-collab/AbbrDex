@@ -1,4 +1,5 @@
 import { Category, Term, BlogPost, AdSlot, UserProfile } from "../types";
+import { NEW_TERMS } from "./newTermsData";
 
 export const CATEGORIES: Category[] = [
   { id: "internet", name: "Internet & chat", tag: "tag-internet" },
@@ -7,10 +8,15 @@ export const CATEGORIES: Category[] = [
   { id: "business", name: "Business & work", tag: "tag-business" },
   { id: "gaming", name: "Gaming", tag: "tag-gaming" },
   { id: "military", name: "Military", tag: "tag-military" },
-  { id: "emoji", name: "Emoji", tag: "tag-emoji" }
+  { id: "emoji", name: "Emoji", tag: "tag-emoji" },
+  { id: "sports", name: "Sports", tag: "tag-sports" },
+  { id: "companies", name: "Company Names", tag: "tag-companies" },
+  { id: "countries", name: "Countries", tag: "tag-countries" },
+  { id: "cities", name: "Cities", tag: "tag-cities" }
 ];
 
 export const TERMS: Term[] = [
+  ...NEW_TERMS,
   // INTERNET & CHAT (50 terms)
   { code: "LOL", full: "Laughing out loud", cat: "internet", ex: "That video was so funny, LOL." },
   { code: "BRB", full: "Be right back", cat: "internet", ex: "BRB, someone is at the door." },
@@ -866,10 +872,10 @@ export const MOCK_USERS: UserProfile[] = [
 ];
 
 export const AD_SLOTS: AdSlot[] = [
-  { name: "Header banner", desc: "728x90 leaderboard, top of every page", on: true, network: "AdSense" },
-  { name: "In-content — after hero", desc: "336x280 rectangle, homepage only", on: true, network: "AdSense" },
+  { name: "Header banner", desc: "728x90 leaderboard, top of every page", on: false, network: "AdSense" },
+  { name: "In-content — after hero", desc: "336x280 rectangle, homepage only", on: false, network: "AdSense" },
   { name: "Sidebar", desc: "300x600 skyscraper, browse and blog pages", on: false, network: "AdSense" },
-  { name: "Between quiz questions", desc: "320x50 mobile banner", on: true, network: "AdSense" },
-  { name: "In-article blog banner", desc: "728x90 leaderboard, inside blog body", on: true, network: "AdSense" },
+  { name: "Between quiz questions", desc: "320x50 mobile banner", on: false, network: "AdSense" },
+  { name: "In-article blog banner", desc: "728x90 leaderboard, inside blog body", on: false, network: "AdSense" },
   { name: "Footer", desc: "728x90 leaderboard, all pages", on: false, network: "AdSense" }
 ];

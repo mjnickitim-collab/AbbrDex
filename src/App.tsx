@@ -47,6 +47,7 @@ export default function App() {
   const [blogs, setBlogs] = useState<BlogPost[]>(initialBlogs);
   const [adSlots, setAdSlots] = useState<AdSlot[]>(initialAdSlots);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [isDbLoaded, setIsDbLoaded] = useState(false);
   
   // Navigation & UI States
   const [activeView, setActiveView] = useState<string>("home");
@@ -130,6 +131,7 @@ export default function App() {
       setTerms(fetchedTerms);
       setBlogs(fetchedBlogs);
       setAdSlots(fetchedAdSlots);
+      setIsDbLoaded(true);
     } catch (err) {
       console.error("Error loading whatsthatmean database:", err);
     }
@@ -284,7 +286,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col justify-between">
       {/* Upper Site Ad Slot */}
-      {!isAdminMode && <AdPlaceholder slotName="Header banner" adSlots={adSlots} />}
+      {!isAdminMode && <AdPlaceholder slotName="Header banner" adSlots={adSlots} isDbLoaded={isDbLoaded} />}
 
       {/* Main Navigation */}
       <Navbar 
@@ -350,7 +352,7 @@ export default function App() {
                     }}
                   />
                   {/* Homepage Ad Slot */}
-                  <AdPlaceholder slotName="In-content — after hero" adSlots={adSlots} />
+                  <AdPlaceholder slotName="In-content — after hero" adSlots={adSlots} isDbLoaded={isDbLoaded} />
                 </>
               )}
 
@@ -365,7 +367,7 @@ export default function App() {
                     />
                   </div>
                   {/* Sidebar Ad Placement (Shown in browse section if toggled on) */}
-                  <AdPlaceholder slotName="Sidebar" adSlots={adSlots} />
+                  <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
                 </div>
               )}
 
@@ -377,7 +379,7 @@ export default function App() {
                     initialMode={quizMode}
                   />
                   {/* Quiz Ad Placement (Shown during quiz questions if toggled on) */}
-                  <AdPlaceholder slotName="Between quiz questions" adSlots={adSlots} />
+                  <AdPlaceholder slotName="Between quiz questions" adSlots={adSlots} isDbLoaded={isDbLoaded} />
                 </>
               )}
 
@@ -391,7 +393,7 @@ export default function App() {
                     />
                   </div>
                   {/* Sidebar Ad Placement (Shown in blog section if toggled on) */}
-                  <AdPlaceholder slotName="Sidebar" adSlots={adSlots} />
+                  <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
                 </div>
               )}
             </div>
@@ -400,7 +402,7 @@ export default function App() {
       </main>
 
       {/* Bottom Footer Ad Slot */}
-      {!isAdminMode && <AdPlaceholder slotName="Footer" adSlots={adSlots} />}
+      {!isAdminMode && <AdPlaceholder slotName="Footer" adSlots={adSlots} isDbLoaded={isDbLoaded} />}
 
       {/* Footer Block */}
       {!isAdminMode && (

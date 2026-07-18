@@ -887,37 +887,39 @@ Try writing your own content or edit this template using the helper buttons abov
   return (
     <div className="admin-shell flex flex-col md:flex-row min-h-[100vh] bg-paper">
       {/* Sidebar Admin Menu */}
-      <div className="admin-side w-full md:w-[240px] md:flex-shrink-0 bg-ink text-white p-6 flex flex-col gap-1.5 md:sticky md:top-0 md:h-[100vh]">
-        <div className="logo2 font-display font-bold text-lg mb-8 pb-4 border-b border-white/10 text-center md:text-left">
+      <div className="admin-side w-full md:w-[240px] md:flex-shrink-0 bg-ink text-white p-4 md:p-6 flex flex-col gap-3 md:gap-1.5 md:sticky md:top-0 md:h-[100vh]">
+        <div className="logo2 font-display font-bold text-base md:text-lg mb-3 md:mb-8 pb-2 md:pb-4 border-b border-white/10 text-center md:text-left">
           ⚡ whatsthatmean admin
         </div>
 
-        {[
-          { id: "overview", label: "Overview", icon: BarChart },
-          { id: "terms", label: "Terms Database", icon: Grid },
-          { id: "emojis", label: "Emoji Database", icon: Smile },
-          { id: "users", label: "Users & Access", icon: Users },
-          { id: "ads", label: "Ad placements", icon: Radio },
-          { id: "blog", label: "Blog Publisher", icon: BookOpen }
-        ].map((tab) => {
-          const IconComp = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as AdminTab)}
-              className={`admin-nav-btn w-full text-left py-3 px-4 rounded-xl text-sm font-semibold transition flex items-center gap-3 cursor-pointer
-                ${activeTab === tab.id
-                  ? "bg-indigo text-white"
-                  : "text-ink-soft hover:bg-white/5 hover:text-white"
-                }`}
-            >
-              <IconComp className="w-4 h-4" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-col gap-1.5 w-full">
+          {[
+            { id: "overview", label: "Overview", icon: BarChart },
+            { id: "terms", label: "Terms Database", icon: Grid },
+            { id: "emojis", label: "Emoji Database", icon: Smile },
+            { id: "users", label: "Users & Access", icon: Users },
+            { id: "ads", label: "Ad placements", icon: Radio },
+            { id: "blog", label: "Blog Publisher", icon: BookOpen }
+          ].map((tab) => {
+            const IconComp = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as AdminTab)}
+                className={`admin-nav-btn w-full text-left py-2.5 md:py-3 px-3 md:px-4 rounded-xl text-xs md:text-sm font-semibold transition flex items-center gap-2 md:gap-3 cursor-pointer
+                  ${activeTab === tab.id
+                    ? "bg-indigo text-white"
+                    : "text-ink-soft hover:bg-white/5 hover:text-white"
+                  }`}
+              >
+                <IconComp className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-        <div className="mt-auto pt-6 border-t border-white/10 text-xs text-ink-soft text-center md:text-left">
+        <div className="hidden md:block mt-auto pt-6 border-t border-white/10 text-xs text-ink-soft text-center md:text-left">
           <p>Logged in as admin:</p>
           <p className="font-semibold text-white/90 truncate mt-0.5">{currentUser?.email}</p>
         </div>
@@ -1127,7 +1129,7 @@ Try writing your own content or edit this template using the helper buttons abov
             </div>
 
             {/* Terms List Table */}
-            <div className="bg-card border-1.5 border-line rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-card border-1.5 border-line rounded-xl overflow-x-auto shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-paper border-b-1.5 border-line">
@@ -1241,7 +1243,7 @@ Try writing your own content or edit this template using the helper buttons abov
             </div>
 
             {/* Emoji List Table */}
-            <div className="bg-card border-1.5 border-line rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-card border-1.5 border-line rounded-xl overflow-x-auto shadow-sm">
               <table id="admin-table-emoji-list" className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-paper border-b-1.5 border-line">
@@ -1319,7 +1321,7 @@ Try writing your own content or edit this template using the helper buttons abov
             </div>
 
             {/* Users Table */}
-            <div className="bg-card border-1.5 border-line rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-card border-1.5 border-line rounded-xl overflow-x-auto shadow-sm">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-paper border-b-1.5 border-line">

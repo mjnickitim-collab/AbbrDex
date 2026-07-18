@@ -112,6 +112,26 @@ body {
   color: #BE123C;
   border: 1px solid #FFE4E6;
 }
+.tag-sports {
+  background-color: #F0FDFA;
+  color: #0F766E;
+  border: 1px solid #CCFBF1;
+}
+.tag-companies {
+  background-color: #EEF2FF;
+  color: #3730A3;
+  border: 1px solid #E0E7FF;
+}
+.tag-countries {
+  background-color: #FFF7ED;
+  color: #9A3412;
+  border: 1px solid #FFEDD5;
+}
+.tag-cities {
+  background-color: #F0F9FF;
+  color: #0369A1;
+  border: 1px solid #E0F2FE;
+}
 
 .tag {
   font-size: 10px;
