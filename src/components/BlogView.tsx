@@ -107,6 +107,22 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
             </p>
           </div>
 
+          {selectedPost.imageUrl && (
+            <div className="rounded-2xl overflow-hidden border border-line my-6">
+              <img
+                src={selectedPost.imageUrl}
+                alt={selectedPost.imageAlt || selectedPost.title}
+                className="w-full h-auto max-h-[380px] object-cover"
+                referrerPolicy="no-referrer"
+              />
+              {selectedPost.imageAlt && (
+                <div className="bg-paper/50 px-4 py-2 text-center text-[11px] text-ink-soft italic border-t border-line/60">
+                  {selectedPost.imageAlt}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Full body with beautiful custom styling */}
           <div className="pt-6 border-t border-line">
             {selectedPost.body ? (
@@ -146,26 +162,38 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
             <button
               key={post.id || post.title}
               onClick={() => setSelectedPost(post)}
-              className="blog-card bg-card border-1.5 border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full"
+              className="blog-card bg-card border-1.5 border-line rounded-2xl overflow-hidden text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full"
             >
-              <div className="space-y-3">
-                <div className="date flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft">
-                  <Calendar className="w-3 h-3" />
-                  <span>{post.date}</span>
-                  <span className="w-1 h-1 rounded-full bg-line" />
-                  <span className="px-1.5 py-0.5 rounded font-bold text-[9px] bg-indigo/5 text-indigo border border-indigo/10">
-                    {CATEGORIES.find(c => c.id === post.cat)?.name || "Internet & chat"}
-                  </span>
+              <div className="w-full">
+                {post.imageUrl && (
+                  <div className="w-full h-44 overflow-hidden border-b border-line">
+                    <img
+                      src={post.imageUrl}
+                      alt={post.imageAlt || post.title}
+                      className="w-full h-full object-cover transition duration-300 hover:scale-105"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                )}
+                <div className="p-6 space-y-3">
+                  <div className="date flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft">
+                    <Calendar className="w-3 h-3" />
+                    <span>{post.date}</span>
+                    <span className="w-1 h-1 rounded-full bg-line" />
+                    <span className="px-1.5 py-0.5 rounded font-bold text-[9px] bg-indigo/5 text-indigo border border-indigo/10">
+                      {CATEGORIES.find(c => c.id === post.cat)?.name || "Internet & chat"}
+                    </span>
+                  </div>
+                  <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] hover:text-indigo transition">
+                    {post.title}
+                  </h3>
+                  <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
+                    {post.excerpt}
+                  </p>
                 </div>
-                <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] hover:text-indigo transition">
-                  {post.title}
-                </h3>
-                <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
-                  {post.excerpt}
-                </p>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-line flex items-center justify-between text-xs font-bold text-indigo hover:text-indigo-dark transition">
+              <div className="px-6 pb-6 pt-4 border-t border-line flex items-center justify-between text-xs font-bold text-indigo hover:text-indigo-dark transition w-full">
                 <span>Read Full Article</span>
                 <span className="text-base">→</span>
               </div>

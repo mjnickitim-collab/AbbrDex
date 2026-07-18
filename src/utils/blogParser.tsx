@@ -35,14 +35,11 @@ export function renderBlogPostContent(body: string, adSlots?: AdSlot[]): React.R
 
         // 1. Explicit AD block
         if (trimmedBlock.toUpperCase() === "[AD]") {
-          if (adSlots) {
-            return (
-              <div key={`ad-${blockIdx}`} className="my-6">
-                <AdPlaceholder slotName="In-article blog banner" adSlots={adSlots} />
-              </div>
-            );
-          }
-          return null;
+          return (
+            <div key={`ad-${blockIdx}`} className="my-6">
+              <AdPlaceholder slotName="In-article blog banner" adSlots={adSlots || []} />
+            </div>
+          );
         }
 
         // Check if it's a list block (all lines start with "- " or "* ")
@@ -84,31 +81,46 @@ export function renderBlogPostContent(body: string, adSlots?: AdSlot[]): React.R
                 )}
               </div>
             );
-          } else if (trimmedBlock.startsWith("# ")) {
-            // Heading 1
+          } else if (trimmedBlock.startsWith("> ")) {
+            // 2. Blockquote support for texting dialogues / examples
             renderedElement = (
-              <h3 key={blockIdx} className="font-display font-bold text-2xl text-ink pt-6 pb-1 border-b border-line mt-8 mb-2">
+              <blockquote key={blockIdx} className="border-l-4 border-indigo bg-indigo/5 px-4 py-3 my-4 italic text-ink-soft rounded-r-lg">
+                {parseInlineStyles(trimmedBlock.substring(2))}
+              </blockquote>
+            );
+          } else if (trimmedBlock.startsWith("[info]")) {
+            // 3. Educational alert banner support
+            renderedElement = (
+              <div key={blockIdx} className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl my-4 text-ink flex gap-3 text-sm">
+                <span className="text-amber-500 font-bold">💡 Tip:</span>
+                <div>{parseInlineStyles(trimmedBlock.substring(6).trim())}</div>
+              </div>
+            );
+          } else if (trimmedBlock.startsWith("# ")) {
+            // Heading 1 (rendered as elegant high-contrast display heading)
+            renderedElement = (
+              <h3 key={blockIdx} className="font-display font-bold text-2xl md:text-3xl text-ink pt-6 pb-2 border-b border-line mt-8 mb-3 tracking-tight">
                 {parseInlineStyles(trimmedBlock.substring(2))}
               </h3>
             );
           } else if (trimmedBlock.startsWith("## ")) {
-            // Heading 2
+            // Heading 2 (primary subheading)
             renderedElement = (
-              <h4 key={blockIdx} className="font-display font-bold text-xl text-ink pt-4 mt-6 mb-1">
+              <h4 key={blockIdx} className="font-display font-bold text-xl md:text-2xl text-ink pt-4 mt-8 mb-2 tracking-tight">
                 {parseInlineStyles(trimmedBlock.substring(3))}
               </h4>
             );
           } else if (trimmedBlock.startsWith("### ")) {
-            // Heading 3
+            // Heading 3 (nested section)
             renderedElement = (
-              <h5 key={blockIdx} className="font-display font-bold text-lg text-ink pt-2 mt-4">
+              <h5 key={blockIdx} className="font-display font-bold text-lg text-ink pt-2 mt-6 mb-1">
                 {parseInlineStyles(trimmedBlock.substring(4))}
               </h5>
             );
           } else {
             // Standard paragraph
             renderedElement = (
-              <p key={blockIdx} className="text-ink leading-relaxed">
+              <p key={blockIdx} className="text-ink leading-relaxed mb-4">
                 {parseInlineStyles(trimmedBlock)}
               </p>
             );

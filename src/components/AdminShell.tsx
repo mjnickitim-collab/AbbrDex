@@ -86,6 +86,8 @@ export default function AdminShell({
   const [blogSeoTitle, setBlogSeoTitle] = useState("");
   const [blogMetaDescription, setBlogMetaDescription] = useState("");
   const [blogKeywords, setBlogKeywords] = useState("");
+  const [blogImageUrl, setBlogImageUrl] = useState("");
+  const [blogImageAlt, setBlogImageAlt] = useState("");
   const [blogDraft, setBlogDraft] = useState(false);
   const [aiKeyword, setAiKeyword] = useState("");
   const [generatingArticle, setGeneratingArticle] = useState(false);
@@ -212,6 +214,8 @@ Try writing your own content or edit this template using the helper buttons abov
     setBlogSeoTitle(post.seoTitle || "");
     setBlogMetaDescription(post.metaDescription || "");
     setBlogKeywords(post.keywords || "");
+    setBlogImageUrl(post.imageUrl || "");
+    setBlogImageAlt(post.imageAlt || "");
     setBlogDraft(post.draft || false);
     setShowPreview(false);
 
@@ -231,6 +235,8 @@ Try writing your own content or edit this template using the helper buttons abov
     setBlogSeoTitle("");
     setBlogMetaDescription("");
     setBlogKeywords("");
+    setBlogImageUrl("");
+    setBlogImageAlt("");
     setBlogDraft(false);
     setShowPreview(false);
   };
@@ -644,6 +650,8 @@ Try writing your own content or edit this template using the helper buttons abov
           seoTitle: blogSeoTitle.trim(),
           metaDescription: blogMetaDescription.trim(),
           keywords: blogKeywords.trim(),
+          imageUrl: blogImageUrl.trim(),
+          imageAlt: blogImageAlt.trim(),
           draft: blogDraft,
         });
         setEditingPost(null);
@@ -657,6 +665,8 @@ Try writing your own content or edit this template using the helper buttons abov
           seoTitle: blogSeoTitle.trim(),
           metaDescription: blogMetaDescription.trim(),
           keywords: blogKeywords.trim(),
+          imageUrl: blogImageUrl.trim(),
+          imageAlt: blogImageAlt.trim(),
           draft: blogDraft,
         });
       }
@@ -667,6 +677,8 @@ Try writing your own content or edit this template using the helper buttons abov
       setBlogSeoTitle("");
       setBlogMetaDescription("");
       setBlogKeywords("");
+      setBlogImageUrl("");
+      setBlogImageAlt("");
       setBlogDraft(false);
       onRefreshData();
     } catch (err) {
@@ -713,6 +725,8 @@ Try writing your own content or edit this template using the helper buttons abov
       setBlogSeoTitle(data.seoTitle || "");
       setBlogMetaDescription(data.metaDescription || "");
       setBlogKeywords(data.keywords || "");
+      setBlogImageUrl(data.imageUrl || "");
+      setBlogImageAlt(data.imageAlt || "");
       setBlogDraft(true);
       setAiKeyword("");
       
@@ -1781,6 +1795,50 @@ Try writing your own content or edit this template using the helper buttons abov
                         onChange={(e) => setBlogKeywords(e.target.value)}
                         className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo font-mono text-xs"
                       />
+                    </div>
+
+                    {/* Feature Image Section */}
+                    <div className="pt-4 border-t border-line/60 space-y-4">
+                      <div className="font-display font-semibold text-xs text-ink-soft uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <span>🖼️</span> <span>Feature Image (대표 이미지)</span>
+                      </div>
+
+                      <div className="field flex flex-col">
+                        <label className="text-xs font-semibold text-ink-soft mb-1">Image URL</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. https://images.unsplash.com/photo-..."
+                          value={blogImageUrl}
+                          onChange={(e) => setBlogImageUrl(e.target.value)}
+                          className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="field flex flex-col">
+                        <label className="text-xs font-semibold text-ink-soft mb-1">Image Alt Text (SEO 최적화 대체 텍스트)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Gen Z friends smiling and looking at their smartphones on the street"
+                          value={blogImageAlt}
+                          onChange={(e) => setBlogImageAlt(e.target.value)}
+                          className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo"
+                        />
+                      </div>
+
+                      {blogImageUrl && (
+                        <div className="mt-2 p-2 bg-paper rounded-lg border border-line flex items-center gap-4">
+                          <img
+                            src={blogImageUrl}
+                            alt={blogImageAlt || "Preview"}
+                            className="w-16 h-16 object-cover rounded-lg border border-line"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="text-left">
+                            <div className="text-xs font-bold text-ink truncate max-w-[240px]">Image Preview</div>
+                            <div className="text-[10px] text-ink-soft truncate max-w-[240px] italic">{blogImageAlt || "No Alt text defined"}</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="field flex items-center gap-2 pt-2">

@@ -73,26 +73,40 @@ app.post("/api/generate-article", async (req: any, res: any) => {
   }
 
   try {
-    const prompt = `You are an expert copywriter and SEO content developer for the website "whatsthatmean.com".
-    Your task is to write a highly informative, entertaining, and search-optimized blog article about the keyword or concept: "${keyword}".
+    const prompt = `You are an elite SEO specialist, professional copywriter, and ad-monetization strategist for the slang and definition authority website "whatsthatmean.com".
+    Your ultimate goal is to write a highly exhaustive, engaging, and search-optimized blog article about the main keyword: "${keyword}". This article must satisfy search engines (Google Rank) and keep users on-page while maximizing Google AdSense clicks.
     
-    The response MUST be a JSON object with the following fields:
-    - title: A catchy, professional blog post title incorporating the keyword.
-    - excerpt: A compelling 1-2 sentence search result summary / meta description.
-    - body: The complete article body content. Write this in a beautifully styled, friendly, highly scannable format. You can use:
-      - ## Heading 2 for sections
-      - **bold text** for emphasis
-      - - Bulleted lists
-      - 1. Numbered lists
-      - [Text Link](/browse?search=ABBREVIATION) to link to other abbreviations in our slang dictionary
-      - > Blockquotes for examples or quotes
-      - [info] Educational/informational alert banners
-      - [ad:In-content — after hero] or [ad:Between quiz questions] or [ad:Sidebar] to strategically embed ad slot placeholders in the body of the text.
-    - seoTitle: A perfect, punchy SEO title (max 60 characters).
-    - metaDescription: A search snippet meta description (max 160 characters).
-    - keywords: A string of 3 to 5 relevant comma-separated keywords (e.g. "slang, gen z, communication").
+    Please strictly enforce the following rules:
+    1. Title: The title MUST start with the main keyword followed by a colon and a compelling, catchy title.
+       Example: "${keyword}: Why This Trending Term is Taking Over Social Media"
+    2. Meta Description: Write a high-CTR meta description under 160 characters. It MUST explicitly contain the exact keyword "${keyword}".
+    3. Heading Hierarchy and Structure:
+       - Start with an H1 main title (this matches the title field).
+       - The body content must use ## (H2) for primary section headings, ### (H3) for nested subheadings, and #### (H4) if needed. Ensure perfect nesting hierarchy.
+       - You must write at least 3 to 4 or more distinct subheadings (H2).
+       - Each section under an H2 subheading must be substantial, thorough, and extensive—approximately 500 words or characters of high-quality, fully detailed content (not short summaries) explaining the slang definition, deep historical origin, evolution, social media and texting context, and cultural impact.
+    4. Ad Optimization (AdSense placeholders):
+       - Insert exactly 2 to 3 "[AD]" placeholders (strictly in uppercase as "[AD]") placed strategically on empty lines between text paragraphs (never inside headings or sentences) to monetize the article's traffic.
+    5. Feature Image Selection:
+       - Find and select an extremely relevant, high-resolution Unsplash image related to communication, texting, smartphone usage, social relationships, or internet culture. Use one of these high-quality, verified Unsplash photos:
+         - Mobile/texting/friends: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80"
+         - Online/social communication: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80"
+         - Gen Z/smartphone/lifestyle: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80"
+         - Neon/cyber/internet: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=800&q=80"
+         - Or any other valid Unsplash photo URL if more appropriate for the topic.
+       - Alt Text: Generate a descriptive, keyword-rich imageAlt text. The alt text MUST naturally include the keyword "${keyword}".
+    6. Content Features: Use rich formatting: **bold** for key terms, bulleted lists for clear takeaways, blockquotes (>) for real-life text messages or dialogues illustrating how "${keyword}" is used in context, and internal links (e.g. "[Explore whatsthatmean](/browse?search=KEYWORD)" or "[YOLO](/browse?search=YOLO)") where applicable.
 
-    Make the body article extensive, structured, explaining the meaning, the origins, real-life examples of texting/social media dialogues, and a conclusion.
+    The response MUST be a JSON object with the exact fields below:
+    - title: The generated catchy blog title starting with "${keyword}: ".
+    - excerpt: A compelling, high-CTR 1-2 sentence search engine summary.
+    - body: The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (approx. 500 words/chars per section), lists, text examples in blockquotes, and strategically placed [AD] tags.
+    - seoTitle: A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title.
+    - metaDescription: A search snippet under 160 characters containing "${keyword}".
+    - keywords: A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, slang meaning, Gen Z slang, internet dictionary").
+    - imageUrl: The selected Unsplash image URL.
+    - imageAlt: The keyword-rich image description.
+
     Return ONLY a raw valid JSON object. Do not wrap it in markdown codeblocks.`;
 
     const ai = getGoogleGenAI();

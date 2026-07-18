@@ -26,6 +26,8 @@ export interface BlogPost {
   metaDescription?: string;
   keywords?: string;
   draft?: boolean;
+  imageUrl?: string;
+  imageAlt?: string;
 }
 
 export interface AdSlot {
