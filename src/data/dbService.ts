@@ -260,6 +260,16 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
       }
       didChange = true;
     }
+
+    // 5. Seed default Site Settings
+    const siteSettingsDocRef = doc(db, "site_settings", "global");
+    const siteSettingsSnap = await getDoc(siteSettingsDocRef);
+    if (!siteSettingsSnap.exists()) {
+      console.log("Seeding default site settings...");
+      await setDoc(siteSettingsDocRef, { googleSiteVerification: "" });
+      didChange = true;
+    }
+
     console.log("Seeding and deduplication checks complete!");
     return didChange;
   } catch (error) {

@@ -3,6 +3,8 @@ import path from "path";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc } from "firebase/firestore";
 
 dotenv.config();
 
@@ -10,6 +12,15 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+
+// Safely load Firebase Config from local json
+const firebaseConfig = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "firebase-applet-config.json"), "utf8")
+);
+
+// Initialize server-side Firestore instance
+const firebaseApp = initializeApp(firebaseConfig);
+const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
 // Helper to lazily initialize Gemini SDK with telemetry User-Agent
 let aiClient: GoogleGenAI | null = null;
@@ -28,21 +39,21 @@ function getGoogleGenAI() {
   return aiClient;
 }
 
-// Helper to fetch blogs from Firestore REST API
+// Helper to fetch blogs from Firestore securely using Firebase JS SDK
 async function getBlogsFromFirestore() {
   try {
-    const res = await fetch("https://firestore.googleapis.com/v1/projects/ai-studio-applet-webapp-f78e7/databases/ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109/documents/blogs?pageSize=100");
-    if (!res.ok) {
-      console.error(`Firestore REST API returned status ${res.status}`);
-      return [];
-    }
-    const data = await res.json();
-    if (!data.documents) return [];
-    return data.documents.map((doc: any) => {
-      const fields = doc.fields || {};
-      const title = fields.title?.stringValue || "";
-      const draft = fields.draft?.booleanValue || false;
-      return { title, draft };
+    const blogsCol = collection(firestoreDb, "blogs");
+    const q = query(blogsCol, orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        title: data.title || "",
+        draft: data.draft || false,
+        excerpt: data.excerpt || "",
+        seoTitle: data.seoTitle || "",
+        metaDescription: data.metaDescription || ""
+      };
     });
   } catch (err) {
     console.error("Error fetching blogs for sitemap:", err);
@@ -50,20 +61,119 @@ async function getBlogsFromFirestore() {
   }
 }
 
-// Helper to fetch Google Site Verification code from Firestore REST API
+// Helper to fetch slang terms and emojis from Firestore securely using Firebase JS SDK
+async function getTermsFromFirestore() {
+  try {
+    const termsCol = collection(firestoreDb, "terms");
+    const q = query(termsCol, orderBy("code", "asc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        code: data.code || "",
+        full: data.full || "",
+        cat: data.cat || "",
+        ex: data.ex || ""
+      };
+    });
+  } catch (err) {
+    console.error("Error fetching terms for sitemap:", err);
+    return [];
+  }
+}
+
+// Helper to resolve SEO metadata based on URL path
+async function getSeoMetadata(urlPath: string) {
+  let title = "whatsthatmean | Ultimate Abbreviation, Acronym & Slang Dictionary";
+  let desc = "Decode the world's abbreviations, modern chat acronyms, gaming shorthand, military codes, and business terminology. Take interactive quizzes and learn on whatsthatmean.";
+
+  try {
+    const pathname = urlPath.split("?")[0];
+
+    if (pathname === "/" || pathname === "/home" || pathname === "") {
+      title = "whatsthatmean | Home - Decode Chat, Gaming, Business & Military Slang";
+      desc = "Discover trending abbreviations and modern acronyms. Search our real-time slang dictionary and test your knowledge.";
+    } else if (pathname === "/browse") {
+      title = "Explore Dictionary | whatsthatmean - Find Abbreviations & Meanings";
+      desc = "Browse through hundreds of curated acronyms, digital shorthand, and slang meanings. Filter by category or search terms instantly.";
+    } else if (pathname === "/quiz") {
+      title = "Interactive Acronym Quiz | whatsthatmean - Test Your Slang Knowledge";
+      desc = "Think you know modern slang and business terminology? Challenge yourself with our challenging, adaptive abbreviation quizzes.";
+    } else if (pathname === "/blog") {
+      title = "Word Feed Blog | whatsthatmean - Insightful Slang Articles & Trends";
+      desc = "Stay up to date with deep-dives into modern internet culture, business acronym origins, and the evolution of digital shorthand.";
+    } else if (pathname === "/emoji") {
+      title = "Emoji Meanings & Dictionary | whatsthatmean";
+      desc = "Browse modern emojis, their actual slang meanings, examples, and texting context in our ultimate real-time emoji dictionary.";
+    } else if (pathname.startsWith("/browse/")) {
+      const category = decodeURIComponent(pathname.substring(8));
+      const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
+      title = `${categoryName} Abbreviations & Meanings | whatsthatmean`;
+      desc = `Explore the best dictionary for ${categoryName} abbreviations, acronyms, and modern chat terms. Learn their meanings and real-world examples.`;
+    } else if (pathname.startsWith("/blog/")) {
+      const slug = pathname.substring(6);
+      const blogs = await getBlogsFromFirestore();
+      const foundBlog = blogs.find((b: any) => {
+        const s = (b.title || "")
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-");
+        return s === slug;
+      });
+      if (foundBlog && !foundBlog.draft) {
+        title = foundBlog.seoTitle || foundBlog.title || title;
+        desc = foundBlog.metaDescription || foundBlog.excerpt || desc;
+      }
+    } else if (pathname.startsWith("/term/")) {
+      const code = decodeURIComponent(pathname.substring(6)).toUpperCase();
+      const terms = await getTermsFromFirestore();
+      const foundTerm = terms.find((t: any) => t.code.toUpperCase() === code);
+      if (foundTerm) {
+        const categoryName = foundTerm.cat ? (foundTerm.cat.charAt(0).toUpperCase() + foundTerm.cat.slice(1)) : "Slang";
+        title = `${foundTerm.code} Meaning: What Does ${foundTerm.code} Mean? | whatsthatmean`;
+        desc = `What does ${foundTerm.code} stand for? It means "${foundTerm.full}". Learn its definition, category (${categoryName}), and see real-world texting examples like: "${foundTerm.ex || ""}"`;
+      }
+    }
+  } catch (err) {
+    console.error("Error generating SEO metadata:", err);
+  }
+
+  return { title, desc };
+}
+
+// Injects dynamic metadata tags in HTML head
+async function injectSeoMetadata(html: string, urlPath: string): Promise<string> {
+  const { title, desc } = await getSeoMetadata(urlPath);
+  
+  let updatedHtml = html;
+  
+  // Replace standard tags cleanly
+  updatedHtml = updatedHtml.replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`);
+  updatedHtml = updatedHtml.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i, `<meta name="description" content="${desc}" />`);
+  updatedHtml = updatedHtml.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${title}" />`);
+  updatedHtml = updatedHtml.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${desc}" />`);
+  
+  return updatedHtml;
+}
+
+// Helper to fetch Google Site Verification code from Firestore
 async function getGoogleSiteVerification() {
   try {
-    const res = await fetch("https://firestore.googleapis.com/v1/projects/ai-studio-applet-webapp-f78e7/databases/ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109/documents/site_settings/global");
-    if (!res.ok) return "";
-    const data = await res.json();
-    return data.fields?.googleSiteVerification?.stringValue || "";
+    const docRef = doc(firestoreDb, "site_settings", "global");
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data()?.googleSiteVerification || "";
+    }
+    return "";
   } catch (err) {
     console.error("Error fetching google-site-verification:", err);
     return "";
   }
 }
 
-export { getGoogleSiteVerification };
+export { getGoogleSiteVerification, injectSeoMetadata };
 
 // API endpoint to generate blog articles using Gemini
 app.post("/api/generate-article", async (req: any, res: any) => {
@@ -126,19 +236,21 @@ app.post("/api/generate-article", async (req: any, res: any) => {
     console.error("Gemini article generation error:", error);
     return res.status(500).json({ error: error.message || "Failed to generate article" });
   }
-});
-
-// Dynamic Sitemap API
+});// Dynamic Sitemap API
 app.get("/sitemap.xml", async (req, res) => {
   const domain = "https://whatsthatmean.com";
   const dateStr = new Date().toISOString().split("T")[0];
   
-  const blogs = await getBlogsFromFirestore();
+  // Fetch real-time blogs and terms from database concurrently
+  const [blogs, terms] = await Promise.all([
+    getBlogsFromFirestore(),
+    getTermsFromFirestore()
+  ]);
   
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   
-  // Core routes
+  // 1. Core routes
   const routes = ["", "/browse", "/quiz", "/blog"];
   routes.forEach(route => {
     xml += `  <url>\n`;
@@ -148,8 +260,27 @@ app.get("/sitemap.xml", async (req, res) => {
     xml += `    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n`;
     xml += `  </url>\n`;
   });
+
+  // 2. Emoji Category page (special primary tab)
+  xml += `  <url>\n`;
+  xml += `    <loc>${domain}/emoji</loc>\n`;
+  xml += `    <lastmod>${dateStr}</lastmod>\n`;
+  xml += `    <changefreq>daily</changefreq>\n`;
+  xml += `    <priority>0.9</priority>\n`;
+  xml += `  </url>\n`;
+
+  // 3. Other specific dictionary category pages
+  const categories = ["internet", "texting", "social", "business", "gaming", "military", "sports", "companies", "countries", "cities"];
+  categories.forEach(cat => {
+    xml += `  <url>\n`;
+    xml += `    <loc>${domain}/browse/${cat}</loc>\n`;
+    xml += `    <lastmod>${dateStr}</lastmod>\n`;
+    xml += `    <changefreq>weekly</changefreq>\n`;
+    xml += `    <priority>0.7</priority>\n`;
+    xml += `  </url>\n`;
+  });
   
-  // Blog routes (excluding drafts)
+  // 4. Blog routes (excluding drafts)
   blogs.forEach((blog: any) => {
     if (blog.draft) return;
     
@@ -162,6 +293,18 @@ app.get("/sitemap.xml", async (req, res) => {
     
     xml += `  <url>\n`;
     xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
+    xml += `    <lastmod>${dateStr}</lastmod>\n`;
+    xml += `    <changefreq>monthly</changefreq>\n`;
+    xml += `    <priority>0.6</priority>\n`;
+    xml += `  </url>\n`;
+  });
+
+  // 5. Slang terms and Emoji detail pages
+  terms.forEach((term: any) => {
+    if (!term.code) return;
+    
+    xml += `  <url>\n`;
+    xml += `    <loc>${domain}/term/${encodeURIComponent(term.code.toUpperCase().trim())}</loc>\n`;
     xml += `    <lastmod>${dateStr}</lastmod>\n`;
     xml += `    <changefreq>monthly</changefreq>\n`;
     xml += `    <priority>0.6</priority>\n`;
@@ -183,11 +326,17 @@ if (!process.env.VERCEL && process.env.NODE_ENV === "production") {
     try {
       const indexHtmlPath = path.join(distPath, "index.html");
       let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
+      
+      // Inject Google site verification meta tag
       const verificationCode = await getGoogleSiteVerification();
       if (verificationCode) {
         const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
         html = html.replace("<head>", `<head>\n    ${metaTag}`);
       }
+      
+      // Inject dynamic, server-side rendered SEO meta tags
+      html = await injectSeoMetadata(html, req.url);
+      
       res.send(html);
     } catch (err) {
       res.sendFile(path.join(distPath, "index.html"));

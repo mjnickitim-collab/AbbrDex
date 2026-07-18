@@ -57,41 +57,201 @@ export default function App() {
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
   const [quizMode, setQuizMode] = useState<"abbreviation" | "emoji">("abbreviation");
 
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (activeView !== "blog") {
       setSelectedBlogPost(null);
     }
   }, [activeView]);
 
-  // Dynamic Title & Meta description for SEO
-  useEffect(() => {
-    // If we're on the blog view and have selected a single post, BlogView component manages its own SEO title/meta tags
-    if (activeView === "blog" && selectedBlogPost) {
-      return;
+  // Parse the current URL path to set the matching React navigation states
+  const syncUrlToState = () => {
+    const pathname = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+    const search = searchParams.get("search") || "";
+
+    if (pathname === "/" || pathname === "/home" || pathname === "") {
+      setActiveView("home");
+      setSelectedBlogPost(null);
+      setSelectedTerm(null);
+    } else if (pathname === "/quiz") {
+      setActiveView("quiz");
+      setSelectedBlogPost(null);
+      setSelectedTerm(null);
+    } else if (pathname === "/blog") {
+      setActiveView("blog");
+      setSelectedBlogPost(null);
+      setSelectedTerm(null);
+    } else if (pathname.startsWith("/blog/")) {
+      const slug = pathname.substring(6);
+      setActiveView("blog");
+      setSelectedTerm(null);
+      if (blogs.length > 0) {
+        const foundBlog = blogs.find(b => {
+          const s = (b.title || "")
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-");
+          return s === slug;
+        });
+        if (foundBlog) {
+          setSelectedBlogPost(foundBlog);
+        }
+      }
+    } else if (pathname === "/emoji") {
+      setActiveView("browse");
+      setSelectedCategory("emoji");
+      setSearchQuery(search);
+      setSelectedBlogPost(null);
+      setSelectedTerm(null);
+    } else if (pathname.startsWith("/browse/")) {
+      const cat = pathname.substring(8);
+      setActiveView("browse");
+      setSelectedCategory(cat);
+      setSearchQuery(search);
+      setSelectedBlogPost(null);
+      setSelectedTerm(null);
+    } else if (pathname === "/browse") {
+      setActiveView("browse");
+      setSelectedCategory(null);
+      setSearchQuery(search);
+      setSelectedBlogPost(null);
+      setSelectedTerm(null);
+    } else if (pathname.startsWith("/term/")) {
+      const code = decodeURIComponent(pathname.substring(6)).toUpperCase();
+      // Keep background as browse
+      setActiveView("browse");
+      setSelectedCategory(null);
+      setSearchQuery("");
+      if (terms.length > 0) {
+        const foundTerm = terms.find(t => t.code.toUpperCase() === code);
+        if (foundTerm) {
+          setSelectedTerm(foundTerm);
+        }
+      }
     }
+  };
+
+  // Sync state changes back to the browser's URL address bar
+  useEffect(() => {
+    if (!isDbLoaded) return;
+
+    let newPath = "/";
+    const params = new URLSearchParams();
+
+    if (!isAdminMode) {
+      if (activeView === "home") {
+        newPath = "/";
+      } else if (activeView === "quiz") {
+        newPath = "/quiz";
+      } else if (activeView === "blog") {
+        if (selectedBlogPost) {
+          const slug = (selectedBlogPost.title || "")
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-");
+          newPath = `/blog/${slug}`;
+        } else {
+          newPath = "/blog";
+        }
+      } else if (activeView === "browse") {
+        if (selectedCategory === "emoji") {
+          newPath = "/emoji";
+        } else if (selectedCategory) {
+          newPath = `/browse/${selectedCategory}`;
+        } else {
+          newPath = "/browse";
+        }
+
+        if (searchQuery) {
+          params.set("search", searchQuery);
+        }
+      }
+
+      // Reflect current active details modal (e.g. /term/CODE) in the URL
+      if (selectedTerm) {
+        newPath = `/term/${encodeURIComponent(selectedTerm.code.toUpperCase())}`;
+      }
+    }
+
+    const queryStr = params.toString();
+    const finalUrl = newPath + (queryStr ? `?${queryStr}` : "");
+
+    if (window.location.pathname + window.location.search !== finalUrl) {
+      window.history.pushState(null, "", finalUrl);
+    }
+  }, [activeView, selectedCategory, searchQuery, selectedTerm, selectedBlogPost, isAdminMode, isDbLoaded]);
+
+  // Synchronize initial page-load URL path to React states once DB is loaded
+  useEffect(() => {
+    if (isDbLoaded) {
+      syncUrlToState();
+    }
+  }, [isDbLoaded]);
+
+  // Handle browser back and forward actions (popstate events)
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isDbLoaded) {
+        syncUrlToState();
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isDbLoaded, terms, blogs]);
+
+  // Dynamic client-side Title & Meta description for SEO
+  useEffect(() => {
+    if (!isDbLoaded) return;
 
     let title = "whatsthatmean | Ultimate Abbreviation, Acronym & Slang Dictionary";
     let desc = "Decode the world's abbreviations, modern chat acronyms, gaming shorthand, military codes, and business terminology. Take interactive quizzes and learn on whatsthatmean.";
 
-    switch (activeView) {
-      case "home":
-        title = "whatsthatmean | Home - Decode Chat, Gaming, Business & Military Slang";
-        desc = "Discover trending abbreviations and modern acronyms. Search our real-time slang dictionary and test your knowledge.";
-        break;
-      case "browse":
-        title = "Explore Dictionary | whatsthatmean - Find Abbreviations & Meanings";
-        desc = "Browse through hundreds of curated acronyms, digital shorthand, and slang meanings. Filter by category or search terms instantly.";
-        break;
-      case "quiz":
-        title = "Interactive Acronym Quiz | whatsthatmean - Test Your Slang Knowledge";
-        desc = "Think you know modern slang and business terminology? Challenge yourself with our challenging, adaptive abbreviation quizzes.";
-        break;
-      case "blog":
-        title = "Word Feed Blog | whatsthatmean - Insightful Slang Articles & Trends";
-        desc = "Stay up to date with deep-dives into modern internet culture, business acronym origins, and the evolution of digital shorthand.";
-        break;
-      default:
-        break;
+    if (selectedTerm) {
+      const categoryName = selectedTerm.cat ? (selectedTerm.cat.charAt(0).toUpperCase() + selectedTerm.cat.slice(1)) : "Slang";
+      title = `${selectedTerm.code} Meaning: What Does ${selectedTerm.code} Mean? | whatsthatmean`;
+      desc = `What does ${selectedTerm.code} stand for? It means "${selectedTerm.full}". Learn its definition, category (${categoryName}), and see real-world texting examples like: "${selectedTerm.ex || ""}"`;
+    } else if (activeView === "blog" && selectedBlogPost) {
+      title = selectedBlogPost.seoTitle || selectedBlogPost.title || title;
+      desc = selectedBlogPost.metaDescription || selectedBlogPost.excerpt || desc;
+    } else {
+      switch (activeView) {
+        case "home":
+          title = "whatsthatmean | Home - Decode Chat, Gaming, Business & Military Slang";
+          desc = "Discover trending abbreviations and modern acronyms. Search our real-time slang dictionary and test your knowledge.";
+          break;
+        case "browse":
+          if (selectedCategory === "emoji") {
+            title = "Emoji Meanings & Dictionary | whatsthatmean";
+            desc = "Browse modern emojis, their actual slang meanings, examples, and texting context in our ultimate real-time emoji dictionary.";
+          } else if (selectedCategory) {
+            const categoryName = selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
+            title = `${categoryName} Abbreviations & Meanings | whatsthatmean`;
+            desc = `Explore the best dictionary for ${categoryName} abbreviations, acronyms, and modern chat terms. Learn their meanings and real-world examples.`;
+          } else {
+            title = "Explore Dictionary | whatsthatmean - Find Abbreviations & Meanings";
+            desc = "Browse through hundreds of curated acronyms, digital shorthand, and slang meanings. Filter by category or search terms instantly.";
+          }
+          break;
+        case "quiz":
+          title = "Interactive Acronym Quiz | whatsthatmean - Test Your Slang Knowledge";
+          desc = "Think you know modern slang and business terminology? Challenge yourself with our challenging, adaptive abbreviation quizzes.";
+          break;
+        case "blog":
+          title = "Word Feed Blog | whatsthatmean - Insightful Slang Articles & Trends";
+          desc = "Stay up to date with deep-dives into modern internet culture, business acronym origins, and the evolution of digital shorthand.";
+          break;
+        default:
+          break;
+      }
     }
 
     document.title = title;
@@ -110,13 +270,7 @@ export default function App() {
     if (ogDescEl) {
       ogDescEl.setAttribute("content", desc);
     }
-  }, [activeView, selectedBlogPost]);
-  
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isAdminMode, setIsAdminMode] = useState(false);
-
-  const [loading, setLoading] = useState(false);
+  }, [activeView, selectedCategory, selectedTerm, selectedBlogPost, isDbLoaded]);
 
   // 1. Initial Seeding and Database Loading
   const loadDatabaseData = async () => {
@@ -201,60 +355,13 @@ export default function App() {
       if (!customEvent.detail || !customEvent.detail.path) return;
       
       const path = customEvent.detail.path;
-      
-      if (path === "/") {
-        setActiveView("home");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else if (path.startsWith("/browse")) {
-        // e.g. /browse?search=FOMO
-        let search = "";
-        try {
-          const urlObj = new URL(path, window.location.origin);
-          search = urlObj.searchParams.get("search") || "";
-        } catch (err) {
-          const match = path.match(/[?&]search=([^&]+)/);
-          if (match) search = decodeURIComponent(match[1]);
-        }
-        setSearchQuery(search);
-        setSelectedCategory(null);
-        setActiveView("browse");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else if (path.startsWith("/quiz")) {
-        setActiveView("quiz");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else if (path.startsWith("/blog")) {
-        // e.g. /blog or /blog/some-slug
-        const urlParts = path.split("/");
-        if (urlParts.length > 2 && urlParts[2]) {
-          const slug = urlParts[2];
-          // Find the blog with matching slug
-          const foundBlog = blogs.find(b => {
-            const s = (b.title || "")
-              .toLowerCase()
-              .trim()
-              .replace(/[^a-z0-9\s-]/g, "")
-              .replace(/\s+/g, "-")
-              .replace(/-+/g, "-");
-            return s === slug;
-          });
-          if (foundBlog) {
-            setSelectedBlogPost(foundBlog);
-            setActiveView("blog");
-          } else {
-            setSelectedBlogPost(null);
-            setActiveView("blog");
-          }
-        } else {
-          setSelectedBlogPost(null);
-          setActiveView("blog");
-        }
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
+      window.history.pushState(null, "", path);
+      syncUrlToState();
     };
     
     window.addEventListener("spa-navigate", handleSpaNavigate);
     return () => window.removeEventListener("spa-navigate", handleSpaNavigate);
-  }, [blogs]);
+  }, [blogs, terms, isDbLoaded]);
 
   // Handle Home Searches
   const handleHomeSearch = (query: string) => {

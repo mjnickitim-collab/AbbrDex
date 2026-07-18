@@ -2,7 +2,7 @@ import app from "./server";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
-import { getGoogleSiteVerification } from "./server";
+import { getGoogleSiteVerification, injectSeoMetadata } from "./server";
 
 const PORT = 3000;
 
@@ -32,6 +32,9 @@ async function startDevServer() {
         const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
         html = html.replace("<head>", `<head>\n    ${metaTag}`);
       }
+
+      // Inject dynamic, server-side rendered SEO meta tags
+      html = await injectSeoMetadata(html, url);
 
       // Transform index.html through Vite to inject HMR and module resolution scripts
       html = await vite.transformIndexHtml(url, html);
