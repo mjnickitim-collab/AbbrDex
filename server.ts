@@ -3,7 +3,7 @@ import path from "path";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc } from "firebase/firestore";
 
 dotenv.config();
@@ -13,42 +13,35 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Deriving __dirname in ESM to enable Vercel NFT file tracing
-import { fileURLToPath } from "url";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Using process.cwd() as the project root for both local, container, and serverless runtimes
+const projectRoot = process.cwd();
 
 // Safely load Firebase Config from local json with fallbacks for local and serverless runtimes
 let firebaseConfig: any;
 try {
-  // Try static path.join with __dirname which enables Vercel NFT to trace and bundle the file
-  const configPath = path.join(__dirname, "firebase-applet-config.json");
+  // Statically analyzeable by Vercel NFT using process.cwd()
+  const configPath = path.join(projectRoot, "firebase-applet-config.json");
   firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
 } catch (err) {
   try {
-    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+    const configPath = path.join(projectRoot, "../firebase-applet-config.json");
     firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
   } catch (err2) {
-    try {
-      const configPath = path.join(__dirname, "../firebase-applet-config.json");
-      firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    } catch (err3) {
-      console.error("Critical error: Failed to load Firebase config on server:", err3);
-      firebaseConfig = {
-        apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyBrYD4DhTBLEDblWXXzPyLEUlyOkMRyS4w",
-        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "ai-studio-applet-webapp-f78e7.firebaseapp.com",
-        projectId: process.env.VITE_FIREBASE_PROJECT_ID || "ai-studio-applet-webapp-f78e7",
-        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "ai-studio-applet-webapp-f78e7.firebasestorage.app",
-        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "717940026511",
-        appId: process.env.VITE_FIREBASE_APP_ID || "1:717940026511:web:f4aecc4e9a0132257914fa",
-        firestoreDatabaseId: process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109"
-      };
-    }
+    console.error("Critical error: Failed to load Firebase config on server, using hardcoded environment defaults:", err2);
+    firebaseConfig = {
+      apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyBrYD4DhTBLEDblWXXzPyLEUlyOkMRyS4w",
+      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "ai-studio-applet-webapp-f78e7.firebaseapp.com",
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID || "ai-studio-applet-webapp-f78e7",
+      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "ai-studio-applet-webapp-f78e7.firebasestorage.app",
+      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "717940026511",
+      appId: process.env.VITE_FIREBASE_APP_ID || "1:717940026511:web:f4aecc4e9a0132257914fa",
+      firestoreDatabaseId: process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109"
+    };
   }
 }
 
-// Initialize server-side Firestore instance
-const firebaseApp = initializeApp(firebaseConfig);
+// Initialize server-side Firebase instance safely avoiding duplicate app error in serverless contexts
+const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
 
 // Helper to lazily initialize Gemini SDK with telemetry User-Agent
