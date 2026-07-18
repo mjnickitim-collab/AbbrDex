@@ -13,10 +13,39 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Safely load Firebase Config from local json
-const firebaseConfig = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), "firebase-applet-config.json"), "utf8")
-);
+// Deriving __dirname in ESM to enable Vercel NFT file tracing
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Safely load Firebase Config from local json with fallbacks for local and serverless runtimes
+let firebaseConfig: any;
+try {
+  // Try static path.join with __dirname which enables Vercel NFT to trace and bundle the file
+  const configPath = path.join(__dirname, "firebase-applet-config.json");
+  firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+} catch (err) {
+  try {
+    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } catch (err2) {
+    try {
+      const configPath = path.join(__dirname, "../firebase-applet-config.json");
+      firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    } catch (err3) {
+      console.error("Critical error: Failed to load Firebase config on server:", err3);
+      firebaseConfig = {
+        apiKey: process.env.VITE_FIREBASE_API_KEY,
+        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.VITE_FIREBASE_APP_ID,
+        firestoreDatabaseId: process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID
+      };
+    }
+  }
+}
 
 // Initialize server-side Firestore instance
 const firebaseApp = initializeApp(firebaseConfig);
@@ -314,6 +343,7 @@ app.get("/sitemap.xml", async (req, res) => {
   xml += `</urlset>\n`;
   
   res.header("Content-Type", "application/xml");
+  res.header("Cache-Control", "public, max-age=0, must-revalidate");
   res.send(xml);
 });
 
