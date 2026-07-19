@@ -36,14 +36,12 @@ const initialAdSlots: AdSlot[] = [
 import Navbar from "./components/Navbar";
 import HomeView from "./components/HomeView";
 import AdPlaceholder from "./components/AdPlaceholder";
-
-// Optimize Speed: Lazy load secondary heavy views and portals
-const BrowseView = lazy(() => import("./components/BrowseView"));
-const QuizView = lazy(() => import("./components/QuizView"));
-const BlogView = lazy(() => import("./components/BlogView"));
-const AdminShell = lazy(() => import("./components/AdminShell"));
-const LoginModal = lazy(() => import("./components/LoginModal"));
-const TermDetailModal = lazy(() => import("./components/TermDetailModal"));
+import BrowseView from "./components/BrowseView";
+import QuizView from "./components/QuizView";
+import BlogView from "./components/BlogView";
+import AdminShell from "./components/AdminShell";
+import LoginModal from "./components/LoginModal";
+import TermDetailModal from "./components/TermDetailModal";
 
 import { Loader2, Sparkles, BookOpen } from "lucide-react";
 

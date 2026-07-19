@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Term, BlogPost, AdSlot, UserProfile } from "../types";
 import { CATEGORIES, TERMS } from "../data/seedData";
+import { CURATED_IMAGES, CuratedImage } from "../data/imagePool";
 import { 
   addTerm, 
   updateTerm, 
@@ -44,7 +45,10 @@ import {
   Check,
   Search,
   Smile,
-  X
+  X,
+  RefreshCw,
+  Calendar,
+  Clock
 } from "lucide-react";
 import { renderBlogPostContent } from "../utils/blogParser";
 
@@ -79,6 +83,7 @@ export default function AdminShell({
 
   // State for blog form
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [previewPost, setPreviewPost] = useState<BlogPost | null>(null);
   const [blogTitle, setBlogTitle] = useState("");
   const [blogCat, setBlogCat] = useState("internet");
   const [blogExcerpt, setBlogExcerpt] = useState("");
@@ -92,6 +97,110 @@ export default function AdminShell({
   const [aiKeyword, setAiKeyword] = useState("");
   const [generatingArticle, setGeneratingArticle] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Recommended Keywords state
+  const [recommendedKeywords, setRecommendedKeywords] = useState<string[]>([]);
+
+  // AI Image Picker Modal states
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageModalSearch, setImageModalSearch] = useState("");
+  const [imageModalTab, setImageModalTab] = useState("AI-Matched (추천)");
+  const [shuffleSeed, setShuffleSeed] = useState(0.5);
+
+  const handleShuffleModalPool = () => {
+    setShuffleSeed(Math.random());
+  };
+
+  // Filter and shuffle pool images for display in the picker
+  const displayImages = React.useMemo(() => {
+    let list = [...CURATED_IMAGES];
+
+    // Filter by search text if entered
+    if (imageModalSearch.trim() !== "") {
+      const query = imageModalSearch.toLowerCase().trim();
+      list = list.filter(img => 
+        img.alt.toLowerCase().includes(query) ||
+        img.category.toLowerCase().includes(query) ||
+        img.keywords.some(k => k.toLowerCase().includes(query))
+      );
+    } else if (imageModalTab === "AI-Matched (추천)") {
+      // Find keywords from blog text
+      const searchStr = `${blogTitle} ${blogExcerpt} ${blogBody} ${blogKeywords} ${blogCat}`.toLowerCase();
+      // Score each image based on matching keywords
+      const scored = list.map(img => {
+        let score = 0;
+        img.keywords.forEach(k => {
+          if (searchStr.includes(k.toLowerCase())) {
+            score += 1;
+          }
+        });
+        // Boost slightly if category matches blog category
+        if (blogCat && img.category.toLowerCase().includes(blogCat.toLowerCase())) {
+          score += 1.5;
+        }
+        return { img, score };
+      });
+      // Filter out scored = 0, sort by score descending
+      const matched = scored.filter(item => item.score > 0).sort((a, b) => b.score - a.score);
+      
+      if (matched.length > 0) {
+        list = matched.map(item => item.img);
+      } else {
+        // Fallback to all if no match
+        list = [...CURATED_IMAGES];
+      }
+    } else if (imageModalTab !== "All") {
+      list = list.filter(img => img.category === imageModalTab);
+    }
+
+    // Shuffle using the seed deterministically
+    return [...list].sort((a, b) => {
+      const hashA = Math.sin(a.url.length * 12.34 + shuffleSeed * 1000);
+      const hashB = Math.sin(b.url.length * 12.34 + shuffleSeed * 1000);
+      return hashA - hashB;
+    });
+  }, [imageModalSearch, imageModalTab, shuffleSeed, blogTitle, blogExcerpt, blogBody, blogKeywords, blogCat]);
+
+  const handleShuffleKeywords = React.useCallback(() => {
+    // A rich curated list of hottest global/worldwide trending topics across Tech, Pop-Culture, Memes, Work, and Lifestyle
+    const globalHotTrends = [
+      "AI Agents", "DeepSeek", "ChatGPT-5", "Sora Video AI", "Vision Pro", "AGI", "SpaceX Mars",
+      "GTA 6", "Elden Ring DLC", "LoL Worlds", "NewJeans", "Blackpink", "Squid Game 2",
+      "Rizz", "Sigma Meme", "Brain Rot", "Skibidi", "TikTok Trend", "Doomscrolling", "FOMO",
+      "YOLO", "갓생", "오운완", "중꺾마", "티라미수케익", "뇌절", "어쩔티비", "킹받네", "디토 감성",
+      "Quiet Quitting", "Side Hustle", "Gig Economy", "Workation", "Burnout Syndrome", "FIRE Movement",
+      "ESG Management", "Carbon Neutrality", "Creator Economy", "No-Code Development", "SaaS Growth"
+    ];
+
+    const localTrendingCodes = (terms || []).filter(t => t.trending).map(t => t.code);
+    const localAllCodes = (terms || []).map(t => t.code);
+
+    // Merge everything into a unique uppercase set of tags/keywords
+    const combinedPool = Array.from(new Set([
+      ...localTrendingCodes,
+      ...globalHotTrends,
+      ...localAllCodes
+    ])).filter(Boolean);
+
+    // Random shuffle
+    const shuffled = [...combinedPool].sort(() => 0.5 - Math.random());
+    // Take exactly 10
+    const selected = shuffled.slice(0, 10);
+    setRecommendedKeywords(selected);
+  }, [terms]);
+
+  useEffect(() => {
+    if (terms && terms.length > 0 && recommendedKeywords.length === 0) {
+      handleShuffleKeywords();
+    }
+  }, [terms, recommendedKeywords.length, handleShuffleKeywords]);
+
+  const handleAutoFillImage = () => {
+    setImageModalTab("AI-Matched (추천)");
+    setImageModalSearch("");
+    setShuffleSeed(Math.random()); // Auto-shuffle on every trigger
+    setIsImageModalOpen(true);
+  };
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(blogs.length / itemsPerPage) || 1;
@@ -1515,6 +1624,44 @@ Try writing your own content or edit this template using the helper buttons abov
                     )}
                   </button>
                 </div>
+
+                {/* Recommended Keywords Section */}
+                <div className="space-y-2.5 pt-2 border-t border-line/40">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink-soft flex items-center gap-1.5">
+                      🔥 추천 트렌드 키워드 (클릭하면 자동 입력):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleShuffleKeywords}
+                      className="text-xs text-indigo hover:text-indigo-dark font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                      title="키워드 새로고침"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> 새로고침
+                    </button>
+                  </div>
+                  
+                  {recommendedKeywords.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {recommendedKeywords.map((kw) => (
+                        <button
+                          key={kw}
+                          type="button"
+                          onClick={() => setAiKeyword(kw)}
+                          className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer duration-200
+                            ${aiKeyword === kw 
+                              ? "bg-indigo text-white border-indigo shadow-sm scale-105" 
+                              : "bg-paper text-ink border-line hover:border-indigo/50 hover:bg-indigo/5"
+                            }`}
+                        >
+                          #{kw}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-ink-soft italic">불러오는 중...</p>
+                  )}
+                </div>
               </div>
 
               {/* Published Articles List (1-column, paginated) */}
@@ -1551,7 +1698,15 @@ Try writing your own content or edit this template using the helper buttons abov
                               </div>
                               <p className="text-xs text-ink-soft line-clamp-2 leading-relaxed">{p.excerpt}</p>
                             </div>
-                            <div className="flex gap-2 md:flex-col justify-end md:w-32">
+                             <div className="flex gap-2 md:flex-col justify-end md:w-32">
+                              <button
+                                onClick={() => setPreviewPost(p)}
+                                className="btn btn-ghost btn-sm font-semibold border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                                title="이 블로그 글의 실제 레이아웃과 디자인으로 미리보기를 띄웁니다"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Preview</span>
+                              </button>
                               <button
                                 onClick={() => handleStartEditPost(p)}
                                 className="btn btn-ghost btn-sm font-semibold border-indigo text-indigo hover:bg-indigo hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
@@ -1892,8 +2047,17 @@ Try writing your own content or edit this template using the helper buttons abov
 
                     {/* Feature Image Section */}
                     <div className="pt-4 border-t border-line/60 space-y-4">
-                      <div className="font-display font-semibold text-xs text-ink-soft uppercase tracking-wider font-mono flex items-center gap-1.5">
-                        <span>🖼️</span> <span>Feature Image (대표 이미지)</span>
+                      <div className="font-display font-semibold text-xs text-ink-soft uppercase tracking-wider font-mono flex items-center justify-between gap-1.5 w-full">
+                        <span className="flex items-center gap-1.5">🖼️ <span>Feature Image (대표 이미지)</span></span>
+                        <button
+                          type="button"
+                          onClick={handleAutoFillImage}
+                          className="px-2.5 py-1 rounded-lg bg-indigo/5 text-indigo hover:bg-indigo hover:text-white border border-indigo/10 text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                          title="글 제목과 내용을 바탕으로 관련성 높은 고화질 이미지와 대체 텍스트를 자동 지정합니다."
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>AI 이미지 자동 추천</span>
+                        </button>
                       </div>
 
                       <div className="field flex flex-col">
@@ -2372,6 +2536,288 @@ Try writing your own content or edit this template using the helper buttons abov
                 className="btn btn-solid flex-1 py-2.5 font-semibold text-xs bg-indigo hover:bg-indigo-dark text-white cursor-pointer disabled:opacity-50"
               >
                 Insert Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. AI Image Recommendation & Search Picker Modal */}
+      {isImageModalOpen && (
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4">
+          <div className="modal-content bg-card border-1.5 border-line rounded-2xl w-full max-w-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+            {/* Header */}
+            <div className="p-5 border-b border-line flex items-center justify-between bg-paper/30">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo animate-pulse" />
+                <h3 className="font-display font-bold text-lg text-ink">AI 이미지 자동 추천 및 검색</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsImageModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-line text-ink-soft hover:text-ink transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Main content split */}
+            <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6 text-left">
+              {/* Top Search bar & Tabs */}
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-soft" />
+                  <input
+                    type="text"
+                    placeholder="원하는 검색어를 입력하거나 아래 추천 카테고리를 선택하세요..."
+                    value={imageModalSearch}
+                    onChange={(e) => {
+                      setImageModalSearch(e.target.value);
+                      if (imageModalTab === "AI-Matched (추천)") {
+                        setImageModalTab("All");
+                      }
+                    }}
+                    className="w-full pl-10 pr-4 py-2.5 border border-line rounded-xl bg-paper text-sm text-ink focus:outline-none focus:border-indigo transition-all font-medium"
+                  />
+                  {imageModalSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setImageModalSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-ink-soft hover:text-ink hover:bg-line rounded"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Category Filters */}
+                <div className="flex flex-wrap gap-1.5 pb-1">
+                  {["AI-Matched (추천)", "All", "AI & Tech", "Gaming", "Work & Productivity", "Finance & FIRE", "Lifestyle", "Trending & Emojis"].map((tab) => {
+                    const isActive = imageModalTab === tab;
+                    return (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => {
+                          setImageModalTab(tab);
+                          setImageModalSearch("");
+                          if (tab === "All") {
+                            setShuffleSeed(Math.random());
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition cursor-pointer flex items-center gap-1
+                          ${isActive 
+                            ? "bg-indigo text-white border-indigo shadow-sm" 
+                            : "bg-paper/40 text-ink border-line hover:border-ink hover:bg-paper"}`}
+                      >
+                        {tab === "AI-Matched (추천)" && <Sparkles className="w-3 h-3 text-current animate-pulse" />}
+                        <span>{tab}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Grid content */}
+              <div className="space-y-4 flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-ink-soft uppercase tracking-wide">
+                    {imageModalTab === "AI-Matched (추천)" ? "블로그 본문 분석 추천 이미지" : `${imageModalTab} 이미지 결과`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleShuffleModalPool}
+                    className="flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark hover:underline transition cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>순서 섞기 / 새로추천</span>
+                  </button>
+                </div>
+
+                {displayImages.length === 0 ? (
+                  <div className="p-12 text-center border-2 border-dashed border-line rounded-xl bg-paper/20">
+                    <p className="text-sm text-ink-soft font-medium">검색 결과나 추천 이미지 조건에 맞는 이미지가 없습니다.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageModalSearch("");
+                        setImageModalTab("All");
+                      }}
+                      className="mt-3 text-xs font-bold text-indigo hover:underline cursor-pointer"
+                    >
+                      전체 이미지 보기
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {displayImages.map((img) => (
+                      <button
+                        key={img.id}
+                        type="button"
+                        onClick={() => {
+                          setBlogImageUrl(img.url);
+                          setBlogImageAlt(img.alt);
+                          setIsImageModalOpen(false);
+                        }}
+                        className="group text-left border border-line hover:border-indigo bg-paper/30 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all cursor-pointer flex flex-col relative h-[155px]"
+                      >
+                        <div className="relative w-full h-[105px] bg-paper overflow-hidden">
+                          <img
+                            src={img.url}
+                            alt={img.alt}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-350"
+                          />
+                          <div className="absolute top-1.5 right-1.5 bg-indigo text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider backdrop-blur-xs font-mono">
+                            {img.category}
+                          </div>
+                        </div>
+                        <div className="p-2 flex-1 flex items-center justify-between gap-1 border-t border-line bg-paper/50 overflow-hidden">
+                          <span className="text-[10px] font-medium text-ink line-clamp-2 leading-snug pr-3">
+                            {img.alt}
+                          </span>
+                          <span className="shrink-0 w-5 h-5 rounded-full bg-indigo/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Check className="w-3 h-3 text-indigo" />
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-line bg-paper/30 flex justify-between items-center text-xs text-ink-soft">
+              <span>원하는 이미지를 클릭하면 해당 고화질 URL과 대체텍스트가 즉시 입력됩니다.</span>
+              <button
+                type="button"
+                onClick={() => setIsImageModalOpen(false)}
+                className="px-4 py-2 border border-line rounded-lg hover:bg-line text-ink font-bold transition cursor-pointer"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BLOG POST DETAIL PREVIEW MODAL */}
+      {previewPost && (
+        <div className="overlay" onClick={() => setPreviewPost(null)}>
+          <div 
+            className="modal relative max-w-3xl w-full bg-card p-6 md:p-8 rounded-2xl border border-line shadow-2xl flex flex-col space-y-6 overflow-hidden max-h-[90vh] animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-line">
+              <div className="text-left space-y-1.5 pr-8">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-indigo/10 text-indigo text-[10px] uppercase font-mono">
+                    {CATEGORIES.find(c => c.id === previewPost.cat)?.name || "INTERNET & CHAT"}
+                  </span>
+                  {previewPost.draft && (
+                    <span className="px-2.5 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 text-[10px]">
+                      임시저장 (Draft)
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-display font-bold text-xl md:text-2xl text-ink leading-tight">
+                  {previewPost.title}
+                </h3>
+              </div>
+              
+              <button
+                onClick={() => setPreviewPost(null)}
+                className="text-ink-soft hover:text-ink p-1.5 hover:bg-line/40 rounded-lg transition cursor-pointer shrink-0"
+                title="닫기"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto pr-2 space-y-5 text-left custom-scrollbar">
+              {/* Feature Image */}
+              {previewPost.imageUrl && (
+                <div className="rounded-xl overflow-hidden border border-line bg-paper/40">
+                  <img
+                    src={previewPost.imageUrl}
+                    alt={previewPost.imageAlt || previewPost.title}
+                    className="w-full h-auto max-h-[300px] object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  {previewPost.imageAlt && (
+                    <div className="px-4 py-2 bg-paper/80 border-t border-line text-center text-[10px] text-ink-soft italic font-medium">
+                      대체 텍스트(Alt): {previewPost.imageAlt}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Meta Stats Panel */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-paper/40 p-4 rounded-xl border border-line/60 text-xs font-mono">
+                <div className="space-y-0.5">
+                  <span className="text-[9px] text-ink-soft uppercase font-bold tracking-wider block">발행일자</span>
+                  <span className="text-ink font-semibold flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-indigo/60" /> {previewPost.date}
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-[9px] text-ink-soft uppercase font-bold tracking-wider block">읽기 시간</span>
+                  <span className="text-ink font-semibold flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo/60" /> {Math.ceil((previewPost.body || "").length / 400) || 1}분 분량
+                  </span>
+                </div>
+                <div className="space-y-0.5 col-span-2">
+                  <span className="text-[9px] text-ink-soft uppercase font-bold tracking-wider block">검색 키워드 (Keywords)</span>
+                  <span className="text-ink font-semibold block truncate" title={previewPost.keywords || "없음"}>
+                    {previewPost.keywords || "지정 안 됨"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Excerpt */}
+              {previewPost.excerpt && (
+                <div className="bg-paper p-4 rounded-xl border-l-4 border-indigo bg-indigo/[0.02]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo block mb-1">Excerpt (요약)</span>
+                  <p className="text-xs text-ink leading-relaxed font-medium">
+                    {previewPost.excerpt}
+                  </p>
+                </div>
+              )}
+
+              {/* Rendered Body */}
+              <div className="markdown-body text-sm leading-relaxed text-ink pt-2">
+                {renderBlogPostContent(previewPost.body, adSlots)}
+              </div>
+
+              {/* SEO Specs Sidebar Inside Modal */}
+              <div className="pt-4 border-t border-line space-y-2.5">
+                <div className="font-display font-semibold text-xs text-ink-soft uppercase tracking-wider font-mono">
+                  🔍 SEO 메타데이터 정보
+                </div>
+                <div className="text-[11px] space-y-1 bg-paper/50 p-3 rounded-lg border border-line/40 font-mono">
+                  <div>
+                    <span className="text-ink-soft font-bold">SEO Title:</span>{" "}
+                    <span className="text-ink">{previewPost.seoTitle || "기본 타이틀 적용"}</span>
+                  </div>
+                  <div>
+                    <span className="text-ink-soft font-bold">Meta Description:</span>{" "}
+                    <span className="text-ink">{previewPost.metaDescription || "지정 안 됨 (기본 요약문 사용)"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="pt-4 border-t border-line flex justify-end">
+              <button
+                type="button"
+                onClick={() => setPreviewPost(null)}
+                className="btn btn-solid px-6 py-2 bg-indigo hover:bg-indigo-dark text-white font-semibold text-xs cursor-pointer shadow-sm"
+              >
+                닫기
               </button>
             </div>
           </div>

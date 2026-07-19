@@ -115,11 +115,6 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
                 className="w-full h-auto max-h-[380px] object-cover"
                 referrerPolicy="no-referrer"
               />
-              {selectedPost.imageAlt && (
-                <div className="bg-paper/50 px-4 py-2 text-center text-[11px] text-ink-soft italic border-t border-line/60">
-                  {selectedPost.imageAlt}
-                </div>
-              )}
             </div>
           )}
 

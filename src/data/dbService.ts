@@ -328,6 +328,8 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
       metaDescription: data.metaDescription || "",
       keywords: data.keywords || "",
       draft: data.draft || false,
+      imageUrl: data.imageUrl || "",
+      imageAlt: data.imageAlt || "",
     };
   }) as BlogPost[];
 }
