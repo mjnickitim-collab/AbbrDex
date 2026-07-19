@@ -10,23 +10,27 @@ import {
   fetchUserProfile 
 } from "./data/dbService";
 import { Term, BlogPost, AdSlot, UserProfile } from "./types";
-import { TERMS, BLOG_SEED, AD_SLOTS } from "./data/seedData";
+// Define lightweight initial state fallbacks to achieve near-zero blocking time and tiny initial JS bundle size
+const initialTerms: Term[] = [
+  { id: "init-1", code: "FYI", full: "For your information", cat: "internet", ex: "FYI, the meeting moved to 3pm.", trending: true },
+  { id: "init-2", code: "GG", full: "Good game", cat: "gaming", ex: "GG, well played everyone!", trending: true },
+  { id: "init-3", code: "ASAP", full: "As soon as possible", cat: "internet", ex: "Please send me the report ASAP.", trending: true },
+  { id: "init-4", code: "FOMO", full: "Fear of missing out", cat: "social", ex: "I bought the ticket due to FOMO.", trending: true },
+  { id: "init-5", code: "SNAFU", full: "Situation normal: all fouled up", cat: "military", ex: "The system crashed again, a total SNAFU.", trending: true },
+  { id: "init-6", code: "HMU", full: "Hit me up", cat: "texting", ex: "HMU when you get to the mall.", trending: true },
+  { id: "init-7", code: "WFH", full: "Work from home", cat: "business", ex: "I love WFH on Fridays.", trending: true },
+  { id: "init-8", code: "TBH", full: "To be honest", cat: "internet", ex: "TBH I forgot we had a call.", trending: true }
+];
 
-const initialTerms: Term[] = TERMS.map((t, idx) => ({
-  id: `seed-term-${idx}`,
-  ...t,
-  trending: ["FOMO", "GG", "ASAP", "HMU", "SNAFU", "DM", "WFH", "POV"].includes(t.code)
-}));
+const initialBlogs: BlogPost[] = [
+  { id: "init-b1", title: "Modern Slang Decoded", excerpt: "An introduction to internet abbreviations.", body: "", cat: "internet", date: "Just now", draft: false, keywords: "slang, modern, chat", metaDescription: "An introduction to internet abbreviations.", seoTitle: "Modern Slang Decoded" }
+];
 
-const initialBlogs: BlogPost[] = BLOG_SEED.map((b, idx) => ({
-  id: `seed-blog-${idx}`,
-  ...b
-}));
-
-const initialAdSlots: AdSlot[] = AD_SLOTS.map((a, idx) => ({
-  id: `seed-ad-${idx}`,
-  ...a
-}));
+const initialAdSlots: AdSlot[] = [
+  { id: "init-ad1", name: "Header banner", desc: "Top of the page banner", on: false, network: "adsense" },
+  { id: "init-ad2", name: "Sidebar", desc: "Sidebar ad space", on: false, network: "adsense" },
+  { id: "init-ad3", name: "Between quiz questions", desc: "Ad shown between quiz rounds", on: false, network: "adsense" }
+];
 
 // Components
 import Navbar from "./components/Navbar";

@@ -15,12 +15,14 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { Term, BlogPost, AdSlot, UserProfile } from "../types";
-import { TERMS, BLOG_SEED, AD_SLOTS, MOCK_USERS } from "./seedData";
 
 // Helper to seed database if empty
 export async function seedDatabaseIfEmpty(): Promise<boolean> {
   let didChange = false;
   try {
+    // Dynamic import to keep massive seedData out of the initial bundle
+    const { TERMS, BLOG_SEED, AD_SLOTS, MOCK_USERS } = await import("./seedData");
+
     // 1. Seed Ad Slots
     const adSlotsCol = collection(db, "ad_slots");
     const adSnapshot = await getDocs(adSlotsCol);
