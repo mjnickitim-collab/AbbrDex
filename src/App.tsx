@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import { 
@@ -31,13 +31,15 @@ const initialAdSlots: AdSlot[] = AD_SLOTS.map((a, idx) => ({
 // Components
 import Navbar from "./components/Navbar";
 import HomeView from "./components/HomeView";
-import BrowseView from "./components/BrowseView";
-import QuizView from "./components/QuizView";
-import BlogView from "./components/BlogView";
-import AdminShell from "./components/AdminShell";
-import LoginModal from "./components/LoginModal";
-import TermDetailModal from "./components/TermDetailModal";
 import AdPlaceholder from "./components/AdPlaceholder";
+
+// Optimize Speed: Lazy load secondary heavy views and portals
+const BrowseView = lazy(() => import("./components/BrowseView"));
+const QuizView = lazy(() => import("./components/QuizView"));
+const BlogView = lazy(() => import("./components/BlogView"));
+const AdminShell = lazy(() => import("./components/AdminShell"));
+const LoginModal = lazy(() => import("./components/LoginModal"));
+const TermDetailModal = lazy(() => import("./components/TermDetailModal"));
 
 import { Loader2, Sparkles, BookOpen } from "lucide-react";
 
@@ -425,14 +427,20 @@ export default function App() {
       {/* Active Body Canvas rendering */}
       <main className="flex-1">
         {isAdminMode ? (
-          <AdminShell 
-            terms={terms}
-            blogs={blogs}
-            adSlots={adSlots}
-            users={users}
-            onRefreshData={handleRefreshData}
-            currentUser={currentUser}
-          />
+          <Suspense fallback={
+            <div className="flex flex-col items-center justify-center min-h-[400px] bg-paper">
+              <Loader2 className="w-8 h-8 text-indigo animate-spin" />
+            </div>
+          }>
+            <AdminShell 
+              terms={terms}
+              blogs={blogs}
+              adSlots={adSlots}
+              users={users}
+              onRefreshData={handleRefreshData}
+              currentUser={currentUser}
+            />
+          </Suspense>
         ) : (
           <div className="flex">
             {/* Main view container */}
@@ -466,46 +474,52 @@ export default function App() {
                 </>
               )}
 
-              {activeView === "browse" && (
-                <div className="flex gap-6 max-w-[1080px] mx-auto">
-                  <div className="flex-1">
-                    <BrowseView 
+              <Suspense fallback={
+                <div className="flex flex-col items-center justify-center min-h-[400px] bg-paper">
+                  <Loader2 className="w-8 h-8 text-indigo animate-spin" />
+                </div>
+              }>
+                {activeView === "browse" && (
+                  <div className="flex gap-6 max-w-[1080px] mx-auto">
+                    <div className="flex-1">
+                      <BrowseView 
+                        terms={terms}
+                        initialCategory={selectedCategory}
+                        initialQuery={searchQuery}
+                        onSelectTerm={setSelectedTerm}
+                      />
+                    </div>
+                    {/* Sidebar Ad Placement (Shown in browse section if toggled on) */}
+                    <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
+                  </div>
+                )}
+
+                {activeView === "quiz" && (
+                  <>
+                    <QuizView 
                       terms={terms}
-                      initialCategory={selectedCategory}
-                      initialQuery={searchQuery}
-                      onSelectTerm={setSelectedTerm}
+                      currentUser={currentUser}
+                      initialMode={quizMode}
                     />
-                  </div>
-                  {/* Sidebar Ad Placement (Shown in browse section if toggled on) */}
-                  <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
-                </div>
-              )}
+                    {/* Quiz Ad Placement (Shown during quiz questions if toggled on) */}
+                    <AdPlaceholder slotName="Between quiz questions" adSlots={adSlots} isDbLoaded={isDbLoaded} />
+                  </>
+                )}
 
-              {activeView === "quiz" && (
-                <>
-                  <QuizView 
-                    terms={terms}
-                    currentUser={currentUser}
-                    initialMode={quizMode}
-                  />
-                  {/* Quiz Ad Placement (Shown during quiz questions if toggled on) */}
-                  <AdPlaceholder slotName="Between quiz questions" adSlots={adSlots} isDbLoaded={isDbLoaded} />
-                </>
-              )}
-
-              {activeView === "blog" && (
-                <div className="flex gap-6 max-w-[1080px] mx-auto">
-                  <div className="flex-1">
-                    <BlogView 
-                      posts={blogs.filter(b => !b.draft)} 
-                      initialSelectedPost={selectedBlogPost}
-                      onCloseSelectedPost={() => setSelectedBlogPost(null)}
-                    />
+                {activeView === "blog" && (
+                  <div className="flex gap-6 max-w-[1080px] mx-auto">
+                    <div className="flex-1">
+                      <BlogView 
+                        posts={blogs.filter(b => !b.draft)} 
+                        initialSelectedPost={selectedBlogPost}
+                        onCloseSelectedPost={() => setSelectedBlogPost(null)}
+                      />
+                    </div>
+                    {/* Sidebar Ad Placement (Shown in blog section if toggled on) */}
+                    <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
                   </div>
-                  {/* Sidebar Ad Placement (Shown in blog section if toggled on) */}
-                  <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
-                </div>
-              )}
+                )}
+              </Suspense>
             </div>
           </div>
         )}
@@ -530,17 +544,19 @@ export default function App() {
       )}
 
       {/* Auth Login Dialog popup */}
-      <LoginModal 
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onLoginSuccess={(profile) => setCurrentUser(profile)}
-      />
+      <Suspense fallback={null}>
+        <LoginModal 
+          isOpen={isLoginOpen}
+          onClose={() => setIsLoginOpen(false)}
+          onLoginSuccess={(profile) => setCurrentUser(profile)}
+        />
 
-      {/* Slang term details popup drawer */}
-      <TermDetailModal 
-        term={selectedTerm}
-        onClose={() => setSelectedTerm(null)}
-      />
+        {/* Slang term details popup drawer */}
+        <TermDetailModal 
+          term={selectedTerm}
+          onClose={() => setSelectedTerm(null)}
+        />
+      </Suspense>
     </div>
   );
 }

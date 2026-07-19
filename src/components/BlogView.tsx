@@ -185,6 +185,7 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
                     <img
                       src={post.imageUrl}
                       alt={post.imageAlt || post.title}
+                      loading="lazy"
                       className="w-full h-full object-cover transition duration-300 hover:scale-105"
                       referrerPolicy="no-referrer"
                     />

@@ -73,6 +73,7 @@ export function renderBlogPostContent(body: string, adSlots?: AdSlot[]): React.R
                 <img 
                   src={url} 
                   alt={alt} 
+                  loading="lazy"
                   referrerPolicy="no-referrer"
                   className="w-full h-auto max-h-[420px] object-contain rounded-lg" 
                 />
@@ -175,6 +176,7 @@ function parseInlineStyles(text: string): React.ReactNode {
             <img 
               src={url} 
               alt={label} 
+              loading="lazy"
               referrerPolicy="no-referrer"
               className="max-w-full h-auto max-h-[300px] rounded-lg object-contain border border-line" 
             />
