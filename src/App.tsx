@@ -409,6 +409,9 @@ export default function App() {
               setSelectedCategory(null);
               setSearchQuery("");
             }
+            if (view === "blog") {
+              setSelectedBlogPost(null);
+            }
             setActiveView(view);
           }
         }}

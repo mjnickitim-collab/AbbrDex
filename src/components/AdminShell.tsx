@@ -91,6 +91,19 @@ export default function AdminShell({
   const [blogDraft, setBlogDraft] = useState(false);
   const [aiKeyword, setAiKeyword] = useState("");
   const [generatingArticle, setGeneratingArticle] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(blogs.length / itemsPerPage) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [blogs.length, totalPages, currentPage]);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedBlogs = blogs.slice(startIndex, startIndex + itemsPerPage);
 
   // Link Insertion Modal States
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -962,20 +975,7 @@ Try writing your own content or edit this template using the helper buttons abov
               <p>Everything you edit here updates Firestore collections in real-time. Slang definitions added by you instantly sync with visitors, allowing real-time decentralized updates!</p>
             </div>
 
-            {/* Database Admin Tools */}
-            <div className="bg-card border-1.5 border-line rounded-xl p-6 shadow-sm space-y-4">
-              <div className="font-display font-bold text-lg text-ink">Database Administration</div>
-              <p className="text-xs text-ink-soft leading-relaxed">
-                Add 50 slang terms per category automatically. This will empty the current "terms" collection and import a fresh, highly diverse set of 300 slang terms categorized under Internet, Texting, Social Media, Business, Gaming, and Military.
-              </p>
-              <button
-                onClick={handleResetTerms}
-                disabled={isSeeding}
-                className="btn btn-solid px-6 py-3 font-semibold text-xs flex items-center gap-2"
-              >
-                {isSeeding ? "Seeding Database..." : "Force Seed 300 Terms (50 per category)"}
-              </button>
-            </div>
+
 
             {/* Google Search Console & Dynamic Sitemap Suite */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1469,59 +1469,150 @@ Try writing your own content or edit this template using the helper buttons abov
               <p className="sub text-sm text-ink-soft mt-1">Write new feature articles or delete old ones from the blog list.</p>
             </div>
 
-            <div className="admin-two-col grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Left Column (AI Generator + Publisher Form) */}
-              <div className="lg:col-span-7 space-y-6">
-                
-                {/* AI Blog Article Generator */}
-                <div className="admin-card bg-card border border-line rounded-xl p-6 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo animate-pulse" />
-                    <div className="font-display font-bold text-lg text-ink">AI Blog Article Generator (Gemini 3.5)</div>
-                  </div>
-                  <p className="text-xs text-ink-soft leading-relaxed">
-                    원하는 키워드 또는 주제를 입력하고 생성 버튼을 누르시면, 구글 검색(SEO) 최적화에 특화된 고품질 블로그 기사가 자동으로 생성됩니다. 
-                    생성된 글은 아래 작성 양식에 자동으로 로드되며 기본적으로 <strong>임시저장(Draft)</strong> 상태로 설정됩니다.
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="예: 'Gen Z slang words', '어쩔티비 뜻', '직장인 비즈니스 영어'"
-                      value={aiKeyword}
-                      onChange={(e) => setAiKeyword(e.target.value)}
-                      className="flex-1 border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo"
-                      disabled={generatingArticle}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleGenerateArticle();
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleGenerateArticle}
-                      disabled={generatingArticle}
-                      className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-5 py-3 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
-                    >
-                      {generatingArticle ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>생성 중...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4" />
-                          <span>Article Generate</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+            <div className="space-y-6 max-w-4xl mx-auto">
+              
+              {/* AI Blog Article Generator */}
+              <div className="admin-card bg-card border border-line rounded-xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-indigo animate-pulse" />
+                  <div className="font-display font-bold text-lg text-ink">AI Blog Article Generator (Gemini 3.5)</div>
                 </div>
+                <p className="text-xs text-ink-soft leading-relaxed">
+                  원하는 키워드 또는 주제를 입력하고 생성 버튼을 누르시면, 구글 검색(SEO) 최적화에 특화된 고품질 블로그 기사가 자동으로 생성됩니다. 
+                  생성된 글은 아래 작성 양식에 자동으로 로드되며 기본적으로 <strong>임시저장(Draft)</strong> 상태로 설정됩니다.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="예: 'Gen Z slang words', '어쩔티비 뜻', '직장인 비즈니스 영어'"
+                    value={aiKeyword}
+                    onChange={(e) => setAiKeyword(e.target.value)}
+                    className="flex-1 border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo"
+                    disabled={generatingArticle}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleGenerateArticle();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGenerateArticle}
+                    disabled={generatingArticle}
+                    className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-5 py-3 font-semibold text-xs flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    {generatingArticle ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>생성 중...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Article Generate</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
 
-                {/* Publisher Form */}
-                <div id="blog-publisher-form" className={`admin-card bg-card border-1.5 rounded-xl p-6 shadow-sm space-y-4 transition-all duration-300
-                  ${editingPost ? "border-indigo shadow-md ring-1 ring-indigo/20 bg-indigo/5" : "border-line"}`}>
+              {/* Published Articles List (1-column, paginated) */}
+              <div className="admin-card bg-card border border-line rounded-xl p-6 shadow-sm space-y-4">
+                <div className="font-display font-bold text-lg text-ink">Existing publications ({blogs.length})</div>
+                
+                {blogs.length === 0 ? (
+                  <p className="text-xs text-ink-soft">No articles published yet.</p>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      {paginatedBlogs.map((p) => {
+                        const postCategory = CATEGORIES.find(c => c.id === p.cat) || CATEGORIES.find(c => c.id === 'internet');
+                        return (
+                          <div key={p.id || p.title} className="bg-paper border border-line rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+                            <div className="flex-1 space-y-2">
+                              <div className="font-display font-bold text-base text-ink leading-tight">{p.title}</div>
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="text-ink-soft font-medium">{p.date}</span>
+                                <span className="w-1 h-1 rounded-full bg-line" />
+                                <span className="px-2.5 py-0.5 rounded-full font-bold bg-indigo/5 text-indigo border border-indigo/10 text-[10px]">
+                                  {postCategory?.name || "Internet & chat"}
+                                </span>
+                                <span className="w-1 h-1 rounded-full bg-line" />
+                                {p.draft ? (
+                                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 text-[10px]">
+                                    Draft (임시저장)
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px]">
+                                    Published (발행됨)
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-ink-soft line-clamp-2 leading-relaxed">{p.excerpt}</p>
+                            </div>
+                            <div className="flex gap-2 md:flex-col justify-end md:w-32">
+                              <button
+                                onClick={() => handleStartEditPost(p)}
+                                className="btn btn-ghost btn-sm font-semibold border-indigo text-indigo hover:bg-indigo hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => p.id && handleDeletePost(p.id)}
+                                className="btn btn-ghost btn-sm font-semibold border-coral text-coral hover:bg-coral hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-1.5 mt-6 pt-4 border-t border-line/60">
+                        <button
+                          type="button"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          className="px-3 py-1.5 rounded-lg border border-line text-xs font-semibold text-ink hover:bg-line/20 disabled:opacity-40 transition cursor-pointer"
+                        >
+                          Previous
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
+                          <button
+                            key={pNum}
+                            type="button"
+                            onClick={() => setCurrentPage(pNum)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer
+                              ${currentPage === pNum 
+                                ? "bg-indigo text-white border border-indigo" 
+                                : "border border-line text-ink hover:bg-line/20"
+                              }`}
+                          >
+                            {pNum}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          className="px-3 py-1.5 rounded-lg border border-line text-xs font-semibold text-ink hover:bg-line/20 disabled:opacity-40 transition cursor-pointer"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Publisher Form */}
+              <div id="blog-publisher-form" className={`admin-card bg-card border-1.5 rounded-xl p-6 shadow-sm space-y-4 transition-all duration-300
+                ${editingPost ? "border-indigo shadow-md ring-1 ring-indigo/20 bg-indigo/5" : "border-line"}`}>
                 <div className="flex items-center justify-between border-b border-line pb-2">
                   <div className="font-display font-bold text-lg text-ink">
                     {editingPost ? (
@@ -1873,57 +1964,7 @@ Try writing your own content or edit this template using the helper buttons abov
                   </div>
                 </form>
               </div>
-              </div>
 
-              {/* Published Articles List (Right) */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="font-display font-bold text-lg text-ink">Existing publications ({blogs.length})</div>
-                
-                <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-1">
-                  {blogs.map((p) => {
-                    const postCategory = CATEGORIES.find(c => c.id === p.cat) || CATEGORIES.find(c => c.id === 'internet');
-                    return (
-                      <div key={p.id || p.title} className="admin-card bg-card border-1.5 border-line rounded-xl p-5 shadow-sm space-y-3 flex flex-col justify-between">
-                        <div>
-                          <div className="font-display font-bold text-base text-ink line-clamp-1">{p.title}</div>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                            <span className="text-[11px] font-semibold text-ink-soft">{p.date}</span>
-                            <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-indigo/5 text-indigo border border-indigo/10">
-                              {postCategory?.name || "Internet & chat"}
-                            </span>
-                            {p.draft ? (
-                              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                Draft (임시저장)
-                              </span>
-                            ) : (
-                              <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                Published (발행됨)
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-ink-soft mt-2 line-clamp-2">{p.excerpt}</p>
-                        </div>
-                        <div className="flex gap-2.5 mt-2.5">
-                          <button
-                            onClick={() => handleStartEditPost(p)}
-                            className="btn btn-ghost btn-sm font-semibold border-indigo text-indigo hover:bg-indigo hover:text-white py-1.5 flex items-center justify-center gap-1.5 flex-1 cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            onClick={() => p.id && handleDeletePost(p.id)}
-                            className="btn btn-ghost btn-sm font-semibold border-coral text-coral hover:bg-coral hover:text-white py-1.5 flex items-center justify-center gap-1.5 flex-1 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           </div>
         )}

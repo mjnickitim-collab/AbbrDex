@@ -13,6 +13,21 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// SEO 308 Redirect Middleware for non-canonical domains (e.g. Cloud Run .run.app URL)
+app.use((req, res, next) => {
+  const host = req.headers.host || "";
+  const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
+  const isPreview = host.includes("aistudio") || host.includes("google");
+  const isCanonical = host === "whatsthatmean.com" || host === "www.whatsthatmean.com";
+
+  if (!isLocal && !isPreview && !isCanonical) {
+    // 308 Permanent Redirect to canonical domain
+    console.log(`Redirecting non-canonical host ${host} to whatsthatmean.com`);
+    return res.redirect(308, `https://whatsthatmean.com${req.originalUrl}`);
+  }
+  next();
+});
+
 // Using process.cwd() as the project root for both local, container, and serverless runtimes
 const projectRoot = process.cwd();
 
@@ -205,29 +220,29 @@ app.post("/api/generate-article", async (req: any, res: any) => {
   }
 
   try {
-    const prompt = `You are an elite SEO specialist, professional copywriter, and ad-monetization strategist for the slang and definition authority website "whatsthatmean.com".
-    Your ultimate goal is to write a highly exhaustive, engaging, and search-optimized blog article about the main keyword: "${keyword}". This article must satisfy search engines (Google Rank) and keep users on-page while maximizing Google AdSense clicks.
+    const prompt = `You are an elite SEO specialist, professional copywriter, and ad-monetization strategist.
+    Your ultimate goal is to write a highly exhaustive, engaging, and search-optimized blog article about the main keyword: "${keyword}". The article MUST focus purely, faithfully, and extensively on this given keyword, its core topic, usage, and practical meaning, regardless of whether it is an internet slang, technical concept, lifestyle topic, or any other subject. Do not force slang or dictionary framing if the keyword points to a different subject. This article must satisfy search engines (Google Rank) and keep users on-page while maximizing Google AdSense clicks.
     
     Please strictly enforce the following rules:
     1. Title: The title MUST start with the main keyword followed by a colon and a compelling, catchy title.
-       Example: "${keyword}: Why This Trending Term is Taking Over Social Media"
+       Example: "${keyword}: The Ultimate Comprehensive Guide and Latest Trends"
     2. Meta Description: Write a high-CTR meta description under 160 characters. It MUST explicitly contain the exact keyword "${keyword}".
     3. Heading Hierarchy and Structure:
        - Start with an H1 main title (this matches the title field).
        - The body content must use ## (H2) for primary section headings, ### (H3) for nested subheadings, and #### (H4) if needed. Ensure perfect nesting hierarchy.
        - You must write at least 3 to 4 or more distinct subheadings (H2).
-       - Each section under an H2 subheading must be substantial, thorough, and extensive—approximately 500 words or characters of high-quality, fully detailed content (not short summaries) explaining the slang definition, deep historical origin, evolution, social media and texting context, and cultural impact.
+       - Each section under an H2 subheading must be substantial, thorough, and extensive—approximately 500 words or characters of high-quality, fully detailed content (not short summaries) explaining the definition, deep concepts, historical background, evolution, practical context, real-world examples, and cultural or industry impact of "${keyword}".
     4. Ad Optimization (AdSense placeholders):
        - Insert exactly 2 to 3 "[AD]" placeholders (strictly in uppercase as "[AD]") placed strategically on empty lines between text paragraphs (never inside headings or sentences) to monetize the article's traffic.
     5. Feature Image Selection:
-       - Find and select an extremely relevant, high-resolution Unsplash image related to communication, texting, smartphone usage, social relationships, or internet culture. Use one of these high-quality, verified Unsplash photos:
-         - Mobile/texting/friends: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80"
-         - Online/social communication: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80"
-         - Gen Z/smartphone/lifestyle: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80"
-         - Neon/cyber/internet: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=800&q=80"
+       - Find and select an extremely relevant, high-resolution Unsplash image related to "${keyword}". Use one of these high-quality, verified Unsplash photos if applicable, or specify any other valid, topic-appropriate Unsplash photo URL (e.g. from Source Unsplash):
+         - Tech/Business/Modern: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80"
+         - Mobile/Texting/Social: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80"
+         - Lifestyle/Friends: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80"
+         - Modern Abstract/Neon: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=800&q=80"
          - Or any other valid Unsplash photo URL if more appropriate for the topic.
        - Alt Text: Generate a descriptive, keyword-rich imageAlt text. The alt text MUST naturally include the keyword "${keyword}".
-    6. Content Features: Use rich formatting: **bold** for key terms, bulleted lists for clear takeaways, blockquotes (>) for real-life text messages or dialogues illustrating how "${keyword}" is used in context, and internal links (e.g. "[Explore whatsthatmean](/browse?search=KEYWORD)" or "[YOLO](/browse?search=YOLO)") where applicable.
+    6. Content Features: Use rich formatting: **bold** for key terms, bulleted lists for clear takeaways, blockquotes (>) for real-life examples, scenarios, or dialogues illustrating "${keyword}", and internal links where appropriate (e.g., "[whatsthatmean](/)").
 
     The response MUST be a JSON object with the exact fields below:
     - title: The generated catchy blog title starting with "${keyword}: ".

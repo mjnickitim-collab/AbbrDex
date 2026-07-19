@@ -133,6 +133,21 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
               </p>
             )}
           </div>
+
+          {/* Back to Blog List Button at Bottom */}
+          <div className="pt-8 mt-12 border-t border-line/60 flex justify-center">
+            <button
+              onClick={() => {
+                setSelectedPost(null);
+                onCloseSelectedPost?.();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="btn btn-ghost border border-line text-xs font-bold text-indigo hover:bg-indigo/5 hover:border-indigo/30 px-6 py-3 rounded-xl flex items-center gap-2 cursor-pointer transition shadow-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back to Blog List</span>
+            </button>
+          </div>
         </article>
       </div>
     );
