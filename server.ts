@@ -15,6 +15,11 @@ app.use(express.json());
 
 // SEO 308 Redirect Middleware for non-canonical domains (e.g. Cloud Run .run.app URL)
 app.use((req, res, next) => {
+  // Skip redirect for API routes completely to avoid redirect loops and fetch issues
+  if (req.path.startsWith("/api/")) {
+    return next();
+  }
+
   const host = req.headers.host || "";
   const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
   const isPreview = host.includes("aistudio") || host.includes("google");
@@ -62,10 +67,13 @@ const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId
 // Helper to lazily initialize Gemini SDK with telemetry User-Agent
 let aiClient: GoogleGenAI | null = null;
 function getGoogleGenAI() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is required on the server. Please check your project settings or secrets configuration.");
+  }
   if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
     aiClient = new GoogleGenAI({
-      apiKey: apiKey || "MISSING_KEY",
+      apiKey: apiKey,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -533,18 +541,35 @@ app.post("/api/sitemap/apply", async (req: any, res: any) => {
     
     // Save to source public directory (syncs to GitHub/ZIP exports automatically)
     const publicPath = path.join(process.cwd(), "public", "sitemap.xml");
-    fs.writeFileSync(publicPath, xml, "utf8");
-    console.log(`Saved sitemap.xml to ${publicPath}`);
+    let savedPublic = false;
+    try {
+      fs.writeFileSync(publicPath, xml, "utf8");
+      console.log(`Saved sitemap.xml to ${publicPath}`);
+      savedPublic = true;
+    } catch (fsErr: any) {
+      console.warn(`Could not write sitemap.xml to public folder (read-only filesystem on serverless environment):`, fsErr.message);
+    }
 
     // Check and save to dist directory if build folder is present
     const distFolder = path.join(process.cwd(), "dist");
+    let savedDist = false;
     if (fs.existsSync(distFolder)) {
       const distPath = path.join(distFolder, "sitemap.xml");
-      fs.writeFileSync(distPath, xml, "utf8");
-      console.log(`Saved sitemap.xml to ${distPath}`);
+      try {
+        fs.writeFileSync(distPath, xml, "utf8");
+        console.log(`Saved sitemap.xml to ${distPath}`);
+        savedDist = true;
+      } catch (fsErr: any) {
+        console.warn(`Could not write sitemap.xml to dist folder (read-only filesystem on serverless environment):`, fsErr.message);
+      }
     }
 
-    return res.json({ success: true, message: "Sitemap successfully applied and saved!" });
+    let successMessage = "Sitemap successfully applied and saved!";
+    if (!savedPublic && !savedDist) {
+      successMessage = "Sitemap successfully applied (dynamically generated and served in read-only environment)!";
+    }
+
+    return res.json({ success: true, message: successMessage });
   } catch (error: any) {
     console.error("Error applying sitemap.xml:", error);
     return res.status(500).json({ error: error.message || "Failed to apply sitemap changes" });

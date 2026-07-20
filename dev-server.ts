@@ -8,7 +8,7 @@ const PORT = 3000;
 
 async function startDevServer() {
   const vite = await createViteServer({
-    server: { middlewareMode: true },
+    server: { middlewareMode: true, hmr: false },
     appType: "custom",
   });
   

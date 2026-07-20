@@ -899,8 +899,15 @@ Try writing your own content or edit this template using the helper buttons abov
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || "Failed to generate article");
+        let errMsg = "Failed to generate article";
+        try {
+          const errData = await response.json();
+          errMsg = errData.error || errMsg;
+        } catch (_) {
+          const errText = await response.text();
+          errMsg = errText || `Server returned status ${response.status}`;
+        }
+        throw new Error(errMsg);
       }
 
       const data = await response.json();
@@ -1084,8 +1091,15 @@ Try writing your own content or edit this template using the helper buttons abov
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to apply sitemap changes");
+        let errMsg = "Failed to apply sitemap changes";
+        try {
+          const data = await response.json();
+          errMsg = data.error || errMsg;
+        } catch (_) {
+          const errText = await response.text();
+          errMsg = errText || `Server returned status ${response.status}`;
+        }
+        throw new Error(errMsg);
       }
 
       alert("성공: sitemap.xml 파일이 최신 데이터로 변경 적용되었습니다! (public/sitemap.xml 및 dist/sitemap.xml 저장 완료)");
