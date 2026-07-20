@@ -273,7 +273,101 @@ app.post("/api/generate-article", async (req: any, res: any) => {
     console.error("Gemini article generation error:", error);
     return res.status(500).json({ error: error.message || "Failed to generate article" });
   }
-});// Dynamic Sitemap API
+});
+
+// Dynamic Unsplash & Wikimedia Image Search API Proxy (With multi-source fallback, no-key, bypasses CORS)
+app.get("/api/search-unsplash", async (req: any, res: any) => {
+  const query = req.query.query as string;
+  if (!query) {
+    return res.status(400).json({ error: "Query is required" });
+  }
+
+  const results: any[] = [];
+
+  // 1. Try official Unsplash API if access key is available
+  if (process.env.UNSPLASH_ACCESS_KEY) {
+    try {
+      const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=24&client_id=${process.env.UNSPLASH_ACCESS_KEY}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        const officialResults = (data.results || []).map((img: any) => ({
+          id: img.id,
+          url: img.urls?.regular || img.urls?.small || "",
+          alt: img.alt_description || img.description || query,
+          category: "Unsplash (Official)",
+          keywords: [query]
+        }));
+        if (officialResults.length > 0) {
+          return res.json({ results: officialResults });
+        }
+      }
+    } catch (err) {
+      console.warn("Unsplash official API failed, falling back to other sources:", err);
+    }
+  }
+
+  // 2. Try Unsplash napi (unofficial web client API)
+  try {
+    const url = `https://unsplash.com/napi/search/photos?query=${encodeURIComponent(query)}&per_page=24`;
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json"
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const napiResults = (data.results || []).map((img: any) => ({
+        id: img.id,
+        url: img.urls?.regular || img.urls?.small || "",
+        alt: img.alt_description || img.description || query,
+        category: "Unsplash",
+        keywords: [query]
+      }));
+      if (napiResults.length > 0) {
+        return res.json({ results: napiResults });
+      }
+    }
+  } catch (error: any) {
+    console.warn("Unsplash napi search failed (possibly due to anti-bot challenge), trying Wikimedia Commons fallback...", error);
+  }
+
+  // 3. Fallback to Wikimedia Commons (Completely free, open, keyless, and reliable)
+  try {
+    const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=24&prop=imageinfo&iiprop=url|mime&format=json&origin=*`;
+    const response = await fetch(wikiUrl);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.query && data.query.pages) {
+        for (const pageId of Object.keys(data.query.pages)) {
+          const page = data.query.pages[pageId];
+          if (page.imageinfo && page.imageinfo.length > 0) {
+            const img = page.imageinfo[0];
+            const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(img.url || "");
+            if (img.url && isImage) {
+              results.push({
+                id: `wiki-${page.pageid}`,
+                url: img.url,
+                alt: page.title.replace(/^File:/i, "").replace(/\.[^/.]+$/, "").replace(/_/g, " "),
+                category: "Wikimedia Commons",
+                keywords: [query]
+              });
+            }
+          }
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error("Wikimedia Commons fallback failed too:", error);
+  }
+
+  // Always return whatever we got, even if empty (no error to client, prevents crash)
+  return res.json({ results });
+});
+
+// Dynamic Sitemap API
 app.get("/sitemap.xml", async (req, res) => {
   const domain = "https://whatsthatmean.com";
   const dateStr = new Date().toISOString().split("T")[0];

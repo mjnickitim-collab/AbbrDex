@@ -107,23 +107,87 @@ export default function AdminShell({
   const [imageModalTab, setImageModalTab] = useState("AI-Matched (추천)");
   const [shuffleSeed, setShuffleSeed] = useState(0.5);
 
+  // Live Unsplash Search states
+  const [isSearchingUnsplash, setIsSearchingUnsplash] = useState(false);
+  const [unsplashSearchResults, setUnsplashSearchResults] = useState<any[]>([]);
+  const [searchError, setSearchError] = useState("");
+
   const handleShuffleModalPool = () => {
     setShuffleSeed(Math.random());
   };
 
+  // Debounced real-time Unsplash search from Express server proxy
+  useEffect(() => {
+    if (!isImageModalOpen) return;
+    
+    const query = imageModalSearch.trim();
+    if (query === "") {
+      setUnsplashSearchResults([]);
+      setSearchError("");
+      return;
+    }
+
+    setIsSearchingUnsplash(true);
+    setSearchError("");
+
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/search-unsplash?query=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+          throw new Error("이미지 검색에 실패했습니다.");
+        }
+        const data = await response.json();
+        if (data.results) {
+          setUnsplashSearchResults(data.results);
+        } else if (data.error) {
+          setSearchError(data.error);
+        }
+      } catch (err: any) {
+        console.error("Unsplash search error:", err);
+        setSearchError("이미지 검색 중 오류가 발생했습니다.");
+      } finally {
+        setIsSearchingUnsplash(false);
+      }
+    }, 450);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [imageModalSearch, isImageModalOpen]);
+
   // Filter and shuffle pool images for display in the picker
   const displayImages = React.useMemo(() => {
-    let list = [...CURATED_IMAGES];
-
-    // Filter by search text if entered
+    // If the search query is active, prioritize combining local matches and Unsplash search results
     if (imageModalSearch.trim() !== "") {
       const query = imageModalSearch.toLowerCase().trim();
-      list = list.filter(img => 
+      
+      // Get any local matches first
+      const localMatches = CURATED_IMAGES.filter(img => 
         img.alt.toLowerCase().includes(query) ||
         img.category.toLowerCase().includes(query) ||
         img.keywords.some(k => k.toLowerCase().includes(query))
       );
-    } else if (imageModalTab === "AI-Matched (추천)") {
+
+      const seenUrls = new Set(localMatches.map(img => img.url));
+      const combined = [...localMatches];
+
+      // Add live Unsplash search results next
+      unsplashSearchResults.forEach(img => {
+        if (!seenUrls.has(img.url)) {
+          combined.push({
+            id: img.id,
+            url: img.url,
+            alt: img.alt,
+            category: "Unsplash",
+            keywords: [query]
+          });
+        }
+      });
+
+      return combined;
+    }
+
+    let list = [...CURATED_IMAGES];
+
+    if (imageModalTab === "AI-Matched (추천)") {
       // Find keywords from blog text
       const searchStr = `${blogTitle} ${blogExcerpt} ${blogBody} ${blogKeywords} ${blogCat}`.toLowerCase();
       // Score each image based on matching keywords
@@ -159,7 +223,7 @@ export default function AdminShell({
       const hashB = Math.sin(b.url.length * 12.34 + shuffleSeed * 1000);
       return hashA - hashB;
     });
-  }, [imageModalSearch, imageModalTab, shuffleSeed, blogTitle, blogExcerpt, blogBody, blogKeywords, blogCat]);
+  }, [imageModalSearch, imageModalTab, shuffleSeed, blogTitle, blogExcerpt, blogBody, blogKeywords, blogCat, unsplashSearchResults]);
 
   const handleShuffleKeywords = React.useCallback(() => {
     // A rich curated list of hottest global/worldwide trending topics across Tech, Pop-Culture, Memes, Work, and Lifestyle
@@ -2566,7 +2630,11 @@ Try writing your own content or edit this template using the helper buttons abov
               {/* Top Search bar & Tabs */}
               <div className="space-y-4">
                 <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-soft" />
+                  {isSearchingUnsplash ? (
+                    <RefreshCw className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo animate-spin" />
+                  ) : (
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-soft" />
+                  )}
                   <input
                     type="text"
                     placeholder="원하는 검색어를 입력하거나 아래 추천 카테고리를 선택하세요..."
@@ -2577,23 +2645,33 @@ Try writing your own content or edit this template using the helper buttons abov
                         setImageModalTab("All");
                       }
                     }}
-                    className="w-full pl-10 pr-4 py-2.5 border border-line rounded-xl bg-paper text-sm text-ink focus:outline-none focus:border-indigo transition-all font-medium"
+                    className="w-full pl-10 pr-10 py-2.5 border border-line rounded-xl bg-paper text-sm text-ink focus:outline-none focus:border-indigo transition-all font-medium"
                   />
                   {imageModalSearch && (
                     <button
                       type="button"
-                      onClick={() => setImageModalSearch("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-ink-soft hover:text-ink hover:bg-line rounded"
+                      onClick={() => {
+                        setImageModalSearch("");
+                        setUnsplashSearchResults([]);
+                      }}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-ink-soft hover:text-ink hover:bg-line rounded"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>
 
+                {searchError && (
+                  <p className="text-xs text-red font-medium px-1">⚠️ {searchError}</p>
+                )}
+                {isSearchingUnsplash && (
+                  <p className="text-xs text-indigo font-medium px-1 animate-pulse">실시간 Unsplash 이미지 라이브러리 검색 중...</p>
+                )}
+
                 {/* Quick Category Filters */}
                 <div className="flex flex-wrap gap-1.5 pb-1">
                   {["AI-Matched (추천)", "All", "AI & Tech", "Gaming", "Work & Productivity", "Finance & FIRE", "Lifestyle", "Trending & Emojis"].map((tab) => {
-                    const isActive = imageModalTab === tab;
+                    const isActive = imageModalTab === tab && !imageModalSearch;
                     return (
                       <button
                         key={tab}
@@ -2601,6 +2679,7 @@ Try writing your own content or edit this template using the helper buttons abov
                         onClick={() => {
                           setImageModalTab(tab);
                           setImageModalSearch("");
+                          setUnsplashSearchResults([]);
                           if (tab === "All") {
                             setShuffleSeed(Math.random());
                           }
@@ -2622,7 +2701,11 @@ Try writing your own content or edit this template using the helper buttons abov
               <div className="space-y-4 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-ink-soft uppercase tracking-wide">
-                    {imageModalTab === "AI-Matched (추천)" ? "블로그 본문 분석 추천 이미지" : `${imageModalTab} 이미지 결과`}
+                    {imageModalSearch.trim() !== "" 
+                      ? `실시간 이미지 검색 결과 (${displayImages.length}개)` 
+                      : imageModalTab === "AI-Matched (추천)" 
+                        ? "블로그 본문 분석 추천 이미지" 
+                        : `${imageModalTab} 이미지 결과`}
                   </span>
                   <button
                     type="button"
@@ -2636,17 +2719,22 @@ Try writing your own content or edit this template using the helper buttons abov
 
                 {displayImages.length === 0 ? (
                   <div className="p-12 text-center border-2 border-dashed border-line rounded-xl bg-paper/20">
-                    <p className="text-sm text-ink-soft font-medium">검색 결과나 추천 이미지 조건에 맞는 이미지가 없습니다.</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setImageModalSearch("");
-                        setImageModalTab("All");
-                      }}
-                      className="mt-3 text-xs font-bold text-indigo hover:underline cursor-pointer"
-                    >
-                      전체 이미지 보기
-                    </button>
+                    <p className="text-sm text-ink-soft font-medium">
+                      {isSearchingUnsplash ? "실시간 검색 중입니다..." : "검색 결과나 추천 이미지 조건에 맞는 이미지가 없습니다."}
+                    </p>
+                    {!isSearchingUnsplash && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageModalSearch("");
+                          setUnsplashSearchResults([]);
+                          setImageModalTab("All");
+                        }}
+                        className="mt-3 text-xs font-bold text-indigo hover:underline cursor-pointer"
+                      >
+                        전체 이미지 보기
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
