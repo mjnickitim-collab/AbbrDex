@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
 import { initializeApp, getApps, getApp } from "firebase/app";
@@ -262,12 +262,92 @@ app.post("/api/generate-article", async (req: any, res: any) => {
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: {
+              type: Type.STRING,
+              description: `The generated catchy blog title starting with "${keyword}: "`
+            },
+            excerpt: {
+              type: Type.STRING,
+              description: "A compelling, high-CTR 1-2 sentence search engine summary."
+            },
+            body: {
+              type: Type.STRING,
+              description: "The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (approx. 500 words/chars per section), lists, text examples in blockquotes, and strategically placed [AD] tags."
+            },
+            seoTitle: {
+              type: Type.STRING,
+              description: "A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title."
+            },
+            metaDescription: {
+              type: Type.STRING,
+              description: `A search snippet under 160 characters containing "${keyword}".`
+            },
+            keywords: {
+              type: Type.STRING,
+              description: `A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, slang meaning, Gen Z slang, internet dictionary").`
+            },
+            imageUrl: {
+              type: Type.STRING,
+              description: "The selected Unsplash image URL."
+            },
+            imageAlt: {
+              type: Type.STRING,
+              description: "The keyword-rich image description."
+            }
+          },
+          required: ["title", "excerpt", "body", "seoTitle", "metaDescription", "keywords", "imageUrl", "imageAlt"]
+        }
       }
     });
 
     const text = response.text || "{}";
-    const generatedData = JSON.parse(text);
+    
+    // Helper to safely parse and clean JSON output from Gemini
+    const cleanAndParseJson = (rawText: string) => {
+      let cleaned = rawText.trim();
+      
+      if (cleaned.startsWith("```json")) {
+        cleaned = cleaned.substring(7);
+      } else if (cleaned.startsWith("```")) {
+        cleaned = cleaned.substring(3);
+      }
+      if (cleaned.endsWith("```")) {
+        cleaned = cleaned.substring(0, cleaned.length - 3);
+      }
+      cleaned = cleaned.trim();
+      
+      try {
+        return JSON.parse(cleaned);
+      } catch (err: any) {
+        console.error("Standard JSON.parse failed. Text length:", cleaned.length, "Error:", err.message);
+        try {
+          let inString = false;
+          let result = "";
+          for (let i = 0; i < cleaned.length; i++) {
+            const char = cleaned[i];
+            if (char === '"' && (i === 0 || cleaned[i-1] !== '\\')) {
+              inString = !inString;
+              result += char;
+            } else if (char === '\n' && inString) {
+              result += "\\n";
+            } else if (char === '\r' && inString) {
+              result += "\\r";
+            } else {
+              result += char;
+            }
+          }
+          return JSON.parse(result);
+        } catch (fallbackErr: any) {
+          console.error("Heuristic JSON fallback parse failed:", fallbackErr.message);
+          throw new Error(`Failed to parse generated article JSON: ${err.message}`);
+        }
+      }
+    };
 
+    const generatedData = cleanAndParseJson(text);
     return res.json(generatedData);
   } catch (error: any) {
     console.error("Gemini article generation error:", error);
@@ -367,8 +447,8 @@ app.get("/api/search-unsplash", async (req: any, res: any) => {
   return res.json({ results });
 });
 
-// Dynamic Sitemap API
-app.get("/sitemap.xml", async (req, res) => {
+// Helper to construct sitemap XML string
+async function buildSitemapXmlString(): Promise<string> {
   const domain = "https://whatsthatmean.com";
   const dateStr = new Date().toISOString().split("T")[0];
   
@@ -443,10 +523,45 @@ app.get("/sitemap.xml", async (req, res) => {
   });
   
   xml += `</urlset>\n`;
-  
-  res.header("Content-Type", "application/xml");
-  res.header("Cache-Control", "public, max-age=0, must-revalidate");
-  res.send(xml);
+  return xml;
+}
+
+// API endpoint to apply/write sitemap.xml to static directories (bypassing dynamic route issues on custom domains)
+app.post("/api/sitemap/apply", async (req: any, res: any) => {
+  try {
+    const xml = await buildSitemapXmlString();
+    
+    // Save to source public directory (syncs to GitHub/ZIP exports automatically)
+    const publicPath = path.join(process.cwd(), "public", "sitemap.xml");
+    fs.writeFileSync(publicPath, xml, "utf8");
+    console.log(`Saved sitemap.xml to ${publicPath}`);
+
+    // Check and save to dist directory if build folder is present
+    const distFolder = path.join(process.cwd(), "dist");
+    if (fs.existsSync(distFolder)) {
+      const distPath = path.join(distFolder, "sitemap.xml");
+      fs.writeFileSync(distPath, xml, "utf8");
+      console.log(`Saved sitemap.xml to ${distPath}`);
+    }
+
+    return res.json({ success: true, message: "Sitemap successfully applied and saved!" });
+  } catch (error: any) {
+    console.error("Error applying sitemap.xml:", error);
+    return res.status(500).json({ error: error.message || "Failed to apply sitemap changes" });
+  }
+});
+
+// Dynamic Sitemap API
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    const xml = await buildSitemapXmlString();
+    res.header("Content-Type", "application/xml");
+    res.header("Cache-Control", "public, max-age=0, must-revalidate");
+    res.send(xml);
+  } catch (err: any) {
+    console.error("Dynamic sitemap fetch error:", err);
+    res.status(500).send("Failed to load sitemap");
+  }
 });
 
 // Serve assets / static app (Production container server only, not run on Vercel)

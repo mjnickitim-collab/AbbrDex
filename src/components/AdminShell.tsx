@@ -432,6 +432,7 @@ Try writing your own content or edit this template using the helper buttons abov
   const [isSeeding, setIsSeeding] = useState(false);
   const [googleSiteVerification, setGoogleSiteVerification] = useState("");
   const [savingVerification, setSavingVerification] = useState(false);
+  const [isApplyingSitemap, setIsApplyingSitemap] = useState(false);
 
   // CSV Export helper
   const handleExportCSV = () => {
@@ -967,44 +968,81 @@ Try writing your own content or edit this template using the helper buttons abov
     }
   };
 
+  const generateSitemapXmlContent = () => {
+    const domain = "https://whatsthatmean.com";
+    const dateStr = new Date().toISOString().split("T")[0];
+    
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+    
+    // 1. Core routes
+    const routes = ["", "/browse", "/quiz", "/blog"];
+    routes.forEach(route => {
+      xml += `  <url>\n`;
+      xml += `    <loc>${domain}${route}</loc>\n`;
+      xml += `    <lastmod>${dateStr}</lastmod>\n`;
+      xml += `    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n`;
+      xml += `    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n`;
+      xml += `  </url>\n`;
+    });
+
+    // 2. Emoji Category page (special primary tab)
+    xml += `  <url>\n`;
+    xml += `    <loc>${domain}/emoji</loc>\n`;
+    xml += `    <lastmod>${dateStr}</lastmod>\n`;
+    xml += `    <changefreq>daily</changefreq>\n`;
+    xml += `    <priority>0.9</priority>\n`;
+    xml += `  </url>\n`;
+
+    // 3. Other specific dictionary category pages
+    const categories = ["internet", "texting", "social", "business", "gaming", "military", "sports", "companies", "countries", "cities"];
+    categories.forEach(cat => {
+      xml += `  <url>\n`;
+      xml += `    <loc>${domain}/browse/${cat}</loc>\n`;
+      xml += `    <lastmod>${dateStr}</lastmod>\n`;
+      xml += `    <changefreq>weekly</changefreq>\n`;
+      xml += `    <priority>0.7</priority>\n`;
+      xml += `  </url>\n`;
+    });
+    
+    // 4. Blog routes (excluding drafts)
+    blogs.forEach((blog) => {
+      if (blog.draft) return;
+      
+      const slug = (blog.title || "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-");
+      
+      xml += `  <url>\n`;
+      xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
+      xml += `    <lastmod>${dateStr}</lastmod>\n`;
+      xml += `    <changefreq>monthly</changefreq>\n`;
+      xml += `    <priority>0.6</priority>\n`;
+      xml += `  </url>\n`;
+    });
+
+    // 5. Slang terms and Emoji detail pages
+    terms.forEach((term) => {
+      if (!term.code) return;
+      
+      xml += `  <url>\n`;
+      xml += `    <loc>${domain}/term/${encodeURIComponent(term.code.toUpperCase().trim())}</loc>\n`;
+      xml += `    <lastmod>${dateStr}</lastmod>\n`;
+      xml += `    <changefreq>monthly</changefreq>\n`;
+      xml += `    <priority>0.6</priority>\n`;
+      xml += `  </url>\n`;
+    });
+    
+    xml += `</urlset>\n`;
+    return xml;
+  };
+
   const handleGenerateSitemap = () => {
     try {
-      const domain = "https://whatsthatmean.com";
-      const dateStr = new Date().toISOString().split("T")[0];
-      
-      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-      
-      // Core routes
-      const routes = ["", "/browse", "/quiz", "/blog"];
-      routes.forEach(route => {
-        xml += `  <url>\n`;
-        xml += `    <loc>${domain}${route}</loc>\n`;
-        xml += `    <lastmod>${dateStr}</lastmod>\n`;
-        xml += `    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n`;
-        xml += `    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n`;
-        xml += `  </url>\n`;
-      });
-      
-      // Blog routes
-      blogs.forEach(blog => {
-        const slug = (blog.title || "")
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "-")
-          .replace(/-+/g, "-");
-        
-        xml += `  <url>\n`;
-        xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
-        xml += `    <lastmod>${dateStr}</lastmod>\n`;
-        xml += `    <changefreq>monthly</changefreq>\n`;
-        xml += `    <priority>0.6</priority>\n`;
-        xml += `  </url>\n`;
-      });
-      
-      xml += `</urlset>\n`;
-      
+      const xml = generateSitemapXmlContent();
       const blob = new Blob([xml], { type: "application/xml;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1019,6 +1057,43 @@ Try writing your own content or edit this template using the helper buttons abov
     } catch (err) {
       console.error("Error generating sitemap:", err);
       alert("Failed to generate sitemap.");
+    }
+  };
+
+  const handleCopyRawXml = () => {
+    try {
+      const xml = generateSitemapXmlContent();
+      navigator.clipboard.writeText(xml);
+      alert("Raw XML content copied to clipboard!");
+    } catch (err) {
+      console.error("Error copying raw sitemap:", err);
+      alert("Failed to copy raw sitemap.");
+    }
+  };
+
+  const handleApplySitemapChanges = async () => {
+    if (!window.confirm("기존 sitemap.xml 파일을 최신 데이터로 덮어쓰고 서버에 저장하시겠습니까?\n(public/sitemap.xml 및 dist/sitemap.xml에 즉시 저장되어 배포/커밋 시 자동으로 반영됩니다.)")) return;
+    
+    setIsApplyingSitemap(true);
+    try {
+      const response = await fetch("/api/sitemap/apply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to apply sitemap changes");
+      }
+
+      alert("성공: sitemap.xml 파일이 최신 데이터로 변경 적용되었습니다! (public/sitemap.xml 및 dist/sitemap.xml 저장 완료)");
+    } catch (err: any) {
+      console.error("Error applying sitemap changes:", err);
+      alert(`오류: 사이트맵 변경 적용에 실패했습니다. (${err.message || err})`);
+    } finally {
+      setIsApplyingSitemap(false);
     }
   };
 
@@ -1186,27 +1261,26 @@ Try writing your own content or edit this template using the helper buttons abov
                     <span>↗</span>
                   </a>
                   <button
-                    onClick={() => {
-                      const domain = "https://whatsthatmean.com";
-                      const dateStr = new Date().toISOString().split("T")[0];
-                      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-                      ["", "/browse", "/quiz", "/blog"].forEach(route => {
-                        xml += `  <url>\n    <loc>${domain}${route}</loc>\n    <lastmod>${dateStr}</lastmod>\n    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n  </url>\n`;
-                      });
-                      blogs.forEach(blog => {
-                        if (blog.draft) return;
-                        const slug = (blog.title || "").toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
-                        xml += `  <url>\n    <loc>${domain}/blog/${slug}</loc>\n    <lastmod>${dateStr}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
-                      });
-                      xml += `</urlset>\n`;
-                      
-                      navigator.clipboard.writeText(xml);
-                      alert("Raw XML content copied to clipboard!");
-                    }}
-                    className="btn btn-ghost border-line text-ink-soft hover:bg-line/40 px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                    onClick={handleCopyRawXml}
+                    className="btn btn-ghost border border-line text-ink-soft hover:bg-line/40 px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer bg-card"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Copy Raw XML</span>
+                  </button>
+                  <button
+                    onClick={handleGenerateSitemap}
+                    className="btn btn-ghost border border-line text-ink-soft hover:bg-line/40 px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer bg-card"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download XML</span>
+                  </button>
+                  <button
+                    onClick={handleApplySitemapChanges}
+                    disabled={isApplyingSitemap}
+                    className="btn btn-solid bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isApplyingSitemap ? "animate-spin" : ""}`} />
+                    <span>{isApplyingSitemap ? "적용 중..." : "Sitemap 변경 적용 (서버 저장)"}</span>
                   </button>
                 </div>
               </div>
