@@ -13,15 +13,23 @@ interface BrowseViewProps {
 export default function BrowseView({ terms, initialCategory, initialQuery = "", onSelectTerm }: BrowseViewProps) {
   const [selectedCat, setSelectedCat] = useState<string | null>(initialCategory);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Sync initial state updates
   useEffect(() => {
     setSelectedCat(initialCategory);
+    setCurrentPage(1);
   }, [initialCategory]);
 
   useEffect(() => {
     setSearchQuery(initialQuery);
+    setCurrentPage(1);
   }, [initialQuery]);
+
+  // Reset page when category or search query changes internally
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCat, searchQuery]);
 
   // Filtering Logic
   const filteredTerms = terms.filter((t) => {
@@ -39,6 +47,36 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
 
   const handleCategoryToggle = (catId: string) => {
     setSelectedCat(selectedCat === catId ? null : catId);
+  };
+
+  // Pagination Logic
+  const ITEMS_PER_PAGE = 30;
+  const totalPages = Math.ceil(filteredTerms.length / ITEMS_PER_PAGE);
+  const paginatedTerms = filteredTerms.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const range = 2; // how many pages around current to show
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - range && i <= currentPage + range)
+      ) {
+        pages.push(i);
+      } else if (pages[pages.length - 1] !== "...") {
+        pages.push("...");
+      }
+    }
+    return pages;
+  };
+
+  const handlePageChange = (pNum: number) => {
+    setCurrentPage(pNum);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -133,36 +171,83 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
             </button>
           </div>
         ) : (
-          <div className="word-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredTerms.map((t) => {
-              const catMeta = CATEGORIES.find((c) => c.id === t.cat) || CATEGORIES[0];
-              return (
+          <div className="space-y-8">
+            <div className="word-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {paginatedTerms.map((t) => {
+                const catMeta = CATEGORIES.find((c) => c.id === t.cat) || CATEGORIES[0];
+                return (
+                  <button
+                    key={t.id || t.code}
+                    onClick={() => onSelectTerm(t)}
+                    className="word-card group bg-card border-1.5 border-line rounded-xl p-5 text-left transition hover:border-ink cursor-pointer flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="top flex items-center justify-between gap-2 border-b border-line pb-2 mb-3">
+                        <span className={`code font-bold text-ink group-hover:text-indigo ${t.cat === "emoji" ? "text-2xl select-none" : "mono font-mono text-lg"}`}>
+                          {t.code}
+                        </span>
+                        <span className={`tag ${catMeta.tag} text-[9.5px]`}>
+                          {catMeta.name}
+                        </span>
+                      </div>
+                      <div className="meaning font-display font-semibold text-sm text-ink mb-2">
+                        {t.full}
+                      </div>
+                    </div>
+                    {t.ex && (
+                      <p className="text-xs text-ink-soft italic line-clamp-2 mt-2">
+                        "{t.ex}"
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-1.5 pt-4 border-t border-line/60">
                 <button
-                  key={t.id || t.code}
-                  onClick={() => onSelectTerm(t)}
-                  className="word-card group bg-card border-1.5 border-line rounded-xl p-5 text-left transition hover:border-ink cursor-pointer flex flex-col justify-between"
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                  className="px-3.5 py-2 rounded-xl border border-line text-xs font-semibold text-ink hover:bg-line/20 disabled:opacity-40 transition cursor-pointer"
                 >
-                  <div>
-                    <div className="top flex items-center justify-between gap-2 border-b border-line pb-2 mb-3">
-                      <span className={`code font-bold text-ink group-hover:text-indigo ${t.cat === "emoji" ? "text-2xl select-none" : "mono font-mono text-lg"}`}>
-                        {t.code}
-                      </span>
-                      <span className={`tag ${catMeta.tag} text-[9.5px]`}>
-                        {catMeta.name}
-                      </span>
-                    </div>
-                    <div className="meaning font-display font-semibold text-sm text-ink mb-2">
-                      {t.full}
-                    </div>
-                  </div>
-                  {t.ex && (
-                    <p className="text-xs text-ink-soft italic line-clamp-2 mt-2">
-                      "{t.ex}"
-                    </p>
-                  )}
+                  Previous
                 </button>
-              );
-            })}
+                {getPageNumbers().map((pNum, index) => {
+                  if (pNum === "...") {
+                    return (
+                      <span key={`dots-${index}`} className="px-2 text-xs text-ink-soft font-semibold select-none">
+                        ...
+                      </span>
+                    );
+                  }
+                  return (
+                    <button
+                      key={`page-${pNum}`}
+                      type="button"
+                      onClick={() => handlePageChange(Number(pNum))}
+                      className={`w-9 h-9 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center
+                        ${currentPage === pNum 
+                          ? "bg-indigo text-white border border-indigo shadow-sm" 
+                          : "border border-line text-ink hover:bg-line/20"
+                        }`}
+                    >
+                      {pNum}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                  className="px-3.5 py-2 rounded-xl border border-line text-xs font-semibold text-ink hover:bg-line/20 disabled:opacity-40 transition cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

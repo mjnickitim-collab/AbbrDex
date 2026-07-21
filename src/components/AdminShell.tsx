@@ -1093,11 +1093,15 @@ Try writing your own content or edit this template using the helper buttons abov
       if (!response.ok) {
         let errMsg = "Failed to apply sitemap changes";
         try {
-          const data = await response.json();
-          errMsg = data.error || errMsg;
-        } catch (_) {
           const errText = await response.text();
-          errMsg = errText || `Server returned status ${response.status}`;
+          try {
+            const data = JSON.parse(errText);
+            errMsg = data.error || errMsg;
+          } catch (_) {
+            errMsg = errText || `Server returned status ${response.status}`;
+          }
+        } catch (_) {
+          errMsg = `Server returned status ${response.status}`;
         }
         throw new Error(errMsg);
       }
@@ -1816,107 +1820,6 @@ Try writing your own content or edit this template using the helper buttons abov
                 </div>
               </div>
 
-              {/* Published Articles List (1-column, paginated) */}
-              <div className="admin-card bg-card border border-line rounded-xl p-6 shadow-sm space-y-4">
-                <div className="font-display font-bold text-lg text-ink">Existing publications ({blogs.length})</div>
-                
-                {blogs.length === 0 ? (
-                  <p className="text-xs text-ink-soft">No articles published yet.</p>
-                ) : (
-                  <>
-                    <div className="space-y-3">
-                      {paginatedBlogs.map((p) => {
-                        const postCategory = CATEGORIES.find(c => c.id === p.cat) || CATEGORIES.find(c => c.id === 'internet');
-                        return (
-                          <div key={p.id || p.title} className="bg-paper border border-line rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
-                            <div className="flex-1 space-y-2">
-                              <div className="font-display font-bold text-base text-ink leading-tight">{p.title}</div>
-                              <div className="flex flex-wrap items-center gap-2 text-xs">
-                                <span className="text-ink-soft font-medium">{p.date}</span>
-                                <span className="w-1 h-1 rounded-full bg-line" />
-                                <span className="px-2.5 py-0.5 rounded-full font-bold bg-indigo/5 text-indigo border border-indigo/10 text-[10px]">
-                                  {postCategory?.name || "Internet & chat"}
-                                </span>
-                                <span className="w-1 h-1 rounded-full bg-line" />
-                                {p.draft ? (
-                                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 text-[10px]">
-                                    Draft (임시저장)
-                                  </span>
-                                ) : (
-                                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px]">
-                                    Published (발행됨)
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-ink-soft line-clamp-2 leading-relaxed">{p.excerpt}</p>
-                            </div>
-                             <div className="flex gap-2 md:flex-col justify-end md:w-32">
-                              <button
-                                onClick={() => setPreviewPost(p)}
-                                className="btn btn-ghost btn-sm font-semibold border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                                title="이 블로그 글의 실제 레이아웃과 디자인으로 미리보기를 띄웁니다"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>Preview</span>
-                              </button>
-                              <button
-                                onClick={() => handleStartEditPost(p)}
-                                className="btn btn-ghost btn-sm font-semibold border-indigo text-indigo hover:bg-indigo hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                                <span>Edit</span>
-                              </button>
-                              <button
-                                onClick={() => p.id && handleDeletePost(p.id)}
-                                className="btn btn-ghost btn-sm font-semibold border-coral text-coral hover:bg-coral hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span>Delete</span>
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-1.5 mt-6 pt-4 border-t border-line/60">
-                        <button
-                          type="button"
-                          disabled={currentPage === 1}
-                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                          className="px-3 py-1.5 rounded-lg border border-line text-xs font-semibold text-ink hover:bg-line/20 disabled:opacity-40 transition cursor-pointer"
-                        >
-                          Previous
-                        </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
-                          <button
-                            key={pNum}
-                            type="button"
-                            onClick={() => setCurrentPage(pNum)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer
-                              ${currentPage === pNum 
-                                ? "bg-indigo text-white border border-indigo" 
-                                : "border border-line text-ink hover:bg-line/20"
-                              }`}
-                          >
-                            {pNum}
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          disabled={currentPage === totalPages}
-                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                          className="px-3 py-1.5 rounded-lg border border-line text-xs font-semibold text-ink hover:bg-line/20 disabled:opacity-40 transition cursor-pointer"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
               {/* Publisher Form */}
               <div id="blog-publisher-form" className={`admin-card bg-card border-1.5 rounded-xl p-6 shadow-sm space-y-4 transition-all duration-300
                 ${editingPost ? "border-indigo shadow-md ring-1 ring-indigo/20 bg-indigo/5" : "border-line"}`}>
@@ -2279,6 +2182,107 @@ Try writing your own content or edit this template using the helper buttons abov
                     </button>
                   </div>
                 </form>
+              </div>
+
+              {/* Published Articles List (1-column, paginated) */}
+              <div className="admin-card bg-card border border-line rounded-xl p-6 shadow-sm space-y-4">
+                <div className="font-display font-bold text-lg text-ink">Existing publications ({blogs.length})</div>
+                
+                {blogs.length === 0 ? (
+                  <p className="text-xs text-ink-soft">No articles published yet.</p>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      {paginatedBlogs.map((p) => {
+                        const postCategory = CATEGORIES.find(c => c.id === p.cat) || CATEGORIES.find(c => c.id === 'internet');
+                        return (
+                          <div key={p.id || p.title} className="bg-paper border border-line rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+                            <div className="flex-1 space-y-2">
+                              <div className="font-display font-bold text-base text-ink leading-tight">{p.title}</div>
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="text-ink-soft font-medium">{p.date}</span>
+                                <span className="w-1 h-1 rounded-full bg-line" />
+                                <span className="px-2.5 py-0.5 rounded-full font-bold bg-indigo/5 text-indigo border border-indigo/10 text-[10px]">
+                                  {postCategory?.name || "Internet & chat"}
+                                </span>
+                                <span className="w-1 h-1 rounded-full bg-line" />
+                                {p.draft ? (
+                                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 text-[10px]">
+                                    Draft (임시저장)
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px]">
+                                    Published (발행됨)
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-ink-soft line-clamp-2 leading-relaxed">{p.excerpt}</p>
+                            </div>
+                             <div className="flex gap-2 md:flex-col justify-end md:w-32">
+                              <button
+                                onClick={() => setPreviewPost(p)}
+                                className="btn btn-ghost btn-sm font-semibold border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                                title="이 블로그 글의 실제 레이아웃과 디자인으로 미리보기를 띄웁니다"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Preview</span>
+                              </button>
+                              <button
+                                onClick={() => handleStartEditPost(p)}
+                                className="btn btn-ghost btn-sm font-semibold border-indigo text-indigo hover:bg-indigo hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                onClick={() => p.id && handleDeletePost(p.id)}
+                                className="btn btn-ghost btn-sm font-semibold border-coral text-coral hover:bg-coral hover:text-white py-1.5 flex items-center justify-center gap-1.5 cursor-pointer text-xs"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-1.5 mt-6 pt-4 border-t border-line/60">
+                        <button
+                          type="button"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          className="px-3 py-1.5 rounded-lg border border-line text-xs font-semibold text-ink hover:bg-line/20 disabled:opacity-40 transition cursor-pointer"
+                        >
+                          Previous
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
+                          <button
+                            key={pNum}
+                            type="button"
+                            onClick={() => setCurrentPage(pNum)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer
+                              ${currentPage === pNum 
+                                ? "bg-indigo text-white border border-indigo" 
+                                : "border border-line text-ink hover:bg-line/20"
+                              }`}
+                          >
+                            {pNum}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          className="px-3 py-1.5 rounded-lg border border-line text-xs font-semibold text-ink hover:bg-line/20 disabled:opacity-40 transition cursor-pointer"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
             </div>
