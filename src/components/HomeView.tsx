@@ -254,9 +254,9 @@ export default function HomeView({
           </div>
         ) : (
           <div className="blog-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {blogs.slice(0, 3).map((post) => (
+            {blogs.slice(0, 3).map((post, idx) => (
               <button
-                key={post.id || post.title}
+                key={post.id ? `home-blog-${post.id}` : `home-blog-${idx}-${post.title}`}
                 onClick={() => onSelectBlogPost(post)}
                 className="blog-card bg-card border-1.5 border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full group"
               >

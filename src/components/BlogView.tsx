@@ -168,9 +168,9 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
         </div>
       ) : (
         <div className="blog-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <button
-              key={post.id || post.title}
+              key={post.id ? `blog-${post.id}` : `blog-${index}-${post.title}`}
               onClick={() => setSelectedPost(post)}
               className="blog-card bg-card border-1.5 border-line rounded-2xl overflow-hidden text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full"
             >

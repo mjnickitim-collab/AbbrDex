@@ -1406,10 +1406,10 @@ Try writing your own content or edit this template using the helper buttons abov
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {terms.map((t) => {
+                  {terms.map((t, idx) => {
                     const catMeta = CATEGORIES.find((c) => c.id === t.cat) || CATEGORIES[0];
                     return (
-                      <tr key={t.id || t.code} className="hover:bg-paper/40 transition">
+                      <tr key={t.id ? `admin-term-${t.id}` : `admin-term-${t.code}-${idx}`} className="hover:bg-paper/40 transition">
                         <td className="p-4 font-mono font-bold text-indigo">{t.code}</td>
                         <td className="p-4 text-sm font-semibold text-ink truncate max-w-xs">{t.full}</td>
                         <td className="p-4">
@@ -1520,10 +1520,10 @@ Try writing your own content or edit this template using the helper buttons abov
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {terms.filter(t => t.cat === "emoji").map((t) => {
+                  {terms.filter(t => t.cat === "emoji").map((t, idx) => {
                     const identifier = t.id || t.code;
                     return (
-                      <tr key={identifier} className="hover:bg-paper/40 transition">
+                      <tr key={t.id ? `admin-emoji-${t.id}` : `admin-emoji-${t.code}-${idx}`} className="hover:bg-paper/40 transition">
                         <td className="p-4 text-3xl font-bold select-none">{t.code}</td>
                         <td className="p-4 text-sm font-semibold text-ink truncate max-w-xs">{t.full}</td>
                         <td className="p-4">
@@ -2193,10 +2193,10 @@ Try writing your own content or edit this template using the helper buttons abov
                 ) : (
                   <>
                     <div className="space-y-3">
-                      {paginatedBlogs.map((p) => {
+                      {paginatedBlogs.map((p, idx) => {
                         const postCategory = CATEGORIES.find(c => c.id === p.cat) || CATEGORIES.find(c => c.id === 'internet');
                         return (
-                          <div key={p.id || p.title} className="bg-paper border border-line rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
+                          <div key={p.id ? `admin-blog-${p.id}` : `admin-blog-${idx}-${p.title}`} className="bg-paper border border-line rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
                             <div className="flex-1 space-y-2">
                               <div className="font-display font-bold text-base text-ink leading-tight">{p.title}</div>
                               <div className="flex flex-wrap items-center gap-2 text-xs">

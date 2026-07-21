@@ -4,7 +4,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc } from "firebase/firestore";
+import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
 
 dotenv.config();
 
@@ -106,11 +106,34 @@ async function getBlogsFromFirestore() {
   }
 }
 
-// Helper to fetch slang terms and emojis from Firestore securely using Firebase JS SDK
+// Helper to fetch a single term by its code securely from Firestore
+async function getTermFromFirestoreByCode(code: string) {
+  try {
+    const termsCol = collection(firestoreDb, "terms");
+    const q = query(termsCol, where("code", "==", code.toUpperCase().trim()), limit(1));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      return {
+        code: data.code || "",
+        full: data.full || "",
+        cat: data.cat || "",
+        ex: data.ex || ""
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error(`Error fetching single term (${code}) from Firestore:`, err);
+    return null;
+  }
+}
+
+// Helper to fetch slang terms and emojis from Firestore securely using Firebase JS SDK (without costly database-side sorting)
 async function getTermsFromFirestore() {
   try {
     const termsCol = collection(firestoreDb, "terms");
-    const q = query(termsCol, orderBy("code", "asc"));
+    const q = query(termsCol);
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
       const data = doc.data();
@@ -173,8 +196,7 @@ async function getSeoMetadata(urlPath: string) {
       }
     } else if (pathname.startsWith("/term/")) {
       const code = decodeURIComponent(pathname.substring(6)).toUpperCase();
-      const terms = await getTermsFromFirestore();
-      const foundTerm = terms.find((t: any) => t.code.toUpperCase() === code);
+      const foundTerm = await getTermFromFirestoreByCode(code);
       if (foundTerm) {
         const categoryName = foundTerm.cat ? (foundTerm.cat.charAt(0).toUpperCase() + foundTerm.cat.slice(1)) : "Slang";
         title = `${foundTerm.code} Meaning: What Does ${foundTerm.code} Mean? | whatsthatmean`;
@@ -455,6 +477,21 @@ app.get("/api/search-unsplash", async (req: any, res: any) => {
   return res.json({ results });
 });
 
+// Sitemap caching states to prevent heavy database queries on every request
+let cachedSitemapXml: string | null = null;
+let lastSitemapGenTime = 0;
+const SITEMAP_CACHE_DURATION = 1000 * 60 * 60 * 12; // 12 hours cache duration
+
+async function getCachedSitemapXml(forceRefresh = false): Promise<string> {
+  const now = Date.now();
+  if (forceRefresh || !cachedSitemapXml || (now - lastSitemapGenTime) > SITEMAP_CACHE_DURATION) {
+    console.log(`Generating sitemap.xml (Force: ${forceRefresh})...`);
+    cachedSitemapXml = await buildSitemapXmlString();
+    lastSitemapGenTime = now;
+  }
+  return cachedSitemapXml;
+}
+
 // Helper to construct sitemap XML string
 async function buildSitemapXmlString(): Promise<string> {
   const domain = "https://whatsthatmean.com";
@@ -537,7 +574,7 @@ async function buildSitemapXmlString(): Promise<string> {
 // API endpoint to apply/write sitemap.xml to static directories (bypassing dynamic route issues on custom domains)
 app.post("/api/sitemap/apply", async (req: any, res: any) => {
   try {
-    const xml = await buildSitemapXmlString();
+    const xml = await getCachedSitemapXml(true);
     
     // Save to source public directory (syncs to GitHub/ZIP exports automatically)
     const publicPath = path.join(process.cwd(), "public", "sitemap.xml");
@@ -579,7 +616,7 @@ app.post("/api/sitemap/apply", async (req: any, res: any) => {
 // Dynamic Sitemap API
 app.get("/sitemap.xml", async (req, res) => {
   try {
-    const xml = await buildSitemapXmlString();
+    const xml = await getCachedSitemapXml(false);
     res.header("Content-Type", "application/xml");
     res.header("Cache-Control", "public, max-age=0, must-revalidate");
     res.send(xml);

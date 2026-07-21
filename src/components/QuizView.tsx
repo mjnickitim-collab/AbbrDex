@@ -310,7 +310,7 @@ export default function QuizView({ terms, currentUser, initialMode = "abbreviati
         </div>
 
         <div className="choiceList w-full space-y-3">
-          {cur.choices.map((choice) => {
+          {cur.choices.map((choice, choiceIdx) => {
             const isSelected = quiz.selectedAnswer === choice;
             const isCorrectAnswer = choice === cur.correct;
             
@@ -333,7 +333,7 @@ export default function QuizView({ terms, currentUser, initialMode = "abbreviati
 
             return (
               <button
-                key={choice}
+                key={`choice-${choiceIdx}-${choice}`}
                 disabled={quiz.answered}
                 onClick={() => handleAnswerSelect(choice)}
                 className={`choice w-full text-left p-4 rounded-xl border-1.5 flex justify-between items-center transition cursor-pointer text-sm font-medium ${btnClass}`}

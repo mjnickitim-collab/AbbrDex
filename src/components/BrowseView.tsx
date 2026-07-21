@@ -173,11 +173,11 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
         ) : (
           <div className="space-y-8">
             <div className="word-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {paginatedTerms.map((t) => {
+              {paginatedTerms.map((t, idx) => {
                 const catMeta = CATEGORIES.find((c) => c.id === t.cat) || CATEGORIES[0];
                 return (
                   <button
-                    key={t.id || t.code}
+                    key={t.id ? `term-${t.id}` : `term-${t.code}-${idx}`}
                     onClick={() => onSelectTerm(t)}
                     className="word-card group bg-card border-1.5 border-line rounded-xl p-5 text-left transition hover:border-ink cursor-pointer flex flex-col justify-between"
                   >
@@ -225,7 +225,7 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
                   }
                   return (
                     <button
-                      key={`page-${pNum}`}
+                      key={`page-${pNum}-${index}`}
                       type="button"
                       onClick={() => handlePageChange(Number(pNum))}
                       className={`w-9 h-9 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center
