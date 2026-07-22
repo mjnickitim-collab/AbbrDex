@@ -899,13 +899,17 @@ Try writing your own content or edit this template using the helper buttons abov
       });
 
       if (!response.ok) {
-        let errMsg = "Failed to generate article";
+        let errMsg = `Failed to generate article (Status ${response.status})`;
         try {
-          const errData = await response.json();
-          errMsg = errData.error || errMsg;
-        } catch (_) {
           const errText = await response.text();
-          errMsg = errText || `Server returned status ${response.status}`;
+          try {
+            const errData = JSON.parse(errText);
+            errMsg = errData.error || errMsg;
+          } catch (_) {
+            if (errText) errMsg = errText;
+          }
+        } catch (_) {
+          errMsg = `Server returned status ${response.status}`;
         }
         throw new Error(errMsg);
       }
@@ -1106,7 +1110,8 @@ Try writing your own content or edit this template using the helper buttons abov
         throw new Error(errMsg);
       }
 
-      alert("성공: sitemap.xml 파일이 최신 데이터로 변경 적용되었습니다! (public/sitemap.xml 및 dist/sitemap.xml 저장 완료)");
+      const data = await response.json();
+      alert(`성공: ${data.message || "sitemap.xml 파일이 최신 데이터로 변경 적용되었습니다!"}`);
     } catch (err: any) {
       console.error("Error applying sitemap changes:", err);
       alert(`오류: 사이트맵 변경 적용에 실패했습니다. (${err.message || err})`);

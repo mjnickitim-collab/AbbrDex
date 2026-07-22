@@ -13,6 +13,17 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// CORS Middleware for API routes
+app.use("/api", (req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 // SEO 308 Redirect Middleware for non-canonical domains (e.g. Cloud Run .run.app URL)
 app.use((req, res, next) => {
   // Skip redirect for API routes completely to avoid redirect loops and fetch issues
@@ -36,40 +47,38 @@ app.use((req, res, next) => {
 // Using process.cwd() as the project root for both local, container, and serverless runtimes
 const projectRoot = process.cwd();
 
-// Safely load Firebase Config from local json with fallbacks for local and serverless runtimes
-let firebaseConfig: any;
+// Safely load Firebase Config with fallback defaults for local, container, and serverless runtimes
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyBrYD4DhTBLEDblWXXzPyLEUlyOkMRyS4w",
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "ai-studio-applet-webapp-f78e7.firebaseapp.com",
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "ai-studio-applet-webapp-f78e7",
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "ai-studio-applet-webapp-f78e7.firebasestorage.app",
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "717940026511",
+  appId: process.env.VITE_FIREBASE_APP_ID || "1:717940026511:web:f4aecc4e9a0132257914fa",
+  firestoreDatabaseId: process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109"
+};
+
+let firebaseConfig = { ...DEFAULT_FIREBASE_CONFIG };
 try {
-  // Statically analyzeable by Vercel NFT using process.cwd()
   const configPath = path.join(projectRoot, "firebase-applet-config.json");
-  firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
-} catch (err) {
-  try {
-    const configPath = path.join(projectRoot, "../firebase-applet-config.json");
-    firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  } catch (err2) {
-    console.error("Critical error: Failed to load Firebase config on server, using hardcoded environment defaults:", err2);
-    firebaseConfig = {
-      apiKey: process.env.VITE_FIREBASE_API_KEY || "AIzaSyBrYD4DhTBLEDblWXXzPyLEUlyOkMRyS4w",
-      authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "ai-studio-applet-webapp-f78e7.firebaseapp.com",
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID || "ai-studio-applet-webapp-f78e7",
-      storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "ai-studio-applet-webapp-f78e7.firebasestorage.app",
-      messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "717940026511",
-      appId: process.env.VITE_FIREBASE_APP_ID || "1:717940026511:web:f4aecc4e9a0132257914fa",
-      firestoreDatabaseId: process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-fd31e368-e61b-4d50-87ab-58823b9be109"
-    };
+  if (fs.existsSync(configPath)) {
+    const loaded = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    firebaseConfig = { ...DEFAULT_FIREBASE_CONFIG, ...loaded };
   }
+} catch (err) {
+  console.warn("Could not read firebase-applet-config.json from disk, using default config:", err);
 }
 
 // Initialize server-side Firebase instance safely avoiding duplicate app error in serverless contexts
 const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId);
 
 // Helper to lazily initialize Gemini SDK with telemetry User-Agent
 let aiClient: GoogleGenAI | null = null;
 function getGoogleGenAI() {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable is required on the server. Please check your project settings or secrets configuration.");
+    throw new Error("GEMINI_API_KEY가 서버 환경 변수에 설정되어 있지 않습니다. Vercel 또는 배포 플랫폼의 Environment Variables 설정에서 GEMINI_API_KEY를 추가해주시기 바랍니다.");
   }
   if (!aiClient) {
     aiClient = new GoogleGenAI({
@@ -243,7 +252,7 @@ async function getGoogleSiteVerification() {
 export { getGoogleSiteVerification, injectSeoMetadata };
 
 // API endpoint to generate blog articles using Gemini
-app.post("/api/generate-article", async (req: any, res: any) => {
+app.post(["/api/generate-article", "/generate-article"], async (req: any, res: any) => {
   const { keyword } = req.body;
   if (!keyword) {
     return res.status(400).json({ error: "Keyword is required" });
@@ -287,51 +296,63 @@ app.post("/api/generate-article", async (req: any, res: any) => {
     Return ONLY a raw valid JSON object. Do not wrap it in markdown codeblocks.`;
 
     const ai = getGoogleGenAI();
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: {
-              type: Type.STRING,
-              description: `The generated catchy blog title starting with "${keyword}: "`
-            },
-            excerpt: {
-              type: Type.STRING,
-              description: "A compelling, high-CTR 1-2 sentence search engine summary."
-            },
-            body: {
-              type: Type.STRING,
-              description: "The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (approx. 500 words/chars per section), lists, text examples in blockquotes, and strategically placed [AD] tags."
-            },
-            seoTitle: {
-              type: Type.STRING,
-              description: "A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title."
-            },
-            metaDescription: {
-              type: Type.STRING,
-              description: `A search snippet under 160 characters containing "${keyword}".`
-            },
-            keywords: {
-              type: Type.STRING,
-              description: `A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, slang meaning, Gen Z slang, internet dictionary").`
-            },
-            imageUrl: {
-              type: Type.STRING,
-              description: "The selected Unsplash image URL."
-            },
-            imageAlt: {
-              type: Type.STRING,
-              description: "The keyword-rich image description."
-            }
+    const generationConfig = {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          title: {
+            type: Type.STRING,
+            description: `The generated catchy blog title starting with "${keyword}: "`
           },
-          required: ["title", "excerpt", "body", "seoTitle", "metaDescription", "keywords", "imageUrl", "imageAlt"]
-        }
+          excerpt: {
+            type: Type.STRING,
+            description: "A compelling, high-CTR 1-2 sentence search engine summary."
+          },
+          body: {
+            type: Type.STRING,
+            description: "The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (approx. 500 words/chars per section), lists, text examples in blockquotes, and strategically placed [AD] tags."
+          },
+          seoTitle: {
+            type: Type.STRING,
+            description: "A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title."
+          },
+          metaDescription: {
+            type: Type.STRING,
+            description: `A search snippet under 160 characters containing "${keyword}".`
+          },
+          keywords: {
+            type: Type.STRING,
+            description: `A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, slang meaning, Gen Z slang, internet dictionary").`
+          },
+          imageUrl: {
+            type: Type.STRING,
+            description: "The selected Unsplash image URL."
+          },
+          imageAlt: {
+            type: Type.STRING,
+            description: "The keyword-rich image description."
+          }
+        },
+        required: ["title", "excerpt", "body", "seoTitle", "metaDescription", "keywords", "imageUrl", "imageAlt"]
       }
-    });
+    };
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt,
+        config: generationConfig
+      });
+    } catch (modelError: any) {
+      console.warn("Primary model gemini-3.6-flash failed, attempting fallback to gemini-2.5-flash:", modelError?.message || modelError);
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: generationConfig
+      });
+    }
 
     const text = response.text || "{}";
     
@@ -386,7 +407,7 @@ app.post("/api/generate-article", async (req: any, res: any) => {
 });
 
 // Dynamic Unsplash & Wikimedia Image Search API Proxy (With multi-source fallback, no-key, bypasses CORS)
-app.get("/api/search-unsplash", async (req: any, res: any) => {
+app.get(["/api/search-unsplash", "/search-unsplash"], async (req: any, res: any) => {
   const query = req.query.query as string;
   if (!query) {
     return res.status(400).json({ error: "Query is required" });
@@ -572,14 +593,18 @@ async function buildSitemapXmlString(): Promise<string> {
 }
 
 // API endpoint to apply/write sitemap.xml to static directories (bypassing dynamic route issues on custom domains)
-app.post("/api/sitemap/apply", async (req: any, res: any) => {
+app.post(["/api/sitemap/apply", "/sitemap/apply"], async (req: any, res: any) => {
   try {
     const xml = await getCachedSitemapXml(true);
     
-    // Save to source public directory (syncs to GitHub/ZIP exports automatically)
-    const publicPath = path.join(process.cwd(), "public", "sitemap.xml");
+    // Save to source public directory if writable (syncs to GitHub/ZIP exports automatically)
     let savedPublic = false;
     try {
+      const publicDir = path.join(process.cwd(), "public");
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true });
+      }
+      const publicPath = path.join(publicDir, "sitemap.xml");
       fs.writeFileSync(publicPath, xml, "utf8");
       console.log(`Saved sitemap.xml to ${publicPath}`);
       savedPublic = true;
@@ -587,23 +612,23 @@ app.post("/api/sitemap/apply", async (req: any, res: any) => {
       console.warn(`Could not write sitemap.xml to public folder (read-only filesystem on serverless environment):`, fsErr.message);
     }
 
-    // Check and save to dist directory if build folder is present
-    const distFolder = path.join(process.cwd(), "dist");
+    // Check and save to dist directory if build folder is present and writable
     let savedDist = false;
-    if (fs.existsSync(distFolder)) {
-      const distPath = path.join(distFolder, "sitemap.xml");
-      try {
+    try {
+      const distFolder = path.join(process.cwd(), "dist");
+      if (fs.existsSync(distFolder)) {
+        const distPath = path.join(distFolder, "sitemap.xml");
         fs.writeFileSync(distPath, xml, "utf8");
         console.log(`Saved sitemap.xml to ${distPath}`);
         savedDist = true;
-      } catch (fsErr: any) {
-        console.warn(`Could not write sitemap.xml to dist folder (read-only filesystem on serverless environment):`, fsErr.message);
       }
+    } catch (fsErr: any) {
+      console.warn(`Could not write sitemap.xml to dist folder (read-only filesystem on serverless environment):`, fsErr.message);
     }
 
-    let successMessage = "Sitemap successfully applied and saved!";
+    let successMessage = "사이트맵이 성공적으로 최신 데이터로 저장 및 변경 적용되었습니다!";
     if (!savedPublic && !savedDist) {
-      successMessage = "Sitemap successfully applied (dynamically generated and served in read-only environment)!";
+      successMessage = "서버리스(읽기전용) 환경입니다. 사이트맵이 메모리/동적 엔드포인트(/sitemap.xml)에 최신 데이터로 실시간 반영되었습니다!";
     }
 
     return res.json({ success: true, message: successMessage });
