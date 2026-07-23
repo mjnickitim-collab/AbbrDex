@@ -890,13 +890,29 @@ Try writing your own content or edit this template using the helper buttons abov
     }
     setGeneratingArticle(true);
     try {
-      const response = await fetch("/api/generate-article", {
+      let response = await fetch("/api/generate-article", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ keyword: aiKeyword.trim() }),
       });
+
+      if (!response.ok) {
+        // Fallback retry with /generate-article if /api rewrite is restricted
+        try {
+          const fallbackResp = await fetch("/generate-article", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ keyword: aiKeyword.trim() }),
+          });
+          if (fallbackResp.ok) {
+            response = fallbackResp;
+          }
+        } catch (_) {}
+      }
 
       if (!response.ok) {
         let errMsg = `Failed to generate article (Status ${response.status})`;
@@ -1087,12 +1103,27 @@ Try writing your own content or edit this template using the helper buttons abov
     
     setIsApplyingSitemap(true);
     try {
-      const response = await fetch("/api/sitemap/apply", {
+      let response = await fetch("/api/sitemap/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
       });
+
+      if (!response.ok) {
+        // Fallback retry with /sitemap/apply if /api rewrite is restricted
+        try {
+          const fallbackResp = await fetch("/sitemap/apply", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+          if (fallbackResp.ok) {
+            response = fallbackResp;
+          }
+        } catch (_) {}
+      }
 
       if (!response.ok) {
         let errMsg = "Failed to apply sitemap changes";

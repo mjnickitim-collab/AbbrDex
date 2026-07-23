@@ -13,27 +13,39 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// Path Normalization Middleware for Vercel Rewrites
+app.use((req, res, next) => {
+  if (req.url && req.url.startsWith("/api/index")) {
+    req.url = req.url.replace("/api/index", "/api");
+  }
+  next();
+});
+
 // CORS Middleware for API routes
-app.use("/api", (req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
+app.use((req, res, next) => {
+  const path = req.path || "";
+  if (path.startsWith("/api") || path.startsWith("/sitemap") || path.startsWith("/generate-article") || path.startsWith("/search-unsplash")) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
   }
   next();
 });
 
 // SEO 308 Redirect Middleware for non-canonical domains (e.g. Cloud Run .run.app URL)
 app.use((req, res, next) => {
-  // Skip redirect for API routes completely to avoid redirect loops and fetch issues
-  if (req.path.startsWith("/api/")) {
+  // Skip redirect for API routes and sitemaps completely
+  const path = req.path || "";
+  if (path.includes("/api/") || path.includes("sitemap") || path.includes("generate-article") || path.includes("search-unsplash")) {
     return next();
   }
 
   const host = req.headers.host || "";
   const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
-  const isPreview = host.includes("aistudio") || host.includes("google");
+  const isPreview = host.includes("aistudio") || host.includes("google") || host.includes("vercel");
   const isCanonical = host === "whatsthatmean.com" || host === "www.whatsthatmean.com";
 
   if (!isLocal && !isPreview && !isCanonical) {
@@ -73,12 +85,32 @@ try {
 const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId);
 
+// Helper to race Firestore async queries against a timeout so serverless functions never hang
+async function withFirestoreTimeout<T>(promise: Promise<T>, ms = 3500, fallback: T): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => {
+      console.warn(`Firestore query timed out after ${ms}ms, returning fallback data.`);
+      resolve(fallback);
+    }, ms);
+  });
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timer);
+    return result;
+  } catch (err) {
+    clearTimeout(timer);
+    console.error("Firestore query error:", err);
+    return fallback;
+  }
+}
+
 // Helper to lazily initialize Gemini SDK with telemetry User-Agent
 let aiClient: GoogleGenAI | null = null;
 function getGoogleGenAI() {
   const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY가 서버 환경 변수에 설정되어 있지 않습니다. Vercel 또는 배포 플랫폼의 Environment Variables 설정에서 GEMINI_API_KEY를 추가해주시기 바랍니다.");
+    return null;
   }
   if (!aiClient) {
     aiClient = new GoogleGenAI({
@@ -95,7 +127,7 @@ function getGoogleGenAI() {
 
 // Helper to fetch blogs from Firestore securely using Firebase JS SDK
 async function getBlogsFromFirestore() {
-  try {
+  return withFirestoreTimeout((async () => {
     const blogsCol = collection(firestoreDb, "blogs");
     const q = query(blogsCol, orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
@@ -109,15 +141,12 @@ async function getBlogsFromFirestore() {
         metaDescription: data.metaDescription || ""
       };
     });
-  } catch (err) {
-    console.error("Error fetching blogs for sitemap:", err);
-    return [];
-  }
+  })(), 3500, []);
 }
 
 // Helper to fetch a single term by its code securely from Firestore
 async function getTermFromFirestoreByCode(code: string) {
-  try {
+  return withFirestoreTimeout((async () => {
     const termsCol = collection(firestoreDb, "terms");
     const q = query(termsCol, where("code", "==", code.toUpperCase().trim()), limit(1));
     const snapshot = await getDocs(q);
@@ -132,15 +161,12 @@ async function getTermFromFirestoreByCode(code: string) {
       };
     }
     return null;
-  } catch (err) {
-    console.error(`Error fetching single term (${code}) from Firestore:`, err);
-    return null;
-  }
+  })(), 3500, null);
 }
 
 // Helper to fetch slang terms and emojis from Firestore securely using Firebase JS SDK (without costly database-side sorting)
 async function getTermsFromFirestore() {
-  try {
+  return withFirestoreTimeout((async () => {
     const termsCol = collection(firestoreDb, "terms");
     const q = query(termsCol);
     const snapshot = await getDocs(q);
@@ -153,10 +179,7 @@ async function getTermsFromFirestore() {
         ex: data.ex || ""
       };
     });
-  } catch (err) {
-    console.error("Error fetching terms for sitemap:", err);
-    return [];
-  }
+  })(), 3500, []);
 }
 
 // Helper to resolve SEO metadata based on URL path
@@ -256,6 +279,13 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
   const { keyword } = req.body;
   if (!keyword) {
     return res.status(400).json({ error: "Keyword is required" });
+  }
+
+  const ai = getGoogleGenAI();
+  if (!ai) {
+    return res.status(400).json({
+      error: "GEMINI_API_KEY가 서버 환경 변수에 설정되어 있지 않습니다. Vercel Project Settings -> Environment Variables에서 GEMINI_API_KEY를 추가해주시기 바랍니다."
+    });
   }
 
   try {
@@ -597,6 +627,14 @@ app.post(["/api/sitemap/apply", "/sitemap/apply"], async (req: any, res: any) =>
   try {
     const xml = await getCachedSitemapXml(true);
     
+    // On Vercel / serverless read-only environment, skip writing to disk to prevent filesystem errors
+    if (process.env.VERCEL) {
+      return res.json({
+        success: true,
+        message: "서버리스(Vercel) 환경입니다. 사이트맵이 메모리에 최신 데이터로 실시간 반영되었으며, /sitemap.xml 엔드포인트에서 최신 사이트맵을 제공합니다!"
+      });
+    }
+
     // Save to source public directory if writable (syncs to GitHub/ZIP exports automatically)
     let savedPublic = false;
     try {
@@ -609,7 +647,7 @@ app.post(["/api/sitemap/apply", "/sitemap/apply"], async (req: any, res: any) =>
       console.log(`Saved sitemap.xml to ${publicPath}`);
       savedPublic = true;
     } catch (fsErr: any) {
-      console.warn(`Could not write sitemap.xml to public folder (read-only filesystem on serverless environment):`, fsErr.message);
+      console.warn(`Could not write sitemap.xml to public folder:`, fsErr?.message);
     }
 
     // Check and save to dist directory if build folder is present and writable
@@ -623,7 +661,7 @@ app.post(["/api/sitemap/apply", "/sitemap/apply"], async (req: any, res: any) =>
         savedDist = true;
       }
     } catch (fsErr: any) {
-      console.warn(`Could not write sitemap.xml to dist folder (read-only filesystem on serverless environment):`, fsErr.message);
+      console.warn(`Could not write sitemap.xml to dist folder:`, fsErr?.message);
     }
 
     let successMessage = "사이트맵이 성공적으로 최신 데이터로 저장 및 변경 적용되었습니다!";
@@ -634,12 +672,12 @@ app.post(["/api/sitemap/apply", "/sitemap/apply"], async (req: any, res: any) =>
     return res.json({ success: true, message: successMessage });
   } catch (error: any) {
     console.error("Error applying sitemap.xml:", error);
-    return res.status(500).json({ error: error.message || "Failed to apply sitemap changes" });
+    return res.status(500).json({ error: error?.message || "Failed to apply sitemap changes" });
   }
 });
 
 // Dynamic Sitemap API
-app.get("/sitemap.xml", async (req, res) => {
+app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   try {
     const xml = await getCachedSitemapXml(false);
     res.header("Content-Type", "application/xml");

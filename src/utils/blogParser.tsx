@@ -131,16 +131,16 @@ export function renderBlogPostContent(body: string, adSlots?: AdSlot[]): React.R
         // If this is the index for automatic ad injection, render the block and follow with an ad banner
         if (blockIdx === adIndex && adSlots) {
           return (
-            <React.Fragment key={`block-${blockIdx}`}>
+            <div key={`block-ad-${blockIdx}`}>
               {renderedElement}
               <div className="my-6">
                 <AdPlaceholder slotName="In-article blog banner" adSlots={adSlots} />
               </div>
-            </React.Fragment>
+            </div>
           );
         }
 
-        return <React.Fragment key={`block-${blockIdx}`}>{renderedElement}</React.Fragment>;
+        return <div key={`block-${blockIdx}`}>{renderedElement}</div>;
       })}
     </div>
   );
@@ -255,11 +255,12 @@ function parseInlineStyles(text: string): React.ReactNode {
   }
 
   if (elements.length === 0) return text;
+  if (elements.length === 1) return elements[0];
 
   return (
     <React.Fragment>
-      {elements.map((el, idx) => (
-        <React.Fragment key={`inline-tok-${idx}`}>{el}</React.Fragment>
+      {elements.map((el, i) => (
+        typeof el === "string" ? <span key={`tok-${i}`}>{el}</span> : el
       ))}
     </React.Fragment>
   );

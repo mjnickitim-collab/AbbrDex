@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { AdSlot } from "../types";
 
 interface AdPlaceholderProps {
@@ -11,38 +11,6 @@ export default function AdPlaceholder({ slotName, adSlots, isDbLoaded = true }: 
   if (!isDbLoaded) return null;
 
   const slot = adSlots.find((s) => s.name.toLowerCase() === slotName.toLowerCase());
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (slot && slot.on && slot.adsenseCode && containerRef.current) {
-      // Clear container and inject custom code or link
-      containerRef.current.innerHTML = "";
-      
-      const isHtml = /<[a-z][\s\S]*>/i.test(slot.adsenseCode);
-      if (isHtml) {
-        try {
-          const range = document.createRange();
-          range.selectNode(containerRef.current);
-          const documentFragment = range.createContextualFragment(slot.adsenseCode);
-          containerRef.current.appendChild(documentFragment);
-        } catch (e) {
-          console.error("Failed to inject HTML AdSense code:", e);
-          // Fallback to text injection
-          containerRef.current.innerText = slot.adsenseCode;
-        }
-      } else {
-        // Render simple link
-        const link = document.createElement("a");
-        const isUrl = slot.adsenseCode.startsWith("http") || slot.adsenseCode.startsWith("www");
-        link.href = isUrl ? slot.adsenseCode : `https://${slot.adsenseCode}`;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.className = "text-indigo font-bold hover:underline text-xs block p-4 text-center border border-indigo/20 rounded-lg bg-indigo/5 transition";
-        link.textContent = `Sponsored Link: ${slot.adsenseCode}`;
-        containerRef.current.appendChild(link);
-      }
-    }
-  }, [slot]);
 
   if (!slot || !slot.on) return null;
 
@@ -56,13 +24,33 @@ export default function AdPlaceholder({ slotName, adSlots, isDbLoaded = true }: 
     sizeClasses = "w-full max-w-[320px] min-h-[50px] mx-auto my-4";
   }
 
-  // Render the real AdSense container if code is saved
+  // Render the real AdSense container if code is saved using standard React dangerouslySetInnerHTML or safe link
   if (slot.adsenseCode) {
+    const isHtml = /<[a-z][\s\S]*>/i.test(slot.adsenseCode);
+
+    if (isHtml) {
+      return (
+        <div 
+          className={`my-6 text-center flex flex-col items-center justify-center overflow-hidden ${sizeClasses}`}
+          dangerouslySetInnerHTML={{ __html: slot.adsenseCode }}
+        />
+      );
+    }
+
+    const isUrl = slot.adsenseCode.startsWith("http") || slot.adsenseCode.startsWith("www");
+    const hrefUrl = isUrl ? slot.adsenseCode : `https://${slot.adsenseCode}`;
+
     return (
-      <div 
-        ref={containerRef} 
-        className={`my-6 text-center flex flex-col items-center justify-center overflow-hidden ${sizeClasses}`}
-      />
+      <div className={`my-6 text-center flex flex-col items-center justify-center overflow-hidden ${sizeClasses}`}>
+        <a
+          href={hrefUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo font-bold hover:underline text-xs block p-4 text-center border border-indigo/20 rounded-lg bg-indigo/5 transition w-full"
+        >
+          Sponsored Link: {slot.adsenseCode}
+        </a>
+      </div>
     );
   }
 
@@ -81,3 +69,4 @@ export default function AdPlaceholder({ slotName, adSlots, isDbLoaded = true }: 
     </div>
   );
 }
+
