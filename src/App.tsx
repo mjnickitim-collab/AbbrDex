@@ -64,6 +64,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [postToEdit, setPostToEdit] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -441,6 +442,8 @@ export default function App() {
               users={users}
               onRefreshData={handleRefreshData}
               currentUser={currentUser}
+              initialEditingPost={postToEdit}
+              onClearInitialEditingPost={() => setPostToEdit(null)}
             />
           </Suspense>
         ) : (
@@ -515,6 +518,13 @@ export default function App() {
                         posts={blogs.filter(b => !b.draft)} 
                         initialSelectedPost={selectedBlogPost}
                         onCloseSelectedPost={() => setSelectedBlogPost(null)}
+                        adSlots={adSlots}
+                        currentUser={currentUser}
+                        isAdminMode={isAdminMode}
+                        onEditPost={(post) => {
+                          setPostToEdit(post);
+                          setIsAdminMode(true);
+                        }}
                       />
                     </div>
                     {/* Sidebar Ad Placement (Shown in blog section if toggled on) */}

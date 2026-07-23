@@ -59,6 +59,8 @@ interface AdminShellProps {
   users: UserProfile[];
   onRefreshData: () => void;
   currentUser: UserProfile | null;
+  initialEditingPost?: BlogPost | null;
+  onClearInitialEditingPost?: () => void;
 }
 
 type AdminTab = "overview" | "terms" | "emojis" | "users" | "ads" | "blog";
@@ -69,7 +71,9 @@ export default function AdminShell({
   adSlots,
   users,
   onRefreshData,
-  currentUser
+  currentUser,
+  initialEditingPost = null,
+  onClearInitialEditingPost
 }: AdminShellProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
 
@@ -411,6 +415,16 @@ Try writing your own content or edit this template using the helper buttons abov
       formElement.scrollIntoView({ behavior: "smooth" });
     }
   };
+
+  useEffect(() => {
+    if (initialEditingPost) {
+      setActiveTab("blog");
+      handleStartEditPost(initialEditingPost);
+      if (onClearInitialEditingPost) {
+        onClearInitialEditingPost();
+      }
+    }
+  }, [initialEditingPost]);
 
   const handleCancelEditPost = () => {
     setEditingPost(null);

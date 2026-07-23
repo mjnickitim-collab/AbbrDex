@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { BlogPost, AdSlot } from "../types";
-import { Calendar, ChevronLeft, BookOpen } from "lucide-react";
+import { BlogPost, AdSlot, UserProfile } from "../types";
+import { Calendar, ChevronLeft, BookOpen, Edit3 } from "lucide-react";
 import { renderBlogPostContent } from "../utils/blogParser";
 import { CATEGORIES } from "../data/seedData";
 
@@ -9,9 +9,20 @@ interface BlogViewProps {
   initialSelectedPost?: BlogPost | null;
   onCloseSelectedPost?: () => void;
   adSlots?: AdSlot[];
+  currentUser?: UserProfile | null;
+  isAdminMode?: boolean;
+  onEditPost?: (post: BlogPost) => void;
 }
 
-export default function BlogView({ posts, initialSelectedPost = null, onCloseSelectedPost, adSlots }: BlogViewProps) {
+export default function BlogView({
+  posts,
+  initialSelectedPost = null,
+  onCloseSelectedPost,
+  adSlots,
+  currentUser,
+  isAdminMode,
+  onEditPost
+}: BlogViewProps) {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(initialSelectedPost);
 
   React.useEffect(() => {
@@ -72,19 +83,34 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
 
   // Detail View of a Selected Blog Post
   if (selectedPost) {
+    const canEdit = isAdminMode || currentUser?.role === "Admin" || currentUser?.role === "Editor";
+
     return (
       <div className="max-w-[720px] mx-auto px-6 py-12">
-        {/* Back Button */}
-        <button
-          onClick={() => {
-            setSelectedPost(null);
-            onCloseSelectedPost?.();
-          }}
-          className="flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition mb-8 group cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition" />
-          <span>Back to Blog List</span>
-        </button>
+        {/* Top Header Navigation & Action Bar */}
+        <div className="flex items-center justify-between gap-4 mb-8">
+          <button
+            onClick={() => {
+              setSelectedPost(null);
+              onCloseSelectedPost?.();
+            }}
+            className="flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition group cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition" />
+            <span>Back to Blog List</span>
+          </button>
+
+          {canEdit && (
+            <button
+              onClick={() => onEditPost?.(selectedPost)}
+              className="flex items-center gap-1.5 text-xs font-bold text-white bg-indigo hover:bg-indigo-dark px-3.5 py-2 rounded-xl shadow-sm transition active:scale-95 cursor-pointer"
+              title="Edit this article in Admin Centre"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit Article (글 수정)</span>
+            </button>
+          )}
+        </div>
 
         {/* Blog Post Header */}
         <article className="space-y-6">
@@ -129,8 +155,8 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
             )}
           </div>
 
-          {/* Back to Blog List Button at Bottom */}
-          <div className="pt-8 mt-12 border-t border-line/60 flex justify-center">
+          {/* Back to Blog List & Edit Button at Bottom */}
+          <div className="pt-8 mt-12 border-t border-line/60 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => {
                 setSelectedPost(null);
@@ -142,6 +168,16 @@ export default function BlogView({ posts, initialSelectedPost = null, onCloseSel
               <ChevronLeft className="w-4 h-4" />
               <span>Back to Blog List</span>
             </button>
+
+            {canEdit && (
+              <button
+                onClick={() => onEditPost?.(selectedPost)}
+                className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white text-xs font-bold px-6 py-3 rounded-xl flex items-center gap-2 cursor-pointer transition shadow-sm active:scale-95"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Edit Article (글 수정)</span>
+              </button>
+            )}
           </div>
         </article>
       </div>

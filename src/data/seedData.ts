@@ -1,5 +1,6 @@
 import { Category, Term, BlogPost, AdSlot, UserProfile } from "../types";
 import { NEW_TERMS } from "./newTermsData";
+import { ATTACHED_TERMS } from "./attachedTermsData";
 
 export const CATEGORIES: Category[] = [
   { id: "internet", name: "Internet & chat", tag: "tag-internet" },
@@ -12,10 +13,15 @@ export const CATEGORIES: Category[] = [
   { id: "sports", name: "Sports", tag: "tag-sports" },
   { id: "companies", name: "Company Names", tag: "tag-companies" },
   { id: "countries", name: "Countries", tag: "tag-countries" },
-  { id: "cities", name: "Cities", tag: "tag-cities" }
+  { id: "cities", name: "Cities", tag: "tag-cities" },
+  { id: "medical", name: "Medical/Health", tag: "tag-medical" },
+  { id: "finance", name: "Finance/Investment", tag: "tag-finance" },
+  { id: "currency", name: "Currency Codes", tag: "tag-currency" },
+  { id: "it_dev", name: "IT/Developer", tag: "tag-it_dev" }
 ];
 
 export const TERMS: Term[] = [
+  ...ATTACHED_TERMS,
   ...NEW_TERMS,
   // INTERNET & CHAT (50 terms)
   { code: "LOL", full: "Laughing out loud", cat: "internet", ex: "That video was so funny, LOL." },
