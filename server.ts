@@ -289,37 +289,52 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
   }
 
   try {
-    const prompt = `You are an elite SEO specialist, professional copywriter, and ad-monetization strategist.
-    Your ultimate goal is to write a highly exhaustive, engaging, and search-optimized blog article about the main keyword: "${keyword}". The article MUST focus purely, faithfully, and extensively on this given keyword, its core topic, usage, and practical meaning, regardless of whether it is an internet slang, technical concept, lifestyle topic, or any other subject. Do not force slang or dictionary framing if the keyword points to a different subject. This article must satisfy search engines (Google Rank) and keep users on-page while maximizing Google AdSense clicks.
+    const prompt = `You are a world-class SEO specialist, master copywriter, and digital marketing expert.
+    Your ultimate goal is to write a comprehensive, authoritative, highly engaging, and Google Search top-ranking blog article about the main keyword: "${keyword}".
+    The article MUST focus purely, faithfully, and extensively on this given keyword, its core topic, usage, and practical meaning, regardless of whether it is an internet slang, medical/health code, financial term, IT/technical concept, lifestyle topic, or any other subject.
     
-    Please strictly enforce the following rules:
-    1. Title: The title MUST start with the main keyword followed by a colon and a compelling, catchy title.
-       Example: "${keyword}: The Ultimate Comprehensive Guide and Latest Trends"
-    2. Meta Description: Write a high-CTR meta description under 160 characters. It MUST explicitly contain the exact keyword "${keyword}".
-    3. Heading Hierarchy and Structure:
-       - Start with an H1 main title (this matches the title field).
-       - The body content must use ## (H2) for primary section headings, ### (H3) for nested subheadings, and #### (H4) if needed. Ensure perfect nesting hierarchy.
-       - You must write at least 3 to 4 or more distinct subheadings (H2).
-       - Each section under an H2 subheading must be substantial, thorough, and extensive—approximately 500 words or characters of high-quality, fully detailed content (not short summaries) explaining the definition, deep concepts, historical background, evolution, practical context, real-world examples, and cultural or industry impact of "${keyword}".
-    4. Ad Optimization (AdSense placeholders):
-       - Insert exactly 2 to 3 "[AD]" placeholders (strictly in uppercase as "[AD]") placed strategically on empty lines between text paragraphs (never inside headings or sentences) to monetize the article's traffic.
-    5. Feature Image Selection:
-       - Find and select an extremely relevant, high-resolution Unsplash image related to "${keyword}". Use one of these high-quality, verified Unsplash photos if applicable, or specify any other valid, topic-appropriate Unsplash photo URL (e.g. from Source Unsplash):
-         - Tech/Business/Modern: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80"
-         - Mobile/Texting/Social: "https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80"
-         - Lifestyle/Friends: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80"
-         - Modern Abstract/Neon: "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=800&q=80"
-         - Or any other valid Unsplash photo URL if more appropriate for the topic.
-       - Alt Text: Generate a descriptive, keyword-rich imageAlt text. The alt text MUST naturally include the keyword "${keyword}".
-    6. Content Features: Use rich formatting: **bold** for key terms, bulleted lists for clear takeaways, blockquotes (>) for real-life examples, scenarios, or dialogues illustrating "${keyword}", and internal links where appropriate (e.g., "[whatsthatmean](/)").
+    CRITICAL GOOGLE SEO & YOAST RANKING RULES (MUST SATISFY ALL 7 FACTORS FROM YOAST/GOOGLE):
+    1. Paragraph Length (문단 길이): Keep paragraphs concise. MAXIMUM 120 words per paragraph. Break long walls of text into smaller, digestible paragraphs.
+    2. Sentence Length (문장 길이): Keep sentences short and clear. Average sentence length must be under 20 words. No more than 15-20% of sentences should exceed 20 words.
+    3. Active Voice (수동태 제한): Use ACTIVE VOICE for at least 90% of sentences. Passive voice must remain under 10% across the entire article (e.g., write "Doctors recommend..." instead of "It is recommended by doctors").
+    4. Transition Words (전환어 필수): At least 30% of all sentences MUST contain clear transition words or logical connectors (such as: however, therefore, in addition, moreover, furthermore, consequently, as a result, for instance, in summary, also, because, besides, for example, first, second, finally).
+    5. No Consecutive Sentence Start Repetition (연속 문장 동일 시작 금지): NEVER start two or more consecutive sentences with the exact same word (e.g., avoid repeating "This is... This is..."). Vary sentence starters naturally.
+    6. Subheading Distribution (소제목 분포): Every content section longer than 250-300 words MUST be divided using H2 (##) or H3 (###) subheadings to ensure high readability and easy scanning. Write at least 4 distinct H2 subheadings.
+    7. Flesch Reading Ease (읽기 쉬움 지수 70+): Maintain high readability by using plain, accessible English, short clear sentences, active verbs, and eliminating unnecessary jargon or overly complex phrasing.
+
+    CRITICAL LINKING RULES (INTERNAL & EXTERNAL LINK PRECISION):
+    8. Internal Link Precision (정밀한 내부링크):
+       - Internal links MUST ONLY point to verified routes in the whatsthatmean web application:
+         - Main Home/Dictionary: [whatsthatmean Dictionary](/)
+         - Term Search: [Search "TERM_CODE"](/?search=TERM_CODE) (e.g. [Search "${keyword}"](/?search=${encodeURIComponent(keyword)}))
+         - Interactive Quiz: [Slang & Acronym Quiz](/quiz)
+         - Blog Home: [whatsthatmean Blog](/blog)
+         - Emoji Dictionary: [Emoji Dictionary](/emoji)
+       - NEVER invent arbitrary non-existent routes (e.g. do NOT write dead links like [link](/term/random-fake-id)). Using search URLs like (/?search=KEYWORD) is guaranteed to open clean search results without broken link errors.
+    9. Mandatory 1 Authoritative External Link (정확하고 안전한 외부링크 1개):
+       - You MUST include EXACTLY ONE (1) highly relevant, trusted, official external reference link (HTTPS) relevant to the topic.
+       - The external link MUST point to an established, top-tier authoritative domain such as:
+         - General/Reference: https://en.wikipedia.org or https://www.merriam-webster.com
+         - Medical/Health: https://www.cdc.gov, https://www.nih.gov, https://www.who.int, https://medlineplus.gov
+         - Finance/Business: https://www.sec.gov, https://www.investopedia.com, https://www.federalreserve.gov
+         - Tech/Developer: https://developer.mozilla.org, https://www.w3.org, https://github.com
+       - Format example: [World Health Organization Guidance](https://www.who.int) or [Investopedia Reference](https://www.investopedia.com).
+       - STRICT WARNING: Never link to unencrypted (http), unknown, spammy, commercial affiliate, or low-quality sites.
+
+    STRUCTURE & CONTENT REQUIREMENTS:
+    - Title: The title MUST start with "${keyword}: " followed by a catchy, high-CTR headline.
+    - Meta Description: High-CTR search snippet under 160 characters explicitly containing "${keyword}".
+    - AdSense Placeholders: Insert exactly 2 to 3 "[AD]" tags (strictly uppercase as "[AD]") placed on empty lines between text paragraphs (never inside headings or sentences).
+    - Unsplash Image: Select a relevant Unsplash image URL and keyword-rich imageAlt text containing "${keyword}".
+    - Formatting: Use **bold** for key terms, bulleted lists for key takeaways, blockquotes (>) for real-world scenarios or dialogues, and H2/H3 subheadings for sections.
 
     The response MUST be a JSON object with the exact fields below:
     - title: The generated catchy blog title starting with "${keyword}: ".
     - excerpt: A compelling, high-CTR 1-2 sentence search engine summary.
-    - body: The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (approx. 500 words/chars per section), lists, text examples in blockquotes, and strategically placed [AD] tags.
+    - body: The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (max 120 words per paragraph, active voice, transition words), lists, text examples in blockquotes, strategic internal links, 1 authoritative external link, and strategically placed [AD] tags.
     - seoTitle: A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title.
     - metaDescription: A search snippet under 160 characters containing "${keyword}".
-    - keywords: A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, slang meaning, Gen Z slang, internet dictionary").
+    - keywords: A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, meaning, definition, guide").
     - imageUrl: The selected Unsplash image URL.
     - imageAlt: The keyword-rich image description.
 

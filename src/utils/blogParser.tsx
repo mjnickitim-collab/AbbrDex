@@ -1,6 +1,7 @@
 import React from "react";
 import AdPlaceholder from "../components/AdPlaceholder";
 import { AdSlot } from "../types";
+import { ExternalLink } from "lucide-react";
 
 /**
  * Parses blog body markdown-like syntax into beautiful React elements.
@@ -225,9 +226,15 @@ function parseInlineStyles(text: string): React.ReactNode {
             target={isInternal ? "_self" : "_blank"} 
             rel={isInternal ? "" : "noopener noreferrer"}
             onClick={handleClick}
-            className="text-indigo hover:text-indigo-dark underline font-semibold transition"
+            className={`inline-flex items-center gap-0.5 font-semibold transition ${
+              isInternal 
+                ? "text-indigo hover:text-indigo-dark underline" 
+                : "text-blue-600 dark:text-blue-400 hover:underline inline-baseline"
+            }`}
+            title={isInternal ? `Internal Link: ${finalUrl}` : `External Reference: ${url}`}
           >
-            {parseInlineStyles(label)}
+            <span>{parseInlineStyles(label)}</span>
+            {!isInternal && <ExternalLink className="w-3 h-3 inline-block shrink-0 opacity-80 ml-0.5" />}
           </a>
         );
       }

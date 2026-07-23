@@ -133,12 +133,18 @@ export default function App() {
       // Keep background as browse
       setActiveView("browse");
       setSelectedCategory(null);
-      setSearchQuery("");
       if (terms.length > 0) {
         const foundTerm = terms.find(t => t.code.toUpperCase() === code);
         if (foundTerm) {
           setSelectedTerm(foundTerm);
+          setSearchQuery("");
+        } else {
+          // Graceful fallback if term doesn't exist: search for the code
+          setSelectedTerm(null);
+          setSearchQuery(code);
         }
+      } else {
+        setSearchQuery(code);
       }
     }
   };
@@ -202,15 +208,29 @@ export default function App() {
     }
   }, [isDbLoaded]);
 
-  // Handle browser back and forward actions (popstate events)
+  // Handle browser back and forward actions (popstate events) and custom SPA navigation
   useEffect(() => {
     const handlePopState = () => {
       if (isDbLoaded) {
         syncUrlToState();
       }
     };
+    const handleSpaNavigate = (e: Event) => {
+      const customEv = e as CustomEvent<{ path: string }>;
+      if (customEv.detail && customEv.detail.path) {
+        window.history.pushState(null, "", customEv.detail.path);
+        if (isDbLoaded) {
+          syncUrlToState();
+        }
+      }
+    };
+
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    window.addEventListener("spa-navigate", handleSpaNavigate);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("spa-navigate", handleSpaNavigate);
+    };
   }, [isDbLoaded, terms, blogs]);
 
   // Dynamic client-side Title & Meta description for SEO
