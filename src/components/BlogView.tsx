@@ -107,7 +107,7 @@ export default function BlogView({
               title="Edit this article in Admin Centre"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit Article (글 수정)</span>
+              <span>Edit Article</span>
             </button>
           )}
         </div>
@@ -175,7 +175,7 @@ export default function BlogView({
                 className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white text-xs font-bold px-6 py-3 rounded-xl flex items-center gap-2 cursor-pointer transition shadow-sm active:scale-95"
               >
                 <Edit3 className="w-4 h-4" />
-                <span>Edit Article (글 수정)</span>
+                <span>Edit Article</span>
               </button>
             )}
           </div>

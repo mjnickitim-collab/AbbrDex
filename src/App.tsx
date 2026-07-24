@@ -397,9 +397,10 @@ export default function App() {
 
   // Handle Home Category click
   const handleHomeCategorySelect = (catId: string) => {
-    setSelectedCategory(catId);
+    setSelectedCategory(catId === "all" ? null : catId);
     setSearchQuery("");
     setActiveView("browse");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (loading) {
