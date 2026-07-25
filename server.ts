@@ -86,7 +86,7 @@ const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : get
 const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId);
 
 // Helper to race Firestore async queries against a timeout so serverless functions never hang
-async function withFirestoreTimeout<T>(promise: Promise<T>, ms = 3500, fallback: T): Promise<T> {
+async function withFirestoreTimeout<T>(promise: Promise<T>, ms = 8000, fallback: T): Promise<T> {
   let timer: any;
   const timeoutPromise = new Promise<T>((resolve) => {
     timer = setTimeout(() => {
@@ -550,24 +550,38 @@ const SITEMAP_CACHE_DURATION = 1000 * 60 * 60 * 12; // 12 hours cache duration
 
 async function getCachedSitemapXml(forceRefresh = false): Promise<string> {
   const now = Date.now();
-  if (forceRefresh || !cachedSitemapXml || (now - lastSitemapGenTime) > SITEMAP_CACHE_DURATION) {
-    console.log(`Generating sitemap.xml (Force: ${forceRefresh})...`);
-    cachedSitemapXml = await buildSitemapXmlString();
-    lastSitemapGenTime = now;
-  }
-  return cachedSitemapXml;
-}
-
-// Helper to construct sitemap XML string
-async function buildSitemapXmlString(): Promise<string> {
-  const domain = "https://whatsthatmean.com";
-  const dateStr = new Date().toISOString().split("T")[0];
   
-  // Fetch real-time blogs and terms from database concurrently
+  if (!forceRefresh && cachedSitemapXml && (now - lastSitemapGenTime) <= SITEMAP_CACHE_DURATION) {
+    return cachedSitemapXml;
+  }
+  
+  console.log(`Generating sitemap.xml (Force: ${forceRefresh})...`);
+  
   const [blogs, terms] = await Promise.all([
     getBlogsFromFirestore(),
     getTermsFromFirestore()
   ]);
+  
+  const isDataEmpty = blogs.length === 0 && terms.length === 0;
+  const xml = buildSitemapXmlStringWithData(blogs, terms);
+  
+  // Crucial: ONLY cache if we actually retrieved either blogs or terms!
+  // This prevents caching empty sitemaps for 12 hours due to cold starts or temporary connection issues.
+  if (!isDataEmpty) {
+    cachedSitemapXml = xml;
+    lastSitemapGenTime = now;
+    console.log(`Successfully generated and cached sitemap.xml with ${blogs.length} blogs and ${terms.length} terms.`);
+  } else {
+    console.warn("Sitemap data is completely empty (0 blogs and 0 terms retrieved). Serving transient un-cached sitemap to allow auto-recovery.");
+  }
+  
+  return xml;
+}
+
+// Helper to construct sitemap XML string using retrieved database items
+function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
+  const domain = "https://whatsthatmean.com";
+  const dateStr = new Date().toISOString().split("T")[0];
   
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
@@ -694,7 +708,8 @@ app.post(["/api/sitemap/apply", "/sitemap/apply"], async (req: any, res: any) =>
 // Dynamic Sitemap API
 app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   try {
-    const xml = await getCachedSitemapXml(false);
+    const forceRefresh = req.query.refresh === "true";
+    const xml = await getCachedSitemapXml(forceRefresh);
     res.header("Content-Type", "application/xml");
     res.header("Cache-Control", "public, max-age=0, must-revalidate");
     res.send(xml);
