@@ -18,6 +18,28 @@ interface HomeViewProps {
 // Sliding reel order for live decoder
 const REEL_ORDER = ["FYI", "GG", "ASAP", "FOMO", "SNAFU", "HMU", "WFH", "TBH", "IMHO", "NSFW", "ETA", "GOAT", "TL;DR", "TBD"];
 
+// SEO Keyword-rich category descriptions for high click-through rates (CTR) and internal linking power
+const getCategoryDescription = (id: string, count: number): string => {
+  const map: { [key: string]: string } = {
+    internet: `Explore ${count}+ Web Slangs & Chat Acronyms`,
+    texting: `Discover ${count}+ Texting Shorthands & SMS Codes`,
+    social: `Browse ${count}+ Social Media Slangs & Viral Tags`,
+    business: `Decode ${count}+ Corporate Abbreviations & Jargons`,
+    gaming: `Master ${count}+ Gaming Terms & Esports Acronyms`,
+    military: `Learn ${count}+ Tactical Jargons & Defense Codes`,
+    emoji: `Decode ${count}+ Emoji Meanings & Combos`,
+    sports: `Look up ${count}+ Sports Leagues & Stats Codes`,
+    companies: `Identify ${count}+ Company Name Abbreviations`,
+    countries: `Browse ${count}+ Country Initials & ISO Codes`,
+    cities: `Find ${count}+ City Abbreviations & Airport Codes`,
+    medical: `Search ${count}+ Clinical & Healthcare Acronyms`,
+    finance: `Analyze ${count}+ Financial Terms & Stock Codes`,
+    currency: `Convert ${count}+ Global Currency Shorthands`,
+    it_dev: `Explore ${count}+ Tech Terms & Programming Acronyms`,
+  };
+  return map[id] || `Explore ${count}+ verified terms & abbreviations`;
+};
+
 export default function HomeView({ 
   terms, 
   onSearch, 
@@ -352,19 +374,23 @@ export default function HomeView({
         <div className="cat-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 mb-8">
           {sortedCategories.map((c) => {
             const count = terms.filter((t) => t.cat === c.id).length;
+            const desc = getCategoryDescription(c.id, count);
             return (
               <button
                 key={`cat-grid-${c.id}`}
                 onClick={() => onSelectCategory(c.id)}
-                className="cat-chip group bg-card border-1.5 border-line rounded-xl p-4 text-left transition hover:border-indigo hover:shadow-sm hover:-translate-y-0.5 cursor-pointer flex flex-col justify-between h-24"
+                className="cat-chip group bg-card border-1.5 border-line rounded-xl p-3.5 text-left transition hover:border-indigo hover:shadow-sm hover:-translate-y-0.5 cursor-pointer flex flex-col justify-between min-h-[128px] h-auto"
               >
                 <div>
                   <div className="n font-display font-bold text-xs text-ink group-hover:text-indigo line-clamp-1">
                     {c.name}
                   </div>
+                  <div className="text-[10px] text-ink-soft leading-tight mt-1 line-clamp-2 font-medium group-hover:text-indigo/80">
+                    {desc}
+                  </div>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-line/40">
-                  <span className="c font-mono text-[11px] text-ink-soft font-semibold">
+                <div className="flex items-center justify-between pt-2 border-t border-line/40 w-full mt-2">
+                  <span className="c font-mono text-[10px] text-ink-soft font-semibold">
                     {count} terms
                   </span>
                   <span className="text-xs text-indigo opacity-0 group-hover:opacity-100 transition">→</span>

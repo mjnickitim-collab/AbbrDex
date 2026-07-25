@@ -22,6 +22,26 @@
     <meta property="og:title" content="Online Abbreviation Dictionary & Acronym Finder | whatsthatmean" />
     <meta property="og:description" content="Decode 4,400+ text slangs, gaming acronyms, business shorthands, and military jargon easily with whatsthatmean dictionary." />
     <meta property="og:type" content="website" />
+
+    <!-- Structured Data (Schema.org) for Sitelinks Searchbox -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "whatsthatmean",
+      "alternateName": ["Whats That Mean", "whatsthatmean.com"],
+      "url": "https://whatsthatmean.com",
+      "description": "Decode 4,400+ text slangs, gaming acronyms, business shorthands, and military jargon easily with whatsthatmean dictionary.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://whatsthatmean.com/?search={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
