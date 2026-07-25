@@ -138,7 +138,8 @@ async function getBlogsFromFirestore() {
         draft: data.draft || false,
         excerpt: data.excerpt || "",
         seoTitle: data.seoTitle || "",
-        metaDescription: data.metaDescription || ""
+        metaDescription: data.metaDescription || "",
+        date: data.date || ""
       };
     });
   })(), 3500, []);
@@ -184,15 +185,33 @@ async function getTermsFromFirestore() {
 
 // Helper to resolve SEO metadata based on URL path
 async function getSeoMetadata(urlPath: string) {
-  let title = "whatsthatmean | Ultimate Abbreviation, Acronym & Slang Dictionary";
-  let desc = "Decode the world's abbreviations, modern chat acronyms, gaming shorthand, military codes, and business terminology. Take interactive quizzes and learn on whatsthatmean.";
+  let title = "Online Abbreviation Dictionary & Acronym Finder | whatsthatmean";
+  let desc = "Decode 4,400+ text slangs, gaming acronyms, business shorthands, and military jargon easily with whatsthatmean dictionary.";
+  let schemaMarkup = "";
 
   try {
     const pathname = urlPath.split("?")[0];
 
     if (pathname === "/" || pathname === "/home" || pathname === "") {
-      title = "whatsthatmean | Home - Decode Chat, Gaming, Business & Military Slang";
-      desc = "Discover trending abbreviations and modern acronyms. Search our real-time slang dictionary and test your knowledge.";
+      title = "Online Abbreviation Dictionary & Acronym Finder | whatsthatmean";
+      desc = "Decode 4,400+ text slangs, gaming acronyms, business shorthands, and military jargon easily with whatsthatmean dictionary.";
+      
+      const homeSchema = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "whatsthatmean",
+        "url": "https://whatsthatmean.com",
+        "description": desc,
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://whatsthatmean.com/?search={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      };
+      schemaMarkup = `<script type="application/ld+json">${JSON.stringify(homeSchema)}</script>`;
     } else if (pathname === "/browse") {
       title = "Explore Dictionary | whatsthatmean - Find Abbreviations & Meanings";
       desc = "Browse through hundreds of curated acronyms, digital shorthand, and slang meanings. Filter by category or search terms instantly.";
@@ -225,6 +244,32 @@ async function getSeoMetadata(urlPath: string) {
       if (foundBlog && !foundBlog.draft) {
         title = foundBlog.seoTitle || foundBlog.title || title;
         desc = foundBlog.metaDescription || foundBlog.excerpt || desc;
+        
+        const blogSchema = {
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "headline": foundBlog.title,
+          "description": foundBlog.excerpt || desc,
+          "datePublished": foundBlog.date || new Date().toISOString().split("T")[0],
+          "author": {
+            "@type": "Organization",
+            "name": "whatsthatmean",
+            "url": "https://whatsthatmean.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "whatsthatmean",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://whatsthatmean.com/logo.png"
+            }
+          },
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `https://whatsthatmean.com/blog/${slug}`
+          }
+        };
+        schemaMarkup = `<script type="application/ld+json">${JSON.stringify(blogSchema)}</script>`;
       }
     } else if (pathname.startsWith("/term/")) {
       const code = decodeURIComponent(pathname.substring(6)).toUpperCase();
@@ -233,18 +278,61 @@ async function getSeoMetadata(urlPath: string) {
         const categoryName = foundTerm.cat ? (foundTerm.cat.charAt(0).toUpperCase() + foundTerm.cat.slice(1)) : "Slang";
         title = `${foundTerm.code} Meaning: What Does ${foundTerm.code} Mean? | whatsthatmean`;
         desc = `What does ${foundTerm.code} stand for? It means "${foundTerm.full}". Learn its definition, category (${categoryName}), and see real-world texting examples like: "${foundTerm.ex || ""}"`;
+        
+        const cleanEx = foundTerm.ex ? foundTerm.ex.replace(/"/g, '\\"') : "";
+        const cleanFull = foundTerm.full ? foundTerm.full.replace(/"/g, '\\"') : "";
+        
+        const termSchema = {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "DefinedTerm",
+              "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#defined-term`,
+              "name": foundTerm.code,
+              "description": `Means: ${cleanFull}. Category: ${categoryName}.`,
+              "inDefinedTermSet": {
+                "@type": "DefinedTermSet",
+                "name": "whatsthatmean Dictionary",
+                "url": "https://whatsthatmean.com"
+              }
+            },
+            {
+              "@type": "FAQPage",
+              "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#faq`,
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": `What does ${foundTerm.code} mean?`,
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": `${foundTerm.code} stands for '${cleanFull}'. It is categorized as a ${categoryName} abbreviation.${cleanEx ? ` Example usage: "${cleanEx}"` : ""}`
+                  }
+                },
+                {
+                  "@type": "Question",
+                  "name": `What is the definition of ${foundTerm.code} in texting and slang?`,
+                  "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": `In texting and online chat, the abbreviation ${foundTerm.code} stands for '${cleanFull}'.`
+                  }
+                }
+              ]
+            }
+          ]
+        };
+        schemaMarkup = `<script type="application/ld+json">${JSON.stringify(termSchema)}</script>`;
       }
     }
   } catch (err) {
     console.error("Error generating SEO metadata:", err);
   }
 
-  return { title, desc };
+  return { title, desc, schemaMarkup };
 }
 
 // Injects dynamic metadata tags in HTML head
 async function injectSeoMetadata(html: string, urlPath: string): Promise<string> {
-  const { title, desc } = await getSeoMetadata(urlPath);
+  const { title, desc, schemaMarkup } = await getSeoMetadata(urlPath);
   
   let updatedHtml = html;
   
@@ -253,6 +341,15 @@ async function injectSeoMetadata(html: string, urlPath: string): Promise<string>
   updatedHtml = updatedHtml.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i, `<meta name="description" content="${desc}" />`);
   updatedHtml = updatedHtml.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${title}" />`);
   updatedHtml = updatedHtml.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${desc}" />`);
+  
+  // Inject schema markup if available
+  if (schemaMarkup) {
+    if (updatedHtml.includes("</head>")) {
+      updatedHtml = updatedHtml.replace("</head>", `${schemaMarkup}\n</head>`);
+    } else {
+      updatedHtml = `${schemaMarkup}\n${updatedHtml}`;
+    }
+  }
   
   return updatedHtml;
 }

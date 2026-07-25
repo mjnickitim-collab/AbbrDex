@@ -116,11 +116,11 @@ export default function HomeView({
         </span>
 
         <h1 className="font-display font-black text-3xl sm:text-4xl md:text-5xl leading-[1.15] text-ink tracking-tight max-w-[800px] mx-auto">
-          Decode the world's abbreviations, one shorthand at a time.
+          Online Abbreviation Dictionary & Acronym Finder
         </h1>
 
-        <p className="sub text-base sm:text-lg text-ink-soft max-w-[620px] mx-auto leading-relaxed">
-          From everyday texting acronyms to professional workplace shorthand — explained clearly, tested playfully.
+        <p className="sub text-base sm:text-lg text-ink-soft max-w-[720px] mx-auto leading-relaxed">
+          Decode 4,400+ text slang meanings, chat acronyms, gaming shorthands, business terms, and military jargon easily with whatsthatmean dictionary.
         </p>
 
         {/* Centered Search Bar */}
@@ -166,7 +166,7 @@ export default function HomeView({
                 <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
                   <TrendingUp className="w-4 h-4" />
                 </div>
-                <h2 className="font-display font-bold text-xl text-ink">Trending Acronyms</h2>
+                <h2 className="font-display font-bold text-xl text-ink">Trending Acronyms & Text Slang Meanings</h2>
               </div>
               <p className="text-xs text-ink-soft font-medium">
                 High-traffic shorthand terms decoded for instant lookups
@@ -225,7 +225,7 @@ export default function HomeView({
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-2xl text-ink">Latest Insights</h2>
+              <h2 className="font-display font-bold text-2xl text-ink">Latest Slang Trends & Abbreviation Guides</h2>
               <p className="text-xs text-ink-soft font-medium">In-depth guides, internet culture trends, and expert explanations of modern shorthand</p>
             </div>
           </div>
@@ -339,7 +339,7 @@ export default function HomeView({
               <Grid className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-2xl text-ink">Popular Categories</h2>
+              <h2 className="font-display font-bold text-2xl text-ink">Browse Abbreviation Dictionary Categories</h2>
               <p className="text-xs text-ink-soft font-medium">Browse abbreviations sorted by topic & domain</p>
             </div>
           </div>
