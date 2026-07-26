@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
+import { generateTermArticle } from "./src/utils/termArticleGenerator";
 
 dotenv.config();
 
@@ -188,6 +189,7 @@ async function getSeoMetadata(urlPath: string) {
   let title = "Online Abbreviation Dictionary & Acronym Finder | whatsthatmean";
   let desc = "Decode 4,400+ text slangs, gaming acronyms, business shorthands, and military jargon easily with whatsthatmean dictionary.";
   let schemaMarkup = "";
+  let bodyArticleHtml = "";
 
   try {
     const pathname = urlPath.split("?")[0];
@@ -212,6 +214,18 @@ async function getSeoMetadata(urlPath: string) {
         }
       };
       schemaMarkup = `<script type="application/ld+json">${JSON.stringify(homeSchema)}</script>`;
+    } else if (pathname === "/about") {
+      title = "About Us | whatsthatmean - Modern Digital Reference Platform";
+      desc = "Learn about whatsthatmean.com, an independent digital reference platform dedicated to decoding acronyms, slang, emojis, and modern internet expressions.";
+    } else if (pathname === "/editorial") {
+      title = "Editorial Policy | whatsthatmean - Quality & Verification Standards";
+      desc = "Read our editorial standards ensuring all definitions, etymologies, and usage examples published on whatsthatmean.com are accurate, human-written, and neutral.";
+    } else if (pathname === "/privacy") {
+      title = "Privacy Policy | whatsthatmean - Data Protection & Privacy";
+      desc = "Privacy Policy for whatsthatmean.com. Learn how we handle technical data, cookies, and privacy rights in compliance with GDPR and CCPA.";
+    } else if (pathname === "/terms") {
+      title = "Terms of Service | whatsthatmean - User Agreement";
+      desc = "Terms of Service governing your access to and use of whatsthatmean.com dictionary portal and reference content.";
     } else if (pathname === "/browse") {
       title = "Explore Dictionary | whatsthatmean - Find Abbreviations & Meanings";
       desc = "Browse through hundreds of curated acronyms, digital shorthand, and slang meanings. Filter by category or search terms instantly.";
@@ -276,10 +290,10 @@ async function getSeoMetadata(urlPath: string) {
       const foundTerm = await getTermFromFirestoreByCode(code);
       if (foundTerm) {
         const categoryName = foundTerm.cat ? (foundTerm.cat.charAt(0).toUpperCase() + foundTerm.cat.slice(1)) : "Slang";
+        const articleData = generateTermArticle(foundTerm);
         title = `${foundTerm.code} Meaning: What Does ${foundTerm.code} Mean? | whatsthatmean`;
-        desc = `What does ${foundTerm.code} stand for? It means "${foundTerm.full}". Learn its definition, category (${categoryName}), and see real-world texting examples like: "${foundTerm.ex || ""}"`;
+        desc = `What does ${foundTerm.code} stand for? It means "${foundTerm.full}". Learn its definition, etymology, tone guide, and see real-world texting examples.`;
         
-        const cleanEx = foundTerm.ex ? foundTerm.ex.replace(/"/g, '\\"') : "";
         const cleanFull = foundTerm.full ? foundTerm.full.replace(/"/g, '\\"') : "";
         
         const termSchema = {
@@ -289,7 +303,7 @@ async function getSeoMetadata(urlPath: string) {
               "@type": "DefinedTerm",
               "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#defined-term`,
               "name": foundTerm.code,
-              "description": `Means: ${cleanFull}. Category: ${categoryName}.`,
+              "description": `Means: ${cleanFull}. Category: ${categoryName}. Tone: ${articleData.formalityLevel}.`,
               "inDefinedTermSet": {
                 "@type": "DefinedTermSet",
                 "name": "whatsthatmean Dictionary",
@@ -297,42 +311,70 @@ async function getSeoMetadata(urlPath: string) {
               }
             },
             {
+              "@type": "Article",
+              "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#article`,
+              "headline": `What Does ${foundTerm.code} Mean? Definition, Origin & Usage Guide`,
+              "description": articleData.overview,
+              "articleBody": `${articleData.overview} ${articleData.etymology} ${articleData.culturalLore}`,
+              "wordCount": articleData.fullWordCount,
+              "publisher": {
+                "@type": "Organization",
+                "name": "whatsthatmean",
+                "url": "https://whatsthatmean.com"
+              }
+            },
+            {
               "@type": "FAQPage",
               "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#faq`,
-              "mainEntity": [
-                {
-                  "@type": "Question",
-                  "name": `What does ${foundTerm.code} mean?`,
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": `${foundTerm.code} stands for '${cleanFull}'. It is categorized as a ${categoryName} abbreviation.${cleanEx ? ` Example usage: "${cleanEx}"` : ""}`
-                  }
-                },
-                {
-                  "@type": "Question",
-                  "name": `What is the definition of ${foundTerm.code} in texting and slang?`,
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": `In texting and online chat, the abbreviation ${foundTerm.code} stands for '${cleanFull}'.`
-                  }
+              "mainEntity": articleData.faqs.map((faq) => ({
+                "@type": "Question",
+                "name": faq.question,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": faq.answer
                 }
-              ]
+              }))
             }
           ]
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(termSchema)}</script>`;
+
+        // Build SSR HTML text block for AdSense and search engine crawlers
+        bodyArticleHtml = `
+          <div id="ssr-term-article" style="display:none;" aria-hidden="true">
+            <article>
+              <h1>What Does ${foundTerm.code} Mean? Definition, Origin & Usage</h1>
+              <p><strong>Spelled-out phrase:</strong> ${foundTerm.full}</p>
+              <p><strong>Category:</strong> ${categoryName}</p>
+              <h2>Overview</h2>
+              <p>${articleData.overview}</p>
+              <h2>Etymology & History</h2>
+              <p>${articleData.etymology}</p>
+              <h2>Usage Scenarios</h2>
+              ${articleData.usageScenarios.map(s => `<h3>${s.title}</h3><p>${s.desc}</p><pre>${s.example}</pre>`).join("")}
+              <h2>Comparisons</h2>
+              ${articleData.comparisons.map(c => `<h3>${c.term}</h3><p>${c.difference}</p>`).join("")}
+              <h2>Common Pitfalls</h2>
+              <ul>${articleData.pitfalls.map(p => `<li>${p}</li>`).join("")}</ul>
+              <h2>Cultural Context</h2>
+              <p>${articleData.culturalLore}</p>
+              <h2>Frequently Asked Questions</h2>
+              ${articleData.faqs.map(f => `<details><summary>${f.question}</summary><p>${f.answer}</p></details>`).join("")}
+            </article>
+          </div>
+        `;
       }
     }
   } catch (err) {
     console.error("Error generating SEO metadata:", err);
   }
 
-  return { title, desc, schemaMarkup };
+  return { title, desc, schemaMarkup, bodyArticleHtml };
 }
 
-// Injects dynamic metadata tags in HTML head
+// Injects dynamic metadata tags in HTML head and body
 async function injectSeoMetadata(html: string, urlPath: string): Promise<string> {
-  const { title, desc, schemaMarkup } = await getSeoMetadata(urlPath);
+  const { title, desc, schemaMarkup, bodyArticleHtml } = await getSeoMetadata(urlPath);
   
   let updatedHtml = html;
   
@@ -349,6 +391,11 @@ async function injectSeoMetadata(html: string, urlPath: string): Promise<string>
     } else {
       updatedHtml = `${schemaMarkup}\n${updatedHtml}`;
     }
+  }
+
+  // Inject body article HTML for crawlers if present
+  if (bodyArticleHtml && updatedHtml.includes("<body>")) {
+    updatedHtml = updatedHtml.replace("<body>", `<body>\n${bodyArticleHtml}`);
   }
   
   return updatedHtml;
@@ -684,7 +731,7 @@ function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   
   // 1. Core routes
-  const routes = ["", "/browse", "/quiz", "/blog"];
+  const routes = ["", "/browse", "/quiz", "/blog", "/about", "/editorial", "/privacy", "/terms"];
   routes.forEach(route => {
     xml += `  <url>\n`;
     xml += `    <loc>${domain}${route}</loc>\n`;
