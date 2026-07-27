@@ -554,24 +554,22 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
     let response;
     try {
       response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: generationConfig
       });
     } catch (modelError: any) {
-      console.warn("Primary model gemini-3.6-flash failed, attempting fallback to gemini-flash-latest:", modelError?.message || modelError);
+      console.warn("Primary model gemini-2.5-flash failed, attempting fallback to gemini-2.5-pro:", modelError?.message || modelError);
       try {
         response = await ai.models.generateContent({
-          model: "gemini-flash-latest",
+          model: "gemini-2.5-pro",
           contents: prompt,
           config: generationConfig
         });
       } catch (fallbackError: any) {
-        console.warn("Fallback gemini-flash-latest failed, trying gemini-3.1-pro-preview:", fallbackError?.message || fallbackError);
-        response = await ai.models.generateContent({
-          model: "gemini-3.1-pro-preview",
-          contents: prompt,
-          config: generationConfig
+        console.error("Both gemini-2.5-flash and gemini-2.5-pro failed:", fallbackError?.message || fallbackError);
+        return res.status(500).json({
+          error: `Gemini API call failed: ${modelError?.message || fallbackError?.message || "Model error"}`
         });
       }
     }

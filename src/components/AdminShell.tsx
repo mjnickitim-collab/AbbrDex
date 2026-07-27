@@ -1790,7 +1790,7 @@ Try writing your own content or edit this template using the helper buttons abov
               <div className="admin-card bg-card border border-line rounded-xl p-6 shadow-sm space-y-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-indigo animate-pulse" />
-                  <div className="font-display font-bold text-lg text-ink">AI Blog Article Generator (Gemini 3.5)</div>
+                  <div className="font-display font-bold text-lg text-ink">AI Blog Article Generator (Gemini 2.5 Flash)</div>
                 </div>
                 <p className="text-xs text-ink-soft leading-relaxed">
                   원하는 키워드 또는 주제를 입력하고 생성 버튼을 누르시면, 구글 검색(SEO) 최적화에 특화된 고품질 블로그 기사가 자동으로 생성됩니다. 
