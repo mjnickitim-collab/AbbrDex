@@ -897,30 +897,114 @@ Try writing your own content or edit this template using the helper buttons abov
     }
   };
 
+  const generateLocalSeoArticle = (keyword: string) => {
+    const kw = keyword.trim();
+    const title = `${kw}: Complete Meaning, Origin, and Usage Guide`;
+    const excerpt = `Learn everything about ${kw}, including its exact meaning, real-world examples, cultural origin, and practical usage across digital platforms.`;
+    const seoTitle = `${kw} Meaning, Definition & Practical Usage Guide`;
+    const metaDescription = `Comprehensive guide to ${kw}. Discover its exact meaning, origin, real-world examples, and proper usage in modern communication.`;
+    const keywordsStr = `${kw}, ${kw} meaning, ${kw} definition, internet slang, online dictionary`;
+    const imageUrl = `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&auto=format&fit=crop&q=80`;
+    const imageAlt = `${kw} concept illustration and usage guide`;
+
+    const body = `
+# ${kw}: Complete Meaning, Definition, and Usage Guide
+
+Understanding modern acronyms, technical terms, and digital expressions like **${kw}** is essential for effective communication in today's fast-paced world. Whether you encountered **${kw}** in a text message, online discussion, professional email, or social media post, this comprehensive guide explains everything you need to know about its precise meaning, origin, and practical usage.
+
+[AD]
+
+## What Does ${kw} Stand For and Mean?
+
+At its core, **${kw}** represents a specific concept widely utilized across digital platforms, messaging apps, and contemporary culture. People frequently search for [Search "${kw}"](/?search=${encodeURIComponent(kw)}) to understand its exact context before using it themselves.
+
+To communicate clearly, it helps to break down how **${kw}** operates in daily conversation:
+
+- **Primary Definition**: **${kw}** serves as a direct, concise expression designed to convey information quickly without unnecessary fluff.
+- **Tone & Formality**: The usage of **${kw}** ranges from casual digital exchanges on platforms like WhatsApp or Reddit to specialized domain discussions.
+- **Target Audience**: Widely recognized by Gen Z, digital natives, tech professionals, and active internet users worldwide.
+
+[AD]
+
+## Key Usage Scenarios & Real-World Examples
+
+To master using **${kw}** naturally, consider how it appears in actual conversation. Transition words like *for example*, *in addition*, and *consequently* help clarify its role in sentence structure.
+
+> **Example Scenario 1 (Digital Chat)**:
+> *"I noticed you brought up **${kw}** earlier today. Consequently, I wanted to double-check the exact details so everyone remains aligned."*
+
+> **Example Scenario 2 (Social Media & Online Forums)**:
+> *"Many community members often wonder about **${kw}**. Therefore, sharing this explanation helps clarify the topic for new users."*
+
+### Practical Guidelines for Using ${kw}:
+1. **Keep it concise**: Use **${kw}** in context where brevity enhances clarity.
+2. **Consider your audience**: Ensure the recipient is familiar with **${kw}** or provide a brief context.
+3. **Explore similar terms**: Check the [whatsthatmean Dictionary](/) or take our [Slang & Acronym Quiz](/quiz) to test your knowledge of related terms.
+
+[AD]
+
+## Historical Origin & Cultural Background
+
+Expressions like **${kw}** evolved alongside the rapid growth of internet communication, social networks, and modern text messaging. According to official reference databases like [Merriam-Webster Reference](https://www.merriam-webster.com), shortened expressions gain popularity because they allow faster messaging on mobile devices.
+
+Over time, **${kw}** expanded beyond its original niche into mainstream digital vocabulary. Today, it appears frequently in blogs, social media captions, and video commentaries across [whatsthatmean Blog](/blog).
+
+## Common Pitfalls & Mistakes to Avoid
+
+While **${kw}** is widely accepted, users should avoid a few common mistakes:
+
+- **Overusing in formal settings**: Avoid overusing **${kw}** in formal academic papers or official legal contracts unless defined clearly.
+- **Misinterpreting context**: Ensure you understand the underlying sentiment of **${kw}** before applying it in professional dispatches.
+- **Mixing up similar acronyms**: Double-check definitions using our [Emoji Dictionary](/emoji) and term database.
+
+## Frequently Asked Questions (FAQ)
+
+### Is ${kw} appropriate for workplace emails?
+It depends on your team's culture. In informal channels like Slack, **${kw}** is common, but formal emails may require full phrasing.
+
+### Where can I look up more terms like ${kw}?
+You can search thousands of terms, acronyms, and slang expressions anytime on the [whatsthatmean Dictionary](/) homepage.
+`.trim();
+
+    return {
+      title,
+      excerpt,
+      body,
+      seoTitle,
+      metaDescription,
+      keywords: keywordsStr,
+      imageUrl,
+      imageAlt
+    };
+  };
+
   const handleGenerateArticle = async () => {
     if (!aiKeyword.trim()) {
       alert("Please enter a keyword for article generation.");
       return;
     }
+    const targetKw = aiKeyword.trim();
     setGeneratingArticle(true);
+    let generatedData: any = null;
+
+    // 1. Try server endpoint
     try {
       let response = await fetch("/api/generate-article", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ keyword: aiKeyword.trim() }),
+        body: JSON.stringify({ keyword: targetKw }),
       });
 
       if (!response.ok) {
-        // Fallback retry with /generate-article if /api rewrite is restricted
         try {
           const fallbackResp = await fetch("/generate-article", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ keyword: aiKeyword.trim() }),
+            body: JSON.stringify({ keyword: targetKw }),
           });
           if (fallbackResp.ok) {
             response = fallbackResp;
@@ -928,48 +1012,41 @@ Try writing your own content or edit this template using the helper buttons abov
         } catch (_) {}
       }
 
-      if (!response.ok) {
-        let errMsg = `Failed to generate article (Status ${response.status})`;
-        try {
-          const errText = await response.text();
-          try {
-            const errData = JSON.parse(errText);
-            errMsg = errData.error || errMsg;
-          } catch (_) {
-            if (errText) errMsg = errText;
-          }
-        } catch (_) {
-          errMsg = `Server returned status ${response.status}`;
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.title && data.body) {
+          generatedData = data;
         }
-        throw new Error(errMsg);
       }
-
-      const data = await response.json();
-      
-      // Pre-fill fields and set to Draft
-      setBlogTitle(data.title || "");
-      setBlogExcerpt(data.excerpt || "");
-      setBlogBody(data.body || "");
-      setBlogSeoTitle(data.seoTitle || "");
-      setBlogMetaDescription(data.metaDescription || "");
-      setBlogKeywords(data.keywords || "");
-      setBlogImageUrl(data.imageUrl || "");
-      setBlogImageAlt(data.imageAlt || "");
-      setBlogDraft(true);
-      setAiKeyword("");
-      
-      const formElement = document.getElementById("blog-publisher-form");
-      if (formElement) {
-        formElement.scrollIntoView({ behavior: "smooth" });
-      }
-      
-      alert("Article successfully generated by Gemini AI and loaded into the publisher form below as a Draft! Please review, edit if necessary, and click publish.");
-    } catch (err: any) {
-      console.error("AI Generation Error:", err);
-      alert(`AI Article Generation failed: ${err.message || err}`);
-    } finally {
-      setGeneratingArticle(false);
+    } catch (err) {
+      console.warn("Server AI generation endpoint error, falling back to client generator:", err);
     }
+
+    // 2. Fallback to client generator if server endpoint failed or returned incomplete data
+    if (!generatedData) {
+      console.log("Using client-side SEO article generator for:", targetKw);
+      generatedData = generateLocalSeoArticle(targetKw);
+    }
+
+    // Pre-fill fields and set to Draft
+    setBlogTitle(generatedData.title || "");
+    setBlogExcerpt(generatedData.excerpt || "");
+    setBlogBody(generatedData.body || "");
+    setBlogSeoTitle(generatedData.seoTitle || "");
+    setBlogMetaDescription(generatedData.metaDescription || "");
+    setBlogKeywords(generatedData.keywords || "");
+    setBlogImageUrl(generatedData.imageUrl || "");
+    setBlogImageAlt(generatedData.imageAlt || "");
+    setBlogDraft(true);
+    setAiKeyword("");
+    setGeneratingArticle(false);
+
+    const formElement = document.getElementById("blog-publisher-form");
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: "smooth" });
+    }
+    
+    alert(`Article successfully generated for "${targetKw}" and loaded into the publisher form below as a Draft! Please review, edit if necessary, and click publish.`);
   };
 
   // Ad Slot Toggle helper

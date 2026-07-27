@@ -106,7 +106,7 @@ try {
 }
 
 // Initialize server-side Firebase instance safely avoiding duplicate app error in serverless contexts
-const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId);
 
 // Helper to race Firestore async queries against a timeout so serverless functions never hang
