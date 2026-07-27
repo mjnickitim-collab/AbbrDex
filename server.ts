@@ -17,10 +17,22 @@ app.use(express.json());
 // Path Normalization Middleware for Vercel Rewrites
 app.use((req, res, next) => {
   if (req.url && req.url.startsWith("/api/index")) {
-    req.url = req.url.replace("/api/index", "/api");
+    try {
+      const urlObj = new URL(req.url, "http://localhost");
+      const subPath = urlObj.searchParams.get("path");
+      if (subPath) {
+        req.url = subPath.startsWith("/") ? `/api${subPath}` : `/api/${subPath}`;
+      } else {
+        const restored = req.url.replace(/^\/api\/index/, "");
+        req.url = restored ? (restored.startsWith("/") ? `/api${restored}` : `/api/${restored}`) : "/api";
+      }
+    } catch (_) {
+      req.url = "/api";
+    }
   }
   next();
 });
+
 
 // CORS Middleware for API routes
 app.use((req, res, next) => {
@@ -535,13 +547,23 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
         config: generationConfig
       });
     } catch (modelError: any) {
-      console.warn("Primary model gemini-3.6-flash failed, attempting fallback to gemini-2.5-flash:", modelError?.message || modelError);
-      response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: generationConfig
-      });
+      console.warn("Primary model gemini-3.6-flash failed, attempting fallback to gemini-flash-latest:", modelError?.message || modelError);
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-flash-latest",
+          contents: prompt,
+          config: generationConfig
+        });
+      } catch (fallbackError: any) {
+        console.warn("Fallback gemini-flash-latest failed, trying gemini-3.1-pro-preview:", fallbackError?.message || fallbackError);
+        response = await ai.models.generateContent({
+          model: "gemini-3.1-pro-preview",
+          contents: prompt,
+          config: generationConfig
+        });
+      }
     }
+
 
     const text = response.text || "{}";
     

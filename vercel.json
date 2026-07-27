@@ -8,11 +8,19 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index"
+      "destination": "/api/index?path=$1"
+    },
+    {
+      "source": "/generate-article",
+      "destination": "/api/index?path=generate-article"
+    },
+    {
+      "source": "/search-unsplash",
+      "destination": "/api/index?path=search-unsplash"
     },
     {
       "source": "/sitemap.xml",
-      "destination": "/api/index"
+      "destination": "/api/index?path=sitemap.xml"
     },
     {
       "source": "/(.*)",
@@ -20,3 +28,4 @@
     }
   ]
 }
+
