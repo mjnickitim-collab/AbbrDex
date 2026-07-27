@@ -12,7 +12,18 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Body Parser middleware compatible with Vercel Serverless Functions and local Express
+app.use((req: any, res: any, next: any) => {
+  if (req.body && typeof req.body === "string") {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch (_) {}
+  }
+  if (req.body && typeof req.body === "object") {
+    return next();
+  }
+  express.json()(req, res, next);
+});
 
 // Path Normalization Middleware for Vercel Rewrites
 app.use((req, res, next) => {
@@ -432,7 +443,8 @@ export { getGoogleSiteVerification, injectSeoMetadata };
 
 // API endpoint to generate blog articles using Gemini
 app.post(["/api/generate-article", "/generate-article"], async (req: any, res: any) => {
-  const { keyword } = req.body;
+  const body = req.body || {};
+  const keyword = body.keyword;
   if (!keyword) {
     return res.status(400).json({ error: "Keyword is required" });
   }
