@@ -898,96 +898,17 @@ Try writing your own content or edit this template using the helper buttons abov
     }
   };
 
-  const generateLocalSeoArticle = (keyword: string) => {
-    const kw = keyword.trim();
-    const title = `${kw}: Complete Guide, Key Insights, and Essential Overview`;
-    const excerpt = `Explore an in-depth analysis of ${kw}, covering its core concepts, key developments, practical implications, and expert insights.`;
-    const seoTitle = `${kw} Guide: Comprehensive Overview & Key Insights`;
-    const metaDescription = `Detailed guide to ${kw}. Discover key developments, strategic insights, practical applications, and common questions answered.`;
-    const keywordsStr = `${kw}, ${kw} guide, ${kw} analysis, ${kw} overview, online reference`;
-    const imageUrl = `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&auto=format&fit=crop&q=80`;
-    const imageAlt = `${kw} concept illustration and overview`;
-
-    const body = `
-# ${kw}: Complete Guide, Key Insights, and Essential Overview
-
-Staying thoroughly informed about **${kw}** is increasingly vital in modern digital research, professional practice, and general knowledge. Whether you are exploring **${kw}** for academic, professional, or personal interest, this comprehensive guide delivers structured insights and key analysis.
-
-[AD]
-
-## 1. Overview and Key Background Context
-
-To understand the full scope of **${kw}**, it is essential to examine its background and modern relevance. Readers frequently explore [Search "${kw}"](/?search=${encodeURIComponent(kw)}) on our dictionary database to discover verified definitions and related topics.
-
-Key highlights surrounding **${kw}** include:
-
-- **Core Significance**: **${kw}** represents a fundamental topic that bridges theoretical knowledge with real-world understanding.
-- **Widespread Impact**: From digital discussions to specialized publications, **${kw}** continues to shape contemporary conversations.
-- **Target Value**: Ideal for researchers, professionals, creators, and general readers seeking authoritative clarity.
-
-[AD]
-
-## 2. Deep Dive: Key Developments and Core Principles
-
-Evaluating the primary dimensions of **${kw}** reveals several critical pillars:
-
-1. **Foundational Mechanics**: How **${kw}** operates in practice, detailing its key attributes and structures.
-2. **Evolving Dynamics**: Recent developments and shifts influencing how **${kw}** is understood globally.
-3. **Strategic Value**: Why staying updated on **${kw}** offers a competitive edge in knowledge and application.
-
-## 3. Practical Applications and Real-World Examples
-
-Across different industries and everyday contexts, **${kw}** manifests in practical ways. Using logical transition words like *consequently*, *furthermore*, and *for instance* helps clarify its impact.
-
-For instance, when evaluating real-world implementations of **${kw}**, experts highlight the following recommendations:
-
-- **Maintain Contextual Awareness**: Always consider the specific environment in which **${kw}** is being referenced.
-- **Consult Reliable Sources**: Verify information through trusted channels such as [Merriam-Webster Reference](https://www.merriam-webster.com) or official domain literature.
-- **Explore Related Topics**: Discover adjacent concepts on the [whatsthatmean Dictionary](/) or browse the [whatsthatmean Blog](/blog) for further reading.
-
-[AD]
-
-## 4. Key Takeaways and Critical Analysis
-
-When evaluating **${kw}**, keeping key principles in mind is essential:
-
-- **Avoid Misinterpretation**: Ensure you understand the operational subtleties of **${kw}** rather than relying on surface-level assumptions.
-- **Maintain Current Knowledge**: Follow authoritative domain publications and explore our [whatsthatmean Blog](https://www.whatsthatmean.com/blog) for updated insights.
-
-## 5. Frequently Asked Questions (FAQ)
-
-### Q: What makes ${kw} significant for readers today?
-
-Understanding **${kw}** empowers readers with accurate knowledge, enabling better decision-making and clearer communication across various contexts.
-
-### Q: Where can I find additional resources about ${kw}?
-
-You can explore related articles and topic guides anytime directly on the [whatsthatmean Blog](https://www.whatsthatmean.com/blog) or search terms via our platform.
-`.trim();
-
-    return {
-      title,
-      excerpt,
-      body,
-      seoTitle,
-      metaDescription,
-      keywords: keywordsStr,
-      imageUrl,
-      imageAlt
-    };
-  };
-
   // Direct client-side Gemini AI generator for static deployments (Cloudflare Pages, Vercel static build, etc.) where Express server backend is not running
   const generateClientGeminiArticle = async (keyword: string) => {
     let apiKey = 
-      ((import.meta as any)?.env?.VITE_GEMINI_API_KEY) ||
+      import.meta.env.VITE_GEMINI_API_KEY ||
       (typeof process !== "undefined" && process.env && process.env.GEMINI_API_KEY) ||
       (typeof window !== "undefined" && (window as any).GEMINI_API_KEY) ||
       localStorage.getItem("GEMINI_API_KEY") ||
       "";
 
     if (!apiKey) {
-      const userKey = window.prompt("Gemini API 키가 설정되지 않았습니다.\n\n클라우드플레어 / Vercel 정적 배포 환경에서 AI Studio Preview와 동일한 2,000자 이상 고품질 AI 글을 작성하려면 Google Gemini API 키가 필요합니다.\n\nAPI 키를 입력해 주세요 (입력 시 브라우저에 저장됩니다):");
+      const userKey = window.prompt("Gemini API 키가 설정되지 않았습니다.\n\n클라우드플레어 / Vercel 정적 배포 환경에서 AI Studio Preview와 동일한 2,000자 이상 고품질 AI 글을 작성하려면 Google Gemini API 키가 필요합니다.\n\nGoogle AI Studio (aistudio.google.com)에서 무료 발급받은 API 키를 입력해 주세요 (입력 시 이 브라우저에 자동 저장됩니다):");
       if (userKey && userKey.trim()) {
         apiKey = userKey.trim();
         localStorage.setItem("GEMINI_API_KEY", apiKey);
@@ -1226,9 +1147,12 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
       }
 
       if (response.ok) {
-        const data = await response.json();
-        if (data && data.title && data.body) {
-          generatedData = data;
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const data = await response.json().catch(() => null);
+          if (data && data.title && data.body) {
+            generatedData = data;
+          }
         }
       } else {
         // Handle API error response, specifically Quota Exceeded (429)
