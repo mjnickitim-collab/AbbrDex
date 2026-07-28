@@ -457,56 +457,58 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
   }
 
   try {
-    const prompt = `You are a world-class SEO specialist, master copywriter, and digital marketing expert.
-    Your ultimate goal is to write a comprehensive, authoritative, highly engaging, and Google Search top-ranking blog article about the main keyword: "${keyword}".
-    The article MUST focus purely, faithfully, and extensively on this given keyword, its core topic, usage, and practical meaning, regardless of whether it is an internet slang, medical/health code, financial term, IT/technical concept, lifestyle topic, or any other subject.
-    
-    CRITICAL GOOGLE SEO & YOAST RANKING RULES (MUST SATISFY ALL 7 FACTORS FROM YOAST/GOOGLE):
-    1. Paragraph Length (문단 길이): Keep paragraphs concise. MAXIMUM 120 words per paragraph. Break long walls of text into smaller, digestible paragraphs.
-    2. Sentence Length (문장 길이): Keep sentences short and clear. Average sentence length must be under 20 words. No more than 15-20% of sentences should exceed 20 words.
-    3. Active Voice (수동태 제한): Use ACTIVE VOICE for at least 90% of sentences. Passive voice must remain under 10% across the entire article (e.g., write "Doctors recommend..." instead of "It is recommended by doctors").
-    4. Transition Words (전환어 필수): At least 30% of all sentences MUST contain clear transition words or logical connectors (such as: however, therefore, in addition, moreover, furthermore, consequently, as a result, for instance, in summary, also, because, besides, for example, first, second, finally).
-    5. No Consecutive Sentence Start Repetition (연속 문장 동일 시작 금지): NEVER start two or more consecutive sentences with the exact same word (e.g., avoid repeating "This is... This is..."). Vary sentence starters naturally.
-    6. Subheading Distribution (소제목 분포): Every content section longer than 250-300 words MUST be divided using H2 (##) or H3 (###) subheadings to ensure high readability and easy scanning. Write at least 4 distinct H2 subheadings.
-    7. Flesch Reading Ease (읽기 쉬움 지수 70+): Maintain high readability by using plain, accessible English, short clear sentences, active verbs, and eliminating unnecessary jargon or overly complex phrasing.
+    const prompt = `You are a world-class digital magazine editor, SEO strategist, and subject-matter expert specializing in creating highly engaging, comprehensive, and top-ranking Google Search blog posts with optimal AdSense revenue performance.
 
-    CRITICAL LINKING RULES (INTERNAL & EXTERNAL LINK PRECISION):
-    8. Internal Link Precision (정밀한 내부링크):
-       - Internal links MUST ONLY point to verified routes in the whatsthatmean web application:
-         - Main Home/Dictionary: [whatsthatmean Dictionary](/)
-         - Term Search: [Search "TERM_CODE"](/?search=TERM_CODE) (e.g. [Search "${keyword}"](/?search=${encodeURIComponent(keyword)}))
-         - Interactive Quiz: [Slang & Acronym Quiz](/quiz)
-         - Blog Home: [whatsthatmean Blog](/blog)
-         - Emoji Dictionary: [Emoji Dictionary](/emoji)
-       - NEVER invent arbitrary non-existent routes (e.g. do NOT write dead links like [link](/term/random-fake-id)). Using search URLs like (/?search=KEYWORD) is guaranteed to open clean search results without broken link errors.
-    9. Mandatory 1 Authoritative External Link (정확하고 안전한 외부링크 1개):
-       - You MUST include EXACTLY ONE (1) highly relevant, trusted, official external reference link (HTTPS) relevant to the topic.
-       - The external link MUST point to an established, top-tier authoritative domain such as:
-         - General/Reference: https://en.wikipedia.org or https://www.merriam-webster.com
-         - Medical/Health: https://www.cdc.gov, https://www.nih.gov, https://www.who.int, https://medlineplus.gov
-         - Finance/Business: https://www.sec.gov, https://www.investopedia.com, https://www.federalreserve.gov
-         - Tech/Developer: https://developer.mozilla.org, https://www.w3.org, https://github.com
-       - Format example: [World Health Organization Guidance](https://www.who.int) or [Investopedia Reference](https://www.investopedia.com).
-       - STRICT WARNING: Never link to unencrypted (http), unknown, spammy, commercial affiliate, or low-quality sites.
+Your task is to write an EXHAUSTIVE, IN-DEPTH, ORIGINAL, and HIGHLY ENGAGING blog article about the topic/keyword: "${keyword}".
 
-    STRUCTURE & CONTENT REQUIREMENTS:
-    - Title: The title MUST start with "${keyword}: " followed by a catchy, high-CTR headline.
-    - Meta Description: High-CTR search snippet under 160 characters explicitly containing "${keyword}".
-    - AdSense Placeholders: Insert exactly 2 to 3 "[AD]" tags (strictly uppercase as "[AD]") placed on empty lines between text paragraphs (never inside headings or sentences).
-    - Unsplash Image: Select a relevant Unsplash image URL and keyword-rich imageAlt text containing "${keyword}".
-    - Formatting: Use **bold** for key terms, bulleted lists for key takeaways, blockquotes (>) for real-world scenarios or dialogues, and H2/H3 subheadings for sections.
+TARGET LENGTH: 1,200 to 2,000 WORDS (approx. 2,500 to 4,000+ CHARACTERS).
 
-    The response MUST be a JSON object with the exact fields below:
-    - title: The generated catchy blog title starting with "${keyword}: ".
-    - excerpt: A compelling, high-CTR 1-2 sentence search engine summary.
-    - body: The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (max 120 words per paragraph, active voice, transition words), lists, text examples in blockquotes, strategic internal links, 1 authoritative external link, and strategically placed [AD] tags.
-    - seoTitle: A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title.
-    - metaDescription: A search snippet under 160 characters containing "${keyword}".
-    - keywords: A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, meaning, definition, guide").
-    - imageUrl: The selected Unsplash image URL.
-    - imageAlt: The keyword-rich image description.
+================================================================================
+1. TOPIC-SPECIFIC CUSTOM STRUCTURE (ABSOLUTELY NO FIXED TEMPLATES)
+================================================================================
+- DEEP TOPIC ANALYSIS: Analyze "${keyword}" and determine its real-world domain (e.g., Global Sports Events, Technology/AI, Financial Markets, Health & Wellness, Entertainment/Culture, World News, or Slang/Acronyms).
+- NO COOKIE-CUTTER HEADINGS: You are STRICTLY FORBIDDEN from using generic template headings like "Practical Scenario A/B", "Executive Summary", "Fundamental Principles and Technical Breakdown", "Core Conceptual Background", or "Slang Meaning".
+- CREATE UNIQUE, ENGAGING H2 & H3 HEADINGS TAILORED SPECIFICALLY TO "${keyword}":
+  * Example for "2026 World Cup":
+    - H1: 2026 World Cup: Complete Guide to Teams, Venues, Schedule & Format Expansion
+    - H2: Overview & Historic 48-Team Format Expansion
+    - H2: Host Cities & World-Class Stadium Venues across USA, Canada, and Mexico
+    - H2: Key Qualification Highlights, Favorite Contenders & Tactical Outlook
+    - H2: Fan Travel Guide, Ticket Expectations & Economic Impact
+    - H2: Frequently Asked Questions About the 2026 FIFA World Cup
+  * Example for "S&P 500":
+    - H1: S&P 500 Index: Historical Performance, Top Holdings & Investment Guide
+    - H2: What Is the S&P 500 and How Does It Work?
+    - H2: Top Sector Holdings, Weighting Methodology & Key Drivers
+    - H2: Historical Returns vs. Active Investing Strategies
+    - H2: Key Risks, Market Volatility & Long-Term Outlook
+    - H2: Frequently Asked Questions
+- Make every article read like a captivating, authoritative feature story written by a seasoned industry journalist.
 
-    Return ONLY a raw valid JSON object. Do not wrap it in markdown codeblocks.`;
+================================================================================
+2. CONTENT DEPTH, ENGAGEMENT & READABILITY
+================================================================================
+- Write with rich facts, specific details, background history, key statistics, and practical context.
+- Keep paragraphs short (maximum 100-120 words per paragraph) for effortless mobile reading.
+- Keep average sentence length under 20 words and use ACTIVE VOICE for over 90% of sentences.
+- Use logical transition words (e.g., however, consequently, in addition, furthermore, specifically, for instance, ultimately, as a result) in at least 30% of sentences.
+- Never start consecutive sentences with the exact same word or phrase.
+- Place an H2 or H3 subheading every 250-300 words.
+
+================================================================================
+3. LINKING & ADSENSE ADS PLACEMENT
+================================================================================
+- Internal Links (seamlessly embedded in relevant sentences):
+  - Home/Dictionary: [whatsthatmean Dictionary](/)
+  - Keyword Search: [Search "${keyword}"](/?search=${encodeURIComponent(keyword)})
+  - Interactive Quiz: [Slang & Acronym Quiz](/quiz)
+  - Blog Main: [whatsthatmean Blog](/blog)
+- External Link (EXACTLY ONE authoritative, relevant HTTPS link):
+  - Must point to an established domain matching the topic (e.g. https://www.fifa.com, https://en.wikipedia.org, https://www.investopedia.com, https://www.cdc.gov, https://developer.mozilla.org, https://www.merriam-webster.com).
+- AdSense Ad Placeholders:
+  - Insert EXACTLY THREE (3) "[AD]" placeholders on empty lines between major sections (e.g. after section 1, section 3, and before the FAQ). Strictly format as "[AD]" on its own line.
+
+Return ONLY a raw valid JSON object matching the requested schema.`;
 
     const ai = getGoogleGenAI();
     const generationConfig = {
@@ -516,35 +518,35 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
         properties: {
           title: {
             type: Type.STRING,
-            description: `The generated catchy blog title starting with "${keyword}: "`
+            description: `A captivating, high-CTR blog title starting with "${keyword}: "`
           },
           excerpt: {
             type: Type.STRING,
-            description: "A compelling, high-CTR 1-2 sentence search engine summary."
+            description: "A compelling 2-sentence summary for search engines."
           },
           body: {
             type: Type.STRING,
-            description: "The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (approx. 500 words/chars per section), lists, text examples in blockquotes, and strategically placed [AD] tags."
+            description: "Long, rich markdown article (1,200 to 2,000 words / 2,500 to 4,000+ characters) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, lists, internal links, 1 external authoritative link, and 3 [AD] tags."
           },
           seoTitle: {
             type: Type.STRING,
-            description: "A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title."
+            description: "SEO title tag under 60 characters."
           },
           metaDescription: {
             type: Type.STRING,
-            description: `A search snippet under 160 characters containing "${keyword}".`
+            description: `Meta description under 160 characters containing "${keyword}".`
           },
           keywords: {
             type: Type.STRING,
-            description: `A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, slang meaning, Gen Z slang, internet dictionary").`
+            description: `A string of 3-5 comma-separated SEO keywords for "${keyword}".`
           },
           imageUrl: {
             type: Type.STRING,
-            description: "The selected Unsplash image URL."
+            description: "Selected Unsplash image URL relevant to the topic."
           },
           imageAlt: {
             type: Type.STRING,
-            description: "The keyword-rich image description."
+            description: "Keyword-rich image alt text."
           }
         },
         required: ["title", "excerpt", "body", "seoTitle", "metaDescription", "keywords", "imageUrl", "imageAlt"]
@@ -552,22 +554,37 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
     };
 
     let response;
+    const isQuotaErr = (err: any) => {
+      const msg = (err?.message || err?.toString() || "").toLowerCase();
+      return msg.includes("quota") || msg.includes("exceeded") || msg.includes("429") || msg.includes("resource_exhausted");
+    };
+
     try {
       response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
         config: generationConfig
       });
     } catch (modelError: any) {
-      console.warn("Primary model gemini-2.5-flash failed, attempting fallback to gemini-2.5-pro:", modelError?.message || modelError);
+      console.warn("Primary model gemini-3.6-flash failed, attempting fallback to gemini-3.1-pro-preview:", modelError?.message || modelError);
+      if (isQuotaErr(modelError)) {
+        return res.status(429).json({
+          error: "You exceeded your current quota. Please check your plan and billing details, or try again later."
+        });
+      }
       try {
         response = await ai.models.generateContent({
-          model: "gemini-2.5-pro",
+          model: "gemini-3.1-pro-preview",
           contents: prompt,
           config: generationConfig
         });
       } catch (fallbackError: any) {
-        console.error("Both gemini-2.5-flash and gemini-2.5-pro failed:", fallbackError?.message || fallbackError);
+        console.error("Both gemini-3.6-flash and gemini-3.1-pro-preview failed:", fallbackError?.message || fallbackError);
+        if (isQuotaErr(fallbackError)) {
+          return res.status(429).json({
+            error: "You exceeded your current quota. Please check your plan and billing details, or try again later."
+          });
+        }
         return res.status(500).json({
           error: `Gemini API call failed: ${modelError?.message || fallbackError?.message || "Model error"}`
         });
