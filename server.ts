@@ -457,18 +457,28 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
   }
 
   try {
-    const prompt = `You are a world-class digital magazine editor, SEO strategist, and subject-matter expert specializing in creating highly engaging, comprehensive, and top-ranking Google Search blog posts with optimal AdSense revenue performance.
+    const prompt = `You are a top-tier expert SEO copywriter, Google AdSense revenue optimization specialist, and Growth Marketing Director specializing in creating top-ranking Google Search content with exceptional content depth (Depth) and reader readability (Readability).
 
-Your task is to write an EXHAUSTIVE, IN-DEPTH, ORIGINAL, and HIGHLY ENGAGING blog article about the topic/keyword: "${keyword}".
+Your mission is to write an IN-DEPTH, EXHAUSTIVE, ORIGINAL, and HIGHLY ENGAGING blog article about the topic/keyword: "${keyword}".
+Never produce a shallow summary ("Thin Content"). Write like a seasoned industry expert delivering a masterclass feature article.
 
-TARGET LENGTH: 1,200 to 2,000 WORDS (approx. 2,500 to 4,000+ CHARACTERS).
+TARGET LENGTH: 1,800 to 2,500 WORDS (strictly measured by WORD COUNT, NOT character count, matching top 10 Google search results).
 
 ================================================================================
-1. TOPIC-SPECIFIC CUSTOM STRUCTURE (ABSOLUTELY NO FIXED TEMPLATES)
+1. TONE, VOICE & STYLE ("PROFESSIONAL YET APPROACHABLE")
 ================================================================================
-- DEEP TOPIC ANALYSIS: Analyze "${keyword}" and determine its real-world domain (e.g., Global Sports Events, Technology/AI, Financial Markets, Health & Wellness, Entertainment/Culture, World News, or Slang/Acronyms).
-- NO COOKIE-CUTTER HEADINGS: You are STRICTLY FORBIDDEN from using generic template headings like "Practical Scenario A/B", "Executive Summary", "Fundamental Principles and Technical Breakdown", "Core Conceptual Background", or "Slang Meaning".
-- CREATE UNIQUE, ENGAGING H2 & H3 HEADINGS TAILORED SPECIFICALLY TO "${keyword}":
+- Authority & Trust: Demonstrate deep domain expertise and authority while remaining warm, accessible, and friendly.
+- Peer-to-Peer Tone: Speak to the reader like an experienced, helpful colleague explaining complex ideas clearly—never patronizing or preachy.
+- Jargon Clarity: Whenever specialized jargon or technical terms are introduced, immediately accompany them with a simple, intuitive explanation.
+- Decisive & Warm Endings: Sentences should conclude with clear conviction and warmth.
+- Native English: Written in 100% fluent, native-level English. Absolutely zero translation awkwardness or machine-generated feel.
+
+================================================================================
+2. TOPIC-SPECIFIC CUSTOM STRUCTURE (NO COOKIE-CUTTER TEMPLATES)
+================================================================================
+- DEEP TOPIC ANALYSIS: Analyze "${keyword}" to identify its true real-world domain (e.g., Global Sports Events, Financial Markets, Tech/AI, Health & Wellness, World History/News, or Slang/Acronyms).
+- NO GENERIC HEADINGS: Strictly forbidden from using generic boilerplate headers like "Practical Scenario A/B", "Executive Summary", "Fundamental Principles", or "Slang Meaning".
+- CRAFT 5–6 UNIQUE, TOPIC-SPECIFIC H2 & H3 HEADINGS:
   * Example for "2026 World Cup":
     - H1: 2026 World Cup: Complete Guide to Teams, Venues, Schedule & Format Expansion
     - H2: Overview & Historic 48-Team Format Expansion
@@ -483,30 +493,75 @@ TARGET LENGTH: 1,200 to 2,000 WORDS (approx. 2,500 to 4,000+ CHARACTERS).
     - H2: Historical Returns vs. Active Investing Strategies
     - H2: Key Risks, Market Volatility & Long-Term Outlook
     - H2: Frequently Asked Questions
-- Make every article read like a captivating, authoritative feature story written by a seasoned industry journalist.
 
 ================================================================================
-2. CONTENT DEPTH, ENGAGEMENT & READABILITY
+3. INTERNAL PRE-RESEARCH & CONCRETE DEPTH (STEP 0 SIMULATION)
 ================================================================================
-- Write with rich facts, specific details, background history, key statistics, and practical context.
-- Keep paragraphs short (maximum 100-120 words per paragraph) for effortless mobile reading.
-- Keep average sentence length under 20 words and use ACTIVE VOICE for over 90% of sentences.
-- Use logical transition words (e.g., however, consequently, in addition, furthermore, specifically, for instance, ultimately, as a result) in at least 30% of sentences.
-- Never start consecutive sentences with the exact same word or phrase.
-- Place an H2 or H3 subheading every 250-300 words.
+- Search Intent: Address the exact searcher intent (Informational, Transactional, Navigational).
+- Sub-Topic Breakdown: Address 5–8 critical sub-questions (e.g., background history, core mechanics, comparative breakdown, practical applications, costs/risks, real-world case studies, future trends, FAQs).
+- Specific Facts & Figures: Include specific statistics, years, concrete data points, or real-world comparison examples in at least 3 places (avoid vague generalities).
+- ABSOLUTELY FORBIDDEN CLICHES:
+  * "In today's fast-paced world"
+  * "It is important to note that"
+  * "Needless to say"
+  * "At the end of the day"
+  * "In conclusion" (Allowed AT MOST 1 time in the entire article)
+- NO DISCLAIMER: Do NOT include any "Disclaimer:", "YMYL Disclaimer", or legal notice text at the end or anywhere in the article.
 
 ================================================================================
-3. LINKING & ADSENSE ADS PLACEMENT
+4. READABILITY, PACING & FORMATTING RULES
 ================================================================================
-- Internal Links (seamlessly embedded in relevant sentences):
-  - Home/Dictionary: [whatsthatmean Dictionary](/)
-  - Keyword Search: [Search "${keyword}"](/?search=${encodeURIComponent(keyword)})
-  - Interactive Quiz: [Slang & Acronym Quiz](/quiz)
-  - Blog Main: [whatsthatmean Blog](/blog)
-- External Link (EXACTLY ONE authoritative, relevant HTTPS link):
+1. Sentence Length:
+   - Sentences with 20+ words MUST NOT exceed 15% of total sentences.
+   - Over 75% of sentences must be under 15 words. Break complex sentences with clean periods.
+2. Transition Words:
+   - Use natural transition words (e.g., Therefore, Moreover, However, In contrast, For example, As a result, In fact, Meanwhile, Furthermore, In short, Ultimately, That said, Consequently, In addition, To sum up) in at least 30% of sentences.
+   - Limit transition word density to 1–2 per paragraph to avoid unnatural repetition.
+3. Paragraph Pacing:
+   - Keep paragraphs short (maximum 5–6 lines / 100–120 words per paragraph) for mobile ease.
+   - Each H2 section should be ~250–400 words to provide natural visual pacing for AdSense ad insertion.
+4. Introduction Hook & Key Takeaways:
+   - Introduction (first 100–150 words): Start with a compelling hook and an immediate summary answering search intent.
+   - Key Takeaways: Include a 3–5 point summary bullet list using standard Markdown dashes (- Point) BEFORE the first H2 heading.
+5. Content Elements & Formatting Strict Rules (STRICT PURE MARKDOWN ONLY):
+   - ABSOLUTELY NO RAW HTML TAGS: Strictly forbidden from writing raw HTML tags in the text like blockquote, ul, li, strong, or p. Always use standard Markdown formatting!
+   - BLOCKQUOTES SYNTAX: For quotes, expert insights, or case studies, use standard Markdown quote syntax starting with a greater-than symbol (> ) (e.g., > "AI tools do not replace human marketing strategy..."). NEVER write raw HTML blockquote tags!
+   - BULLET LISTS SYNTAX: Use standard Markdown dashes (- ) or asterisks (* ) for bullet lists.
+   - BOLD TEXT SYNTAX: Use double asterisks (**text**) for bolding key terms.
+   - NO MARKDOWN TABLES: Strictly forbidden from generating Markdown tables (using |---|---|). Tables frequently break and misalign on mobile viewports. Instead, represent comparative data, metrics, or summaries using clean Markdown bulleted lists (- ), numbered lists, bold key-value pairs (e.g., **Key Feature**: Explanation), or Markdown blockquotes (> ).
+   - Active Voice: Maintain active voice in over 90% of sentences.
+   - Key Terminology: Use **bold** for important keywords and concepts.
+   - FAQ Section Formatting (CRITICAL):
+     * Near the end, include an "## Frequently Asked Questions (FAQ)" heading.
+     * Include 3 to 5 long-tail questions using H3 format: "### Q: [Question text]".
+     * MANDATORY SPACING: You MUST insert a full blank line (empty newline) between the "### Q: [Question]" header and the answer paragraph.
+     * MANDATORY SPACING: You MUST insert a full blank line after the answer paragraph before starting the next question.
+     * Example FAQ format:
+       ## Frequently Asked Questions (FAQ)
+
+       ### Q: What makes this topic important for readers today?
+
+       Understanding this concept allows readers to make informed decisions by providing clear, actionable insights...
+
+       ### Q: How can I stay updated on future developments?
+
+       You can follow authoritative industry sources and explore our dictionary portal...
+
+================================================================================
+6. LINKING & ADSENSE ADS PLACEMENT
+================================================================================
+- Internal Links (STRICT CONTEXTUAL RELEVANCE RULES):
+  * Do NOT force unnatural or irrelevant internal links. Include internal links ONLY if they naturally fit the article context.
+  * ABSOLUTE RESTRICTION FOR GENERAL TOPICS: If "${keyword}" is a general topic (e.g., sports events like World Cup, financial markets, technology, health, news) and NOT an internet slang term or acronym, you MUST NOT include links to Slang/Acronym Quizzes (/quiz), Emoji Dictionaries (/emoji), or slang reference pages.
+  * Allowed optional internal links ONLY when relevant:
+    - Main Blog Hub: [whatsthatmean Blog](https://www.whatsthatmean.com/blog)
+    - Term Search (only if search/lookup is genuinely applicable): [Search "${keyword}"](https://www.whatsthatmean.com/?search=${encodeURIComponent(keyword)})
+  * If no internal link fits naturally without feeling forced, do NOT include any internal link.
+- External Links (1–2 authoritative, relevant HTTPS links):
   - Must point to an established domain matching the topic (e.g. https://www.fifa.com, https://en.wikipedia.org, https://www.investopedia.com, https://www.cdc.gov, https://developer.mozilla.org, https://www.merriam-webster.com).
 - AdSense Ad Placeholders:
-  - Insert EXACTLY THREE (3) "[AD]" placeholders on empty lines between major sections (e.g. after section 1, section 3, and before the FAQ). Strictly format as "[AD]" on its own line.
+  - Insert EXACTLY THREE (3) "[AD]" placeholders on empty lines between major sections (e.g., after the intro summary, after section 3, and before the FAQ). Strictly format as "[AD]" on its own line.
+- AdSense Policy Compliance: Zero ad click incentive phrases, zero clickbait or exaggerated claims.
 
 Return ONLY a raw valid JSON object matching the requested schema.`;
 
@@ -526,7 +581,7 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
           },
           body: {
             type: Type.STRING,
-            description: "Long, rich markdown article (1,200 to 2,000 words / 2,500 to 4,000+ characters) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, lists, internal links, 1 external authoritative link, and 3 [AD] tags."
+            description: "In-depth, rich markdown article (1,800 to 2,500 words) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, summary bullet list, blockquotes, internal links, external authoritative links, and 3 [AD] tags (no disclaimer)."
           },
           seoTitle: {
             type: Type.STRING,
