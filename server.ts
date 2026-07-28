@@ -70,12 +70,12 @@ app.use((req, res, next) => {
   const host = req.headers.host || "";
   const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
   const isPreview = host.includes("aistudio") || host.includes("google") || host.includes("vercel");
-  const isCanonical = host === "whatsthatmean.com" || host === "www.whatsthatmean.com";
+  const isCanonical = host === "www.whatsthatmean.com";
 
   if (!isLocal && !isPreview && !isCanonical) {
-    // 308 Permanent Redirect to canonical domain
-    console.log(`Redirecting non-canonical host ${host} to whatsthatmean.com`);
-    return res.redirect(308, `https://whatsthatmean.com${req.originalUrl}`);
+    // 308 Permanent Redirect to canonical domain (www.whatsthatmean.com)
+    console.log(`Redirecting non-canonical host ${host} to www.whatsthatmean.com`);
+    return res.redirect(308, `https://www.whatsthatmean.com${req.originalUrl}`);
   }
   next();
 });
@@ -225,13 +225,13 @@ async function getSeoMetadata(urlPath: string) {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "whatsthatmean",
-        "url": "https://whatsthatmean.com",
+        "url": "https://www.whatsthatmean.com",
         "description": desc,
         "potentialAction": {
           "@type": "SearchAction",
           "target": {
             "@type": "EntryPoint",
-            "urlTemplate": "https://whatsthatmean.com/?search={search_term_string}"
+            "urlTemplate": "https://www.whatsthatmean.com/?search={search_term_string}"
           },
           "query-input": "required name=search_term_string"
         }
@@ -291,19 +291,19 @@ async function getSeoMetadata(urlPath: string) {
           "author": {
             "@type": "Organization",
             "name": "whatsthatmean",
-            "url": "https://whatsthatmean.com"
+            "url": "https://www.whatsthatmean.com"
           },
           "publisher": {
             "@type": "Organization",
             "name": "whatsthatmean",
             "logo": {
               "@type": "ImageObject",
-              "url": "https://whatsthatmean.com/logo.png"
+              "url": "https://www.whatsthatmean.com/logo.png"
             }
           },
           "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": `https://whatsthatmean.com/blog/${slug}`
+            "@id": `https://www.whatsthatmean.com/blog/${slug}`
           }
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(blogSchema)}</script>`;
@@ -324,18 +324,18 @@ async function getSeoMetadata(urlPath: string) {
           "@graph": [
             {
               "@type": "DefinedTerm",
-              "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#defined-term`,
+              "@id": `https://www.whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#defined-term`,
               "name": foundTerm.code,
               "description": `Means: ${cleanFull}. Category: ${categoryName}. Tone: ${articleData.formalityLevel}.`,
               "inDefinedTermSet": {
                 "@type": "DefinedTermSet",
                 "name": "whatsthatmean Dictionary",
-                "url": "https://whatsthatmean.com"
+                "url": "https://www.whatsthatmean.com"
               }
             },
             {
               "@type": "Article",
-              "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#article`,
+              "@id": `https://www.whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#article`,
               "headline": `What Does ${foundTerm.code} Mean? Definition, Origin & Usage Guide`,
               "description": articleData.overview,
               "articleBody": `${articleData.overview} ${articleData.etymology} ${articleData.culturalLore}`,
@@ -343,12 +343,12 @@ async function getSeoMetadata(urlPath: string) {
               "publisher": {
                 "@type": "Organization",
                 "name": "whatsthatmean",
-                "url": "https://whatsthatmean.com"
+                "url": "https://www.whatsthatmean.com"
               }
             },
             {
               "@type": "FAQPage",
-              "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#faq`,
+              "@id": `https://www.whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#faq`,
               "mainEntity": articleData.faqs.map((faq) => ({
                 "@type": "Question",
                 "name": faq.question,
@@ -773,7 +773,7 @@ async function getCachedSitemapXml(forceRefresh = false): Promise<string> {
 
 // Helper to construct sitemap XML string using retrieved database items
 function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
-  const domain = "https://whatsthatmean.com";
+  const domain = "https://www.whatsthatmean.com";
   const dateStr = new Date().toISOString().split("T")[0];
   
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;

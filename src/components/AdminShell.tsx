@@ -381,7 +381,7 @@ export default function AdminShell({
   const handleInsertSampleTemplate = () => {
     const sample = `In today's digital era, modern communication relies heavily on digital shorthand and acronyms.
 
-Check out our primary dictionary at [Explore whatsthatmean Dictionary](https://whatsthatmean.com/browse) to search and filter hundreds of curated slang terms!
+Check out our primary dictionary at [Explore whatsthatmean Dictionary](https://www.whatsthatmean.com/browse) to search and filter hundreds of curated slang terms!
 
 Here is an example visualization of digital workspace productivity:
 ![Workspace Collaboration Infographic](https://images.unsplash.com/photo-1531535934027-667f6db87540?auto=format&fit=crop&w=600&q=80)
@@ -1104,7 +1104,7 @@ You can search thousands of terms, concepts, and guides anytime directly on the 
   };
 
   const generateSitemapXmlContent = () => {
-    const domain = "https://whatsthatmean.com";
+    const domain = "https://www.whatsthatmean.com";
     const dateStr = new Date().toISOString().split("T")[0];
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -1401,10 +1401,10 @@ You can search thousands of terms, concepts, and guides anytime directly on the 
                   이제 sitemap.xml을 수동으로 다운로드하고 업로드하실 필요가 없습니다! 블로그 글을 발행하거나 삭제할 때마다 실시간으로 반영되는 <strong>실시간 동적 Sitemap</strong> 기능이 서버에 적용되었습니다.
                 </p>
                 <div className="bg-paper p-3.5 rounded-lg border border-line text-xs font-mono break-all flex justify-between items-center gap-2 text-ink">
-                  <span>https://whatsthatmean.com/sitemap.xml</span>
+                  <span>https://www.whatsthatmean.com/sitemap.xml</span>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText("https://whatsthatmean.com/sitemap.xml");
+                      navigator.clipboard.writeText("https://www.whatsthatmean.com/sitemap.xml");
                       alert("Sitemap URL copied to clipboard!");
                     }}
                     className="text-[10px] font-sans font-bold text-indigo hover:text-indigo-dark whitespace-nowrap cursor-pointer underline"
