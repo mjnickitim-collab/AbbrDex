@@ -987,12 +987,12 @@ You can explore related articles and topic guides anytime directly on the [whats
       "";
 
     if (!apiKey) {
-      const userKey = window.prompt("Gemini API 키가 설정되지 않았습니다.\n클라우드플레어 / Vercel 정적 배포 환경에서 2,000자 이상 고품질 AI 글을 생성하려면 Google Gemini API 키를 입력해 주세요 (입력시 브라우저에 저장됩니다):");
+      const userKey = window.prompt("Gemini API 키가 설정되지 않았습니다.\n\n클라우드플레어 / Vercel 정적 배포 환경에서 AI Studio Preview와 동일한 2,000자 이상 고품질 AI 글을 작성하려면 Google Gemini API 키가 필요합니다.\n\nAPI 키를 입력해 주세요 (입력 시 브라우저에 저장됩니다):");
       if (userKey && userKey.trim()) {
         apiKey = userKey.trim();
         localStorage.setItem("GEMINI_API_KEY", apiKey);
       } else {
-        return null;
+        throw new Error("Gemini API 키가 입력되지 않아 AI 글 작성을 취소하였습니다.");
       }
     }
 
@@ -1150,17 +1150,35 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
     let response;
     try {
       response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.6-flash",
         contents: prompt,
         config: generationConfig
       });
-    } catch (err: any) {
-      console.warn("Client gemini-2.5-flash failed, trying gemini-2.5-pro:", err);
-      response = await ai.models.generateContent({
-        model: "gemini-2.5-pro",
-        contents: prompt,
-        config: generationConfig
-      });
+    } catch (err1: any) {
+      console.warn("Client gemini-3.6-flash failed, trying gemini-2.5-flash:", err1);
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: generationConfig
+        });
+      } catch (err2: any) {
+        console.warn("Client gemini-2.5-flash failed, trying gemini-2.0-flash:", err2);
+        try {
+          response = await ai.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: prompt,
+            config: generationConfig
+          });
+        } catch (err3: any) {
+          console.warn("Client gemini-2.0-flash failed, trying gemini-1.5-flash:", err3);
+          response = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: prompt,
+            config: generationConfig
+          });
+        }
+      }
     }
 
     const rawText = response.text || "{}";
@@ -1245,19 +1263,27 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
         generatedData = await generateClientGeminiArticle(targetKw);
       } catch (clientErr: any) {
         console.error("Client Gemini generator error:", clientErr);
-        const errStr = (clientErr?.message || "").toLowerCase();
+        const errMsg = clientErr?.message || String(clientErr);
+        const errStr = errMsg.toLowerCase();
         if (errStr.includes("quota") || errStr.includes("exceeded") || errStr.includes("429")) {
           alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량을 확인해주시기 바랍니다.");
-          setGeneratingArticle(false);
-          return;
+        } else if (errStr.includes("api 키가 입력되지 않아")) {
+          // User cancelled prompt
+        } else if (errStr.includes("api_key_invalid") || errStr.includes("invalid api key") || errStr.includes("unauthorized") || errStr.includes("403")) {
+          localStorage.removeItem("GEMINI_API_KEY");
+          alert(`⚠️ Gemini API 키가 올바르지 않습니다.\n\n오류 내용: ${errMsg}\n\n저장된 키를 삭제하였습니다. 다시 시도할 때 올바른 Gemini API 키를 입력해 주세요.`);
+        } else {
+          alert(`⚠️ AI 글 작성 중 오류가 발생하였습니다:\n\n${errMsg}\n\nAPI 키 상태 및 네트워크 연결을 확인해 주세요.`);
         }
+        setGeneratingArticle(false);
+        return;
       }
     }
 
-    // 3. Fallback to local SEO article template if both server and client Gemini calls returned nothing
     if (!generatedData) {
-      console.log("Using local SEO article template for:", targetKw);
-      generatedData = generateLocalSeoArticle(targetKw);
+      alert("⚠️ AI 글 생성 데이터를 불러오지 못했습니다. 키워드를 확인 후 다시 시도해 주세요.");
+      setGeneratingArticle(false);
+      return;
     }
 
     // Pre-fill fields and set to Draft
