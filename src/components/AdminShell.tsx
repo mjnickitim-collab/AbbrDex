@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Term, BlogPost, AdSlot, UserProfile } from "../types";
 import { CATEGORIES, TERMS } from "../data/seedData";
 import { CURATED_IMAGES, CuratedImage } from "../data/imagePool";
@@ -976,6 +977,202 @@ You can explore related articles and topic guides anytime directly on the [whats
     };
   };
 
+  // Direct client-side Gemini AI generator for static deployments (Cloudflare Pages, Vercel static build, etc.) where Express server backend is not running
+  const generateClientGeminiArticle = async (keyword: string) => {
+    let apiKey = 
+      ((import.meta as any)?.env?.VITE_GEMINI_API_KEY) ||
+      (typeof process !== "undefined" && process.env && process.env.GEMINI_API_KEY) ||
+      (typeof window !== "undefined" && (window as any).GEMINI_API_KEY) ||
+      localStorage.getItem("GEMINI_API_KEY") ||
+      "";
+
+    if (!apiKey) {
+      const userKey = window.prompt("Gemini API 키가 설정되지 않았습니다.\n클라우드플레어 / Vercel 정적 배포 환경에서 2,000자 이상 고품질 AI 글을 생성하려면 Google Gemini API 키를 입력해 주세요 (입력시 브라우저에 저장됩니다):");
+      if (userKey && userKey.trim()) {
+        apiKey = userKey.trim();
+        localStorage.setItem("GEMINI_API_KEY", apiKey);
+      } else {
+        return null;
+      }
+    }
+
+    const prompt = `You are a top-tier expert SEO copywriter, Google AdSense revenue optimization specialist, and Growth Marketing Director specializing in creating top-ranking Google Search content with exceptional content depth (Depth) and reader readability (Readability).
+
+Your mission is to write an IN-DEPTH, EXHAUSTIVE, ORIGINAL, and HIGHLY ENGAGING blog article about the topic/keyword: "${keyword}".
+Never produce a shallow summary ("Thin Content"). Write like a seasoned industry expert delivering a masterclass feature article.
+
+TARGET LENGTH: 1,800 to 2,500 WORDS (strictly measured by WORD COUNT, NOT character count, matching top 10 Google search results).
+
+================================================================================
+1. TONE, VOICE & STYLE ("PROFESSIONAL YET APPROACHABLE")
+================================================================================
+- Authority & Trust: Demonstrate deep domain expertise and authority while remaining warm, accessible, and friendly.
+- Peer-to-Peer Tone: Speak to the reader like an experienced, helpful colleague explaining complex ideas clearly—never patronizing or preachy.
+- Jargon Clarity: Whenever specialized jargon or technical terms are introduced, immediately accompany them with a simple, intuitive explanation.
+- Decisive & Warm Endings: Sentences should conclude with clear conviction and warmth.
+- Native English: Written in 100% fluent, native-level English. Absolutely zero translation awkwardness or machine-generated feel.
+
+================================================================================
+2. TOPIC-SPECIFIC CUSTOM STRUCTURE (NO COOKIE-CUTTER TEMPLATES)
+================================================================================
+- DEEP TOPIC ANALYSIS: Analyze "${keyword}" to identify its true real-world domain (e.g., Global Sports Events, Financial Markets, Tech/AI, Health & Wellness, World History/News, or Slang/Acronyms).
+- NO GENERIC HEADINGS: Strictly forbidden from using generic boilerplate headers like "Practical Scenario A/B", "Executive Summary", "Fundamental Principles", or "Slang Meaning".
+- CRAFT 5–6 UNIQUE, TOPIC-SPECIFIC H2 & H3 HEADINGS:
+  * Example for "2026 World Cup":
+    - H1: 2026 World Cup: Complete Guide to Teams, Venues, Schedule & Format Expansion
+    - H2: Overview & Historic 48-Team Format Expansion
+    - H2: Host Cities & World-Class Stadium Venues across USA, Canada, and Mexico
+    - H2: Key Qualification Highlights, Favorite Contenders & Tactical Outlook
+    - H2: Fan Travel Guide, Ticket Expectations & Economic Impact
+    - H2: Frequently Asked Questions About the 2026 FIFA World Cup
+  * Example for "S&P 500":
+    - H1: S&P 500 Index: Historical Performance, Top Holdings & Investment Guide
+    - H2: What Is the S&P 500 and How Does It Work?
+    - H2: Top Sector Holdings, Weighting Methodology & Key Drivers
+    - H2: Historical Returns vs. Active Investing Strategies
+    - H2: Key Risks, Market Volatility & Long-Term Outlook
+    - H2: Frequently Asked Questions
+
+================================================================================
+3. INTERNAL PRE-RESEARCH & CONCRETE DEPTH (STEP 0 SIMULATION)
+================================================================================
+- Search Intent: Address the exact searcher intent (Informational, Transactional, Navigational).
+- Sub-Topic Breakdown: Address 5–8 critical sub-questions (e.g., background history, core mechanics, comparative breakdown, practical applications, costs/risks, real-world case studies, future trends, FAQs).
+- Specific Facts & Figures: Include specific statistics, years, concrete data points, or real-world comparison examples in at least 3 places (avoid vague generalities).
+- ABSOLUTELY FORBIDDEN CLICHES:
+  * "In today's fast-paced world"
+  * "It is important to note that"
+  * "Needless to say"
+  * "At the end of the day"
+  * "In conclusion" (Allowed AT MOST 1 time in the entire article)
+- NO DISCLAIMER: Do NOT include any "Disclaimer:", "YMYL Disclaimer", or legal notice text at the end or anywhere in the article.
+
+================================================================================
+4. READABILITY, PACING & FORMATTING RULES
+================================================================================
+1. Sentence Length:
+   - Sentences with 20+ words MUST NOT exceed 15% of total sentences.
+   - Over 75% of sentences must be under 15 words. Break complex sentences with clean periods.
+2. Transition Words:
+   - Use natural transition words (e.g., Therefore, Moreover, However, In contrast, For example, As a result, In fact, Meanwhile, Furthermore, In short, Ultimately, That said, Consequently, In addition, To sum up) in at least 30% of sentences.
+   - Limit transition word density to 1–2 per paragraph to avoid unnatural repetition.
+3. Paragraph Pacing:
+   - Keep paragraphs short (maximum 5–6 lines / 100–120 words per paragraph) for mobile ease.
+   - Each H2 section should be ~250–400 words to provide natural visual pacing for AdSense ad insertion.
+4. Introduction Hook & Key Takeaways:
+   - Introduction (first 100–150 words): Start with a compelling hook and an immediate summary answering search intent.
+   - Key Takeaways: Include a 3–5 point summary bullet list using standard Markdown dashes (- Point) BEFORE the first H2 heading.
+5. Content Elements & Formatting Strict Rules (STRICT PURE MARKDOWN ONLY):
+   - ABSOLUTELY NO RAW HTML TAGS: Strictly forbidden from writing raw HTML tags in the text like blockquote, ul, li, strong, or p. Always use standard Markdown formatting!
+   - BLOCKQUOTES SYNTAX: For quotes, expert insights, or case studies, use standard Markdown quote syntax starting with a greater-than symbol (> ) (e.g., > "AI tools do not replace human marketing strategy..."). NEVER write raw HTML blockquote tags!
+   - BULLET LISTS SYNTAX: Use standard Markdown dashes (- ) or asterisks (* ) for bullet lists.
+   - BOLD TEXT SYNTAX: Use double asterisks (**text**) for bolding key terms.
+   - NO MARKDOWN TABLES: Strictly forbidden from generating Markdown tables (using |---|---|). Tables frequently break and misalign on mobile viewports. Instead, represent comparative data, metrics, or summaries using clean Markdown bulleted lists (- ), numbered lists, bold key-value pairs (e.g., **Key Feature**: Explanation), or Markdown blockquotes (> ).
+   - Active Voice: Maintain active voice in over 90% of sentences.
+   - Key Terminology: Use **bold** for important keywords and concepts.
+   - FAQ Section Formatting (CRITICAL):
+     * Near the end, include an "## Frequently Asked Questions (FAQ)" heading.
+     * Include 3 to 5 long-tail questions using H3 format: "### Q: [Question text]".
+     * MANDATORY SPACING: You MUST insert a full blank line (empty newline) between the "### Q: [Question]" header and the answer paragraph.
+     * MANDATORY SPACING: You MUST insert a full blank line after the answer paragraph before starting the next question.
+     * Example FAQ format:
+       ## Frequently Asked Questions (FAQ)
+
+       ### Q: What makes this topic important for readers today?
+
+       Understanding this concept allows readers to make informed decisions by providing clear, actionable insights...
+
+       ### Q: How can I stay updated on future developments?
+
+       You can follow authoritative industry sources and explore our dictionary portal...
+
+================================================================================
+6. LINKING & ADSENSE ADS PLACEMENT
+================================================================================
+- Internal Links (STRICT CONTEXTUAL RELEVANCE RULES):
+  * Do NOT force unnatural or irrelevant internal links. Include internal links ONLY if they naturally fit the article context.
+  * ABSOLUTE RESTRICTION FOR GENERAL TOPICS: If "${keyword}" is a general topic (e.g., sports events like World Cup, financial markets, technology, health, news) and NOT an internet slang term or acronym, you MUST NOT include links to Slang/Acronym Quizzes (/quiz), Emoji Dictionaries (/emoji), or slang reference pages.
+  * Allowed optional internal links ONLY when relevant:
+    - Main Blog Hub: [whatsthatmean Blog](https://www.whatsthatmean.com/blog)
+    - Term Search (only if search/lookup is genuinely applicable): [Search "${keyword}"](https://www.whatsthatmean.com/?search=${encodeURIComponent(keyword)})
+  * If no internal link fits naturally without feeling forced, do NOT include any internal link.
+- External Links (1–2 authoritative, relevant HTTPS links):
+  - Must point to an established domain matching the topic (e.g. https://www.fifa.com, https://en.wikipedia.org, https://www.investopedia.com, https://www.cdc.gov, https://developer.mozilla.org, https://www.merriam-webster.com).
+- AdSense Ad Placeholders:
+  - Insert EXACTLY THREE (3) "[AD]" placeholders on empty lines between major sections (e.g., after the intro summary, after section 3, and before the FAQ). Strictly format as "[AD]" on its own line.
+- AdSense Policy Compliance: Zero ad click incentive phrases, zero clickbait or exaggerated claims.
+
+Return ONLY a raw valid JSON object matching the requested schema.`;
+
+    const ai = new GoogleGenAI({ apiKey });
+    const generationConfig = {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          title: {
+            type: Type.STRING,
+            description: `A captivating, high-CTR blog title starting with "${keyword}: "`
+          },
+          excerpt: {
+            type: Type.STRING,
+            description: "A compelling 2-sentence summary for search engines."
+          },
+          body: {
+            type: Type.STRING,
+            description: "In-depth, rich markdown article (1,800 to 2,500 words) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, summary bullet list, blockquotes, internal links, external authoritative links, and 3 [AD] tags (no disclaimer)."
+          },
+          seoTitle: {
+            type: Type.STRING,
+            description: "SEO title tag under 60 characters."
+          },
+          metaDescription: {
+            type: Type.STRING,
+            description: `Meta description under 160 characters containing "${keyword}".`
+          },
+          keywords: {
+            type: Type.STRING,
+            description: `A string of 3-5 comma-separated SEO keywords for "${keyword}".`
+          },
+          imageUrl: {
+            type: Type.STRING,
+            description: "Selected Unsplash image URL relevant to the topic."
+          },
+          imageAlt: {
+            type: Type.STRING,
+            description: "Keyword-rich image alt text."
+          }
+        },
+        required: ["title", "excerpt", "body", "seoTitle", "metaDescription", "keywords", "imageUrl", "imageAlt"]
+      }
+    };
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: generationConfig
+      });
+    } catch (err: any) {
+      console.warn("Client gemini-2.5-flash failed, trying gemini-2.5-pro:", err);
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-pro",
+        contents: prompt,
+        config: generationConfig
+      });
+    }
+
+    const rawText = response.text || "{}";
+    let cleaned = rawText.trim();
+    if (cleaned.startsWith("```json")) cleaned = cleaned.substring(7);
+    else if (cleaned.startsWith("```")) cleaned = cleaned.substring(3);
+    if (cleaned.endsWith("```")) cleaned = cleaned.substring(0, cleaned.length - 3);
+    cleaned = cleaned.trim();
+
+    return JSON.parse(cleaned);
+  };
+
   const handleGenerateArticle = async () => {
     if (!aiKeyword.trim()) {
       alert("Please enter a keyword for article generation.");
@@ -1035,15 +1232,31 @@ You can explore related articles and topic guides anytime directly on the [whats
       console.warn("Server AI generation endpoint error:", err);
       const errStr = (err?.message || "").toLowerCase();
       if (errStr.includes("quota") || errStr.includes("exceeded")) {
-        alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량(Quota)을 초과하였습니다. 잠시 후 다시 시도해주시기 바랍니다.");
+        alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량을 확인해주시기 바랍니다.");
         setGeneratingArticle(false);
         return;
       }
     }
 
-    // 2. Fallback to client generator if server endpoint failed with non-quota error or returned incomplete data
+    // 2. If server endpoint failed or returned non-200 (e.g. Cloudflare Pages / Vercel static deployment), call client Gemini generator directly!
     if (!generatedData) {
-      console.log("Using client-side SEO article generator for:", targetKw);
+      console.log("Server endpoint unavailable. Running direct client-side Gemini AI generator for:", targetKw);
+      try {
+        generatedData = await generateClientGeminiArticle(targetKw);
+      } catch (clientErr: any) {
+        console.error("Client Gemini generator error:", clientErr);
+        const errStr = (clientErr?.message || "").toLowerCase();
+        if (errStr.includes("quota") || errStr.includes("exceeded") || errStr.includes("429")) {
+          alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량을 확인해주시기 바랍니다.");
+          setGeneratingArticle(false);
+          return;
+        }
+      }
+    }
+
+    // 3. Fallback to local SEO article template if both server and client Gemini calls returned nothing
+    if (!generatedData) {
+      console.log("Using local SEO article template for:", targetKw);
       generatedData = generateLocalSeoArticle(targetKw);
     }
 
