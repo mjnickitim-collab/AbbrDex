@@ -30,9 +30,21 @@ app.use((req, res, next) => {
   if (req.url && req.url.startsWith("/api/index")) {
     try {
       const urlObj = new URL(req.url, "http://localhost");
+      const pagePath = urlObj.searchParams.get("page");
       const subPath = urlObj.searchParams.get("path");
-      if (subPath) {
-        req.url = subPath.startsWith("/") ? `/api${subPath}` : `/api/${subPath}`;
+      
+      if (pagePath) {
+        if (pagePath === "home") {
+          req.url = "/";
+        } else {
+          req.url = pagePath.startsWith("/") ? pagePath : `/${pagePath}`;
+        }
+      } else if (subPath) {
+        if (subPath === "sitemap.xml") {
+          req.url = "/sitemap.xml";
+        } else {
+          req.url = subPath.startsWith("/") ? `/api${subPath}` : `/api/${subPath}`;
+        }
       } else {
         const restored = req.url.replace(/^\/api\/index/, "");
         req.url = restored ? (restored.startsWith("/") ? `/api${restored}` : `/api/${restored}`) : "/api";
@@ -967,10 +979,13 @@ app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   }
 });
 
-// Serve assets / static app (Production container server only, not run on Vercel)
-if (!process.env.VERCEL && process.env.NODE_ENV === "production") {
+// Serve assets / static app (Production only, works for both Vercel and standalone containers)
+if (process.env.NODE_ENV === "production") {
   const distPath = path.join(process.cwd(), "dist");
-  app.use(express.static(distPath, { index: false })); // don't serve index.html directly
+  
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath, { index: false })); // don't serve index.html directly
+  }
   
   app.get("*", async (req, res) => {
     try {
@@ -987,15 +1002,19 @@ if (!process.env.VERCEL && process.env.NODE_ENV === "production") {
       // Inject dynamic, server-side rendered SEO meta tags
       html = await injectSeoMetadata(html, req.url);
       
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.send(html);
     } catch (err) {
+      console.error("Production wildcard SEO fallback routing error:", err);
       res.sendFile(path.join(distPath, "index.html"));
     }
   });
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Production server running on port ${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Production server running on port ${PORT}`);
+    });
+  }
 }
 
 export default app;

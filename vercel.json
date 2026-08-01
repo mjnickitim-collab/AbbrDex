@@ -2,7 +2,8 @@
   "version": 2,
   "functions": {
     "api/index.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "dist/**"
     }
   },
   "rewrites": [
@@ -21,6 +22,46 @@
     {
       "source": "/sitemap.xml",
       "destination": "/api/index?path=sitemap.xml"
+    },
+    {
+      "source": "/blog",
+      "destination": "/api/index?page=blog"
+    },
+    {
+      "source": "/blog/(.*)",
+      "destination": "/api/index?page=blog/$1"
+    },
+    {
+      "source": "/term/(.*)",
+      "destination": "/api/index?page=term/$1"
+    },
+    {
+      "source": "/browse",
+      "destination": "/api/index?page=browse"
+    },
+    {
+      "source": "/browse/(.*)",
+      "destination": "/api/index?page=browse/$1"
+    },
+    {
+      "source": "/quiz",
+      "destination": "/api/index?page=quiz"
+    },
+    {
+      "source": "/emoji",
+      "destination": "/api/index?page=emoji"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/api/index?page=privacy"
+    },
+    {
+      "source": "/terms",
+      "destination": "/api/index?page=terms"
+    },
+    {
+      "source": "/",
+      "destination": "/api/index?page=home"
     },
     {
       "source": "/(.*)",
