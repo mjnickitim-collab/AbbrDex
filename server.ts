@@ -989,8 +989,35 @@ if (process.env.NODE_ENV === "production") {
   
   app.get("*", async (req, res) => {
     try {
-      const indexHtmlPath = path.join(distPath, "index.html");
-      let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
+      let indexHtmlPath = path.join(distPath, "index.html");
+      
+      // Resilient paths for Vercel's serverless function layout
+      if (!fs.existsSync(indexHtmlPath)) {
+        indexHtmlPath = path.join(__dirname, "../dist/index.html");
+      }
+      if (!fs.existsSync(indexHtmlPath)) {
+        indexHtmlPath = path.join(__dirname, "dist/index.html");
+      }
+      
+      let html = "";
+      if (fs.existsSync(indexHtmlPath)) {
+        html = await fs.promises.readFile(indexHtmlPath, "utf-8");
+      } else {
+        console.warn("Vite build index.html not found on disk, utilizing SEO-optimized template fallback.");
+        html = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Abbreviation Dictionary & Acronym Finder | whatsthatmean</title>
+    <meta name="description" content="Decode 4,400+ text slangs, gaming acronyms, business shorthands, and military jargon easily with whatsthatmean dictionary." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`;
+      }
       
       // Inject Google site verification meta tag
       const verificationCode = await getGoogleSiteVerification();
@@ -1006,7 +1033,12 @@ if (process.env.NODE_ENV === "production") {
       res.send(html);
     } catch (err) {
       console.error("Production wildcard SEO fallback routing error:", err);
-      res.sendFile(path.join(distPath, "index.html"));
+      try {
+        res.status(500).setHeader("Content-Type", "text/html; charset=utf-8");
+        res.send(`<h1>500 Internal Server Error</h1><p>Something went wrong loading the requested page. Please try again later.</p>`);
+      } catch (nestedErr) {
+        console.error("Nested error sending 500 response:", nestedErr);
+      }
     }
   });
 
