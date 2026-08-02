@@ -5,21 +5,45 @@ import dotenv from "dotenv";
 import fs from "fs";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
+import { generateTermArticle } from "./src/utils/termArticleGenerator";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Body Parser middleware compatible with Vercel Serverless Functions and local Express
+app.use((req: any, res: any, next: any) => {
+  if (req.body && typeof req.body === "string") {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch (_) {}
+  }
+  if (req.body && typeof req.body === "object") {
+    return next();
+  }
+  express.json()(req, res, next);
+});
 
 // Path Normalization Middleware for Vercel Rewrites
 app.use((req, res, next) => {
   if (req.url && req.url.startsWith("/api/index")) {
-    req.url = req.url.replace("/api/index", "/api");
+    try {
+      const urlObj = new URL(req.url, "http://localhost");
+      const subPath = urlObj.searchParams.get("path");
+      if (subPath) {
+        req.url = subPath.startsWith("/") ? `/api${subPath}` : `/api/${subPath}`;
+      } else {
+        const restored = req.url.replace(/^\/api\/index/, "");
+        req.url = restored ? (restored.startsWith("/") ? `/api${restored}` : `/api/${restored}`) : "/api";
+      }
+    } catch (_) {
+      req.url = "/api";
+    }
   }
   next();
 });
+
 
 // CORS Middleware for API routes
 app.use((req, res, next) => {
@@ -46,12 +70,12 @@ app.use((req, res, next) => {
   const host = req.headers.host || "";
   const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
   const isPreview = host.includes("aistudio") || host.includes("google") || host.includes("vercel");
-  const isCanonical = host === "whatsthatmean.com" || host === "www.whatsthatmean.com";
+  const isCanonical = host === "www.whatsthatmean.com";
 
   if (!isLocal && !isPreview && !isCanonical) {
-    // 308 Permanent Redirect to canonical domain
-    console.log(`Redirecting non-canonical host ${host} to whatsthatmean.com`);
-    return res.redirect(308, `https://whatsthatmean.com${req.originalUrl}`);
+    // 308 Permanent Redirect to canonical domain (www.whatsthatmean.com)
+    console.log(`Redirecting non-canonical host ${host} to www.whatsthatmean.com`);
+    return res.redirect(308, `https://www.whatsthatmean.com${req.originalUrl}`);
   }
   next();
 });
@@ -82,7 +106,7 @@ try {
 }
 
 // Initialize server-side Firebase instance safely avoiding duplicate app error in serverless contexts
-const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId);
 
 // Helper to race Firestore async queries against a timeout so serverless functions never hang
@@ -188,6 +212,7 @@ async function getSeoMetadata(urlPath: string) {
   let title = "Online Abbreviation Dictionary & Acronym Finder | whatsthatmean";
   let desc = "Decode 4,400+ text slangs, gaming acronyms, business shorthands, and military jargon easily with whatsthatmean dictionary.";
   let schemaMarkup = "";
+  let bodyArticleHtml = "";
 
   try {
     const pathname = urlPath.split("?")[0];
@@ -200,18 +225,30 @@ async function getSeoMetadata(urlPath: string) {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "whatsthatmean",
-        "url": "https://whatsthatmean.com",
+        "url": "https://www.whatsthatmean.com",
         "description": desc,
         "potentialAction": {
           "@type": "SearchAction",
           "target": {
             "@type": "EntryPoint",
-            "urlTemplate": "https://whatsthatmean.com/?search={search_term_string}"
+            "urlTemplate": "https://www.whatsthatmean.com/?search={search_term_string}"
           },
           "query-input": "required name=search_term_string"
         }
       };
       schemaMarkup = `<script type="application/ld+json">${JSON.stringify(homeSchema)}</script>`;
+    } else if (pathname === "/about") {
+      title = "About Us | whatsthatmean - Modern Digital Reference Platform";
+      desc = "Learn about whatsthatmean.com, an independent digital reference platform dedicated to decoding acronyms, slang, emojis, and modern internet expressions.";
+    } else if (pathname === "/editorial") {
+      title = "Editorial Policy | whatsthatmean - Quality & Verification Standards";
+      desc = "Read our editorial standards ensuring all definitions, etymologies, and usage examples published on whatsthatmean.com are accurate, human-written, and neutral.";
+    } else if (pathname === "/privacy") {
+      title = "Privacy Policy | whatsthatmean - Data Protection & Privacy";
+      desc = "Privacy Policy for whatsthatmean.com. Learn how we handle technical data, cookies, and privacy rights in compliance with GDPR and CCPA.";
+    } else if (pathname === "/terms") {
+      title = "Terms of Service | whatsthatmean - User Agreement";
+      desc = "Terms of Service governing your access to and use of whatsthatmean.com dictionary portal and reference content.";
     } else if (pathname === "/browse") {
       title = "Explore Dictionary | whatsthatmean - Find Abbreviations & Meanings";
       desc = "Browse through hundreds of curated acronyms, digital shorthand, and slang meanings. Filter by category or search terms instantly.";
@@ -254,19 +291,19 @@ async function getSeoMetadata(urlPath: string) {
           "author": {
             "@type": "Organization",
             "name": "whatsthatmean",
-            "url": "https://whatsthatmean.com"
+            "url": "https://www.whatsthatmean.com"
           },
           "publisher": {
             "@type": "Organization",
             "name": "whatsthatmean",
             "logo": {
               "@type": "ImageObject",
-              "url": "https://whatsthatmean.com/logo.png"
+              "url": "https://www.whatsthatmean.com/logo.png"
             }
           },
           "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": `https://whatsthatmean.com/blog/${slug}`
+            "@id": `https://www.whatsthatmean.com/blog/${slug}`
           }
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(blogSchema)}</script>`;
@@ -276,10 +313,10 @@ async function getSeoMetadata(urlPath: string) {
       const foundTerm = await getTermFromFirestoreByCode(code);
       if (foundTerm) {
         const categoryName = foundTerm.cat ? (foundTerm.cat.charAt(0).toUpperCase() + foundTerm.cat.slice(1)) : "Slang";
+        const articleData = generateTermArticle(foundTerm);
         title = `${foundTerm.code} Meaning: What Does ${foundTerm.code} Mean? | whatsthatmean`;
-        desc = `What does ${foundTerm.code} stand for? It means "${foundTerm.full}". Learn its definition, category (${categoryName}), and see real-world texting examples like: "${foundTerm.ex || ""}"`;
+        desc = `What does ${foundTerm.code} stand for? It means "${foundTerm.full}". Learn its definition, etymology, tone guide, and see real-world texting examples.`;
         
-        const cleanEx = foundTerm.ex ? foundTerm.ex.replace(/"/g, '\\"') : "";
         const cleanFull = foundTerm.full ? foundTerm.full.replace(/"/g, '\\"') : "";
         
         const termSchema = {
@@ -287,52 +324,80 @@ async function getSeoMetadata(urlPath: string) {
           "@graph": [
             {
               "@type": "DefinedTerm",
-              "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#defined-term`,
+              "@id": `https://www.whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#defined-term`,
               "name": foundTerm.code,
-              "description": `Means: ${cleanFull}. Category: ${categoryName}.`,
+              "description": `Means: ${cleanFull}. Category: ${categoryName}. Tone: ${articleData.formalityLevel}.`,
               "inDefinedTermSet": {
                 "@type": "DefinedTermSet",
                 "name": "whatsthatmean Dictionary",
-                "url": "https://whatsthatmean.com"
+                "url": "https://www.whatsthatmean.com"
+              }
+            },
+            {
+              "@type": "Article",
+              "@id": `https://www.whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#article`,
+              "headline": `What Does ${foundTerm.code} Mean? Definition, Origin & Usage Guide`,
+              "description": articleData.overview,
+              "articleBody": `${articleData.overview} ${articleData.etymology} ${articleData.culturalLore}`,
+              "wordCount": articleData.fullWordCount,
+              "publisher": {
+                "@type": "Organization",
+                "name": "whatsthatmean",
+                "url": "https://www.whatsthatmean.com"
               }
             },
             {
               "@type": "FAQPage",
-              "@id": `https://whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#faq`,
-              "mainEntity": [
-                {
-                  "@type": "Question",
-                  "name": `What does ${foundTerm.code} mean?`,
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": `${foundTerm.code} stands for '${cleanFull}'. It is categorized as a ${categoryName} abbreviation.${cleanEx ? ` Example usage: "${cleanEx}"` : ""}`
-                  }
-                },
-                {
-                  "@type": "Question",
-                  "name": `What is the definition of ${foundTerm.code} in texting and slang?`,
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": `In texting and online chat, the abbreviation ${foundTerm.code} stands for '${cleanFull}'.`
-                  }
+              "@id": `https://www.whatsthatmean.com/term/${encodeURIComponent(foundTerm.code)}#faq`,
+              "mainEntity": articleData.faqs.map((faq) => ({
+                "@type": "Question",
+                "name": faq.question,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": faq.answer
                 }
-              ]
+              }))
             }
           ]
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(termSchema)}</script>`;
+
+        // Build SSR HTML text block for AdSense and search engine crawlers
+        bodyArticleHtml = `
+          <div id="ssr-term-article" style="display:none;" aria-hidden="true">
+            <article>
+              <h1>What Does ${foundTerm.code} Mean? Definition, Origin & Usage</h1>
+              <p><strong>Spelled-out phrase:</strong> ${foundTerm.full}</p>
+              <p><strong>Category:</strong> ${categoryName}</p>
+              <h2>Overview</h2>
+              <p>${articleData.overview}</p>
+              <h2>Etymology & History</h2>
+              <p>${articleData.etymology}</p>
+              <h2>Usage Scenarios</h2>
+              ${articleData.usageScenarios.map(s => `<h3>${s.title}</h3><p>${s.desc}</p><pre>${s.example}</pre>`).join("")}
+              <h2>Comparisons</h2>
+              ${articleData.comparisons.map(c => `<h3>${c.term}</h3><p>${c.difference}</p>`).join("")}
+              <h2>Common Pitfalls</h2>
+              <ul>${articleData.pitfalls.map(p => `<li>${p}</li>`).join("")}</ul>
+              <h2>Cultural Context</h2>
+              <p>${articleData.culturalLore}</p>
+              <h2>Frequently Asked Questions</h2>
+              ${articleData.faqs.map(f => `<details><summary>${f.question}</summary><p>${f.answer}</p></details>`).join("")}
+            </article>
+          </div>
+        `;
       }
     }
   } catch (err) {
     console.error("Error generating SEO metadata:", err);
   }
 
-  return { title, desc, schemaMarkup };
+  return { title, desc, schemaMarkup, bodyArticleHtml };
 }
 
-// Injects dynamic metadata tags in HTML head
+// Injects dynamic metadata tags in HTML head and body
 async function injectSeoMetadata(html: string, urlPath: string): Promise<string> {
-  const { title, desc, schemaMarkup } = await getSeoMetadata(urlPath);
+  const { title, desc, schemaMarkup, bodyArticleHtml } = await getSeoMetadata(urlPath);
   
   let updatedHtml = html;
   
@@ -349,6 +414,11 @@ async function injectSeoMetadata(html: string, urlPath: string): Promise<string>
     } else {
       updatedHtml = `${schemaMarkup}\n${updatedHtml}`;
     }
+  }
+
+  // Inject body article HTML for crawlers if present
+  if (bodyArticleHtml && updatedHtml.includes("<body>")) {
+    updatedHtml = updatedHtml.replace("<body>", `<body>\n${bodyArticleHtml}`);
   }
   
   return updatedHtml;
@@ -373,7 +443,8 @@ export { getGoogleSiteVerification, injectSeoMetadata };
 
 // API endpoint to generate blog articles using Gemini
 app.post(["/api/generate-article", "/generate-article"], async (req: any, res: any) => {
-  const { keyword } = req.body;
+  const body = req.body || {};
+  const keyword = body.keyword;
   if (!keyword) {
     return res.status(400).json({ error: "Keyword is required" });
   }
@@ -386,56 +457,113 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
   }
 
   try {
-    const prompt = `You are a world-class SEO specialist, master copywriter, and digital marketing expert.
-    Your ultimate goal is to write a comprehensive, authoritative, highly engaging, and Google Search top-ranking blog article about the main keyword: "${keyword}".
-    The article MUST focus purely, faithfully, and extensively on this given keyword, its core topic, usage, and practical meaning, regardless of whether it is an internet slang, medical/health code, financial term, IT/technical concept, lifestyle topic, or any other subject.
-    
-    CRITICAL GOOGLE SEO & YOAST RANKING RULES (MUST SATISFY ALL 7 FACTORS FROM YOAST/GOOGLE):
-    1. Paragraph Length (문단 길이): Keep paragraphs concise. MAXIMUM 120 words per paragraph. Break long walls of text into smaller, digestible paragraphs.
-    2. Sentence Length (문장 길이): Keep sentences short and clear. Average sentence length must be under 20 words. No more than 15-20% of sentences should exceed 20 words.
-    3. Active Voice (수동태 제한): Use ACTIVE VOICE for at least 90% of sentences. Passive voice must remain under 10% across the entire article (e.g., write "Doctors recommend..." instead of "It is recommended by doctors").
-    4. Transition Words (전환어 필수): At least 30% of all sentences MUST contain clear transition words or logical connectors (such as: however, therefore, in addition, moreover, furthermore, consequently, as a result, for instance, in summary, also, because, besides, for example, first, second, finally).
-    5. No Consecutive Sentence Start Repetition (연속 문장 동일 시작 금지): NEVER start two or more consecutive sentences with the exact same word (e.g., avoid repeating "This is... This is..."). Vary sentence starters naturally.
-    6. Subheading Distribution (소제목 분포): Every content section longer than 250-300 words MUST be divided using H2 (##) or H3 (###) subheadings to ensure high readability and easy scanning. Write at least 4 distinct H2 subheadings.
-    7. Flesch Reading Ease (읽기 쉬움 지수 70+): Maintain high readability by using plain, accessible English, short clear sentences, active verbs, and eliminating unnecessary jargon or overly complex phrasing.
+    const prompt = `You are a top-tier expert SEO copywriter, Google AdSense revenue optimization specialist, and Growth Marketing Director specializing in creating top-ranking Google Search content with exceptional content depth (Depth) and reader readability (Readability).
 
-    CRITICAL LINKING RULES (INTERNAL & EXTERNAL LINK PRECISION):
-    8. Internal Link Precision (정밀한 내부링크):
-       - Internal links MUST ONLY point to verified routes in the whatsthatmean web application:
-         - Main Home/Dictionary: [whatsthatmean Dictionary](/)
-         - Term Search: [Search "TERM_CODE"](/?search=TERM_CODE) (e.g. [Search "${keyword}"](/?search=${encodeURIComponent(keyword)}))
-         - Interactive Quiz: [Slang & Acronym Quiz](/quiz)
-         - Blog Home: [whatsthatmean Blog](/blog)
-         - Emoji Dictionary: [Emoji Dictionary](/emoji)
-       - NEVER invent arbitrary non-existent routes (e.g. do NOT write dead links like [link](/term/random-fake-id)). Using search URLs like (/?search=KEYWORD) is guaranteed to open clean search results without broken link errors.
-    9. Mandatory 1 Authoritative External Link (정확하고 안전한 외부링크 1개):
-       - You MUST include EXACTLY ONE (1) highly relevant, trusted, official external reference link (HTTPS) relevant to the topic.
-       - The external link MUST point to an established, top-tier authoritative domain such as:
-         - General/Reference: https://en.wikipedia.org or https://www.merriam-webster.com
-         - Medical/Health: https://www.cdc.gov, https://www.nih.gov, https://www.who.int, https://medlineplus.gov
-         - Finance/Business: https://www.sec.gov, https://www.investopedia.com, https://www.federalreserve.gov
-         - Tech/Developer: https://developer.mozilla.org, https://www.w3.org, https://github.com
-       - Format example: [World Health Organization Guidance](https://www.who.int) or [Investopedia Reference](https://www.investopedia.com).
-       - STRICT WARNING: Never link to unencrypted (http), unknown, spammy, commercial affiliate, or low-quality sites.
+Your mission is to write an IN-DEPTH, EXHAUSTIVE, ORIGINAL, and HIGHLY ENGAGING blog article about the topic/keyword: "${keyword}".
+Never produce a shallow summary ("Thin Content"). Write like a seasoned industry expert delivering a masterclass feature article.
 
-    STRUCTURE & CONTENT REQUIREMENTS:
-    - Title: The title MUST start with "${keyword}: " followed by a catchy, high-CTR headline.
-    - Meta Description: High-CTR search snippet under 160 characters explicitly containing "${keyword}".
-    - AdSense Placeholders: Insert exactly 2 to 3 "[AD]" tags (strictly uppercase as "[AD]") placed on empty lines between text paragraphs (never inside headings or sentences).
-    - Unsplash Image: Select a relevant Unsplash image URL and keyword-rich imageAlt text containing "${keyword}".
-    - Formatting: Use **bold** for key terms, bulleted lists for key takeaways, blockquotes (>) for real-world scenarios or dialogues, and H2/H3 subheadings for sections.
+TARGET LENGTH: 1,800 to 2,500 WORDS (strictly measured by WORD COUNT, NOT character count, matching top 10 Google search results).
 
-    The response MUST be a JSON object with the exact fields below:
-    - title: The generated catchy blog title starting with "${keyword}: ".
-    - excerpt: A compelling, high-CTR 1-2 sentence search engine summary.
-    - body: The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (max 120 words per paragraph, active voice, transition words), lists, text examples in blockquotes, strategic internal links, 1 authoritative external link, and strategically placed [AD] tags.
-    - seoTitle: A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title.
-    - metaDescription: A search snippet under 160 characters containing "${keyword}".
-    - keywords: A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, meaning, definition, guide").
-    - imageUrl: The selected Unsplash image URL.
-    - imageAlt: The keyword-rich image description.
+================================================================================
+1. TONE, VOICE & STYLE ("PROFESSIONAL YET APPROACHABLE")
+================================================================================
+- Authority & Trust: Demonstrate deep domain expertise and authority while remaining warm, accessible, and friendly.
+- Peer-to-Peer Tone: Speak to the reader like an experienced, helpful colleague explaining complex ideas clearly—never patronizing or preachy.
+- Jargon Clarity: Whenever specialized jargon or technical terms are introduced, immediately accompany them with a simple, intuitive explanation.
+- Decisive & Warm Endings: Sentences should conclude with clear conviction and warmth.
+- Native English: Written in 100% fluent, native-level English. Absolutely zero translation awkwardness or machine-generated feel.
 
-    Return ONLY a raw valid JSON object. Do not wrap it in markdown codeblocks.`;
+================================================================================
+2. TOPIC-SPECIFIC CUSTOM STRUCTURE (NO COOKIE-CUTTER TEMPLATES)
+================================================================================
+- DEEP TOPIC ANALYSIS: Analyze "${keyword}" to identify its true real-world domain (e.g., Global Sports Events, Financial Markets, Tech/AI, Health & Wellness, World History/News, or Slang/Acronyms).
+- NO GENERIC HEADINGS: Strictly forbidden from using generic boilerplate headers like "Practical Scenario A/B", "Executive Summary", "Fundamental Principles", or "Slang Meaning".
+- CRAFT 5–6 UNIQUE, TOPIC-SPECIFIC H2 & H3 HEADINGS:
+  * Example for "2026 World Cup":
+    - H1: 2026 World Cup: Complete Guide to Teams, Venues, Schedule & Format Expansion
+    - H2: Overview & Historic 48-Team Format Expansion
+    - H2: Host Cities & World-Class Stadium Venues across USA, Canada, and Mexico
+    - H2: Key Qualification Highlights, Favorite Contenders & Tactical Outlook
+    - H2: Fan Travel Guide, Ticket Expectations & Economic Impact
+    - H2: Frequently Asked Questions About the 2026 FIFA World Cup
+  * Example for "S&P 500":
+    - H1: S&P 500 Index: Historical Performance, Top Holdings & Investment Guide
+    - H2: What Is the S&P 500 and How Does It Work?
+    - H2: Top Sector Holdings, Weighting Methodology & Key Drivers
+    - H2: Historical Returns vs. Active Investing Strategies
+    - H2: Key Risks, Market Volatility & Long-Term Outlook
+    - H2: Frequently Asked Questions
+
+================================================================================
+3. INTERNAL PRE-RESEARCH & CONCRETE DEPTH (STEP 0 SIMULATION)
+================================================================================
+- Search Intent: Address the exact searcher intent (Informational, Transactional, Navigational).
+- Sub-Topic Breakdown: Address 5–8 critical sub-questions (e.g., background history, core mechanics, comparative breakdown, practical applications, costs/risks, real-world case studies, future trends, FAQs).
+- Specific Facts & Figures: Include specific statistics, years, concrete data points, or real-world comparison examples in at least 3 places (avoid vague generalities).
+- ABSOLUTELY FORBIDDEN CLICHES:
+  * "In today's fast-paced world"
+  * "It is important to note that"
+  * "Needless to say"
+  * "At the end of the day"
+  * "In conclusion" (Allowed AT MOST 1 time in the entire article)
+- NO DISCLAIMER: Do NOT include any "Disclaimer:", "YMYL Disclaimer", or legal notice text at the end or anywhere in the article.
+
+================================================================================
+4. READABILITY, PACING & FORMATTING RULES
+================================================================================
+1. Sentence Length:
+   - Sentences with 20+ words MUST NOT exceed 15% of total sentences.
+   - Over 75% of sentences must be under 15 words. Break complex sentences with clean periods.
+2. Transition Words:
+   - Use natural transition words (e.g., Therefore, Moreover, However, In contrast, For example, As a result, In fact, Meanwhile, Furthermore, In short, Ultimately, That said, Consequently, In addition, To sum up) in at least 30% of sentences.
+   - Limit transition word density to 1–2 per paragraph to avoid unnatural repetition.
+3. Paragraph Pacing:
+   - Keep paragraphs short (maximum 5–6 lines / 100–120 words per paragraph) for mobile ease.
+   - Each H2 section should be ~250–400 words to provide natural visual pacing for AdSense ad insertion.
+4. Introduction Hook & Key Takeaways:
+   - Introduction (first 100–150 words): Start with a compelling hook and an immediate summary answering search intent.
+   - Key Takeaways: Include a 3–5 point summary bullet list using standard Markdown dashes (- Point) BEFORE the first H2 heading.
+5. Content Elements & Formatting Strict Rules (STRICT PURE MARKDOWN ONLY):
+   - ABSOLUTELY NO RAW HTML TAGS: Strictly forbidden from writing raw HTML tags in the text like blockquote, ul, li, strong, or p. Always use standard Markdown formatting!
+   - BLOCKQUOTES SYNTAX: For quotes, expert insights, or case studies, use standard Markdown quote syntax starting with a greater-than symbol (> ) (e.g., > "AI tools do not replace human marketing strategy..."). NEVER write raw HTML blockquote tags!
+   - BULLET LISTS SYNTAX: Use standard Markdown dashes (- ) or asterisks (* ) for bullet lists.
+   - BOLD TEXT SYNTAX: Use double asterisks (**text**) for bolding key terms.
+   - NO MARKDOWN TABLES: Strictly forbidden from generating Markdown tables (using |---|---|). Tables frequently break and misalign on mobile viewports. Instead, represent comparative data, metrics, or summaries using clean Markdown bulleted lists (- ), numbered lists, bold key-value pairs (e.g., **Key Feature**: Explanation), or Markdown blockquotes (> ).
+   - Active Voice: Maintain active voice in over 90% of sentences.
+   - Key Terminology: Use **bold** for important keywords and concepts.
+   - FAQ Section Formatting (CRITICAL):
+     * Near the end, include an "## Frequently Asked Questions (FAQ)" heading.
+     * Include 3 to 5 long-tail questions using H3 format: "### Q: [Question text]".
+     * MANDATORY SPACING: You MUST insert a full blank line (empty newline) between the "### Q: [Question]" header and the answer paragraph.
+     * MANDATORY SPACING: You MUST insert a full blank line after the answer paragraph before starting the next question.
+     * Example FAQ format:
+       ## Frequently Asked Questions (FAQ)
+
+       ### Q: What makes this topic important for readers today?
+
+       Understanding this concept allows readers to make informed decisions by providing clear, actionable insights...
+
+       ### Q: How can I stay updated on future developments?
+
+       You can follow authoritative industry sources and explore our dictionary portal...
+
+================================================================================
+6. LINKING & ADSENSE ADS PLACEMENT
+================================================================================
+- Internal Links (STRICT CONTEXTUAL RELEVANCE RULES):
+  * Do NOT force unnatural or irrelevant internal links. Include internal links ONLY if they naturally fit the article context.
+  * ABSOLUTE RESTRICTION FOR GENERAL TOPICS: If "${keyword}" is a general topic (e.g., sports events like World Cup, financial markets, technology, health, news) and NOT an internet slang term or acronym, you MUST NOT include links to Slang/Acronym Quizzes (/quiz), Emoji Dictionaries (/emoji), or slang reference pages.
+  * Allowed optional internal links ONLY when relevant:
+    - Main Blog Hub: [whatsthatmean Blog](https://www.whatsthatmean.com/blog)
+    - Term Search (only if search/lookup is genuinely applicable): [Search "${keyword}"](https://www.whatsthatmean.com/?search=${encodeURIComponent(keyword)})
+  * If no internal link fits naturally without feeling forced, do NOT include any internal link.
+- External Links (1–2 authoritative, relevant HTTPS links):
+  - Must point to an established domain matching the topic (e.g. https://www.fifa.com, https://en.wikipedia.org, https://www.investopedia.com, https://www.cdc.gov, https://developer.mozilla.org, https://www.merriam-webster.com).
+- AdSense Ad Placeholders:
+  - Insert EXACTLY THREE (3) "[AD]" placeholders on empty lines between major sections (e.g., after the intro summary, after section 3, and before the FAQ). Strictly format as "[AD]" on its own line.
+- AdSense Policy Compliance: Zero ad click incentive phrases, zero clickbait or exaggerated claims.
+
+Return ONLY a raw valid JSON object matching the requested schema.`;
 
     const ai = getGoogleGenAI();
     const generationConfig = {
@@ -445,35 +573,35 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
         properties: {
           title: {
             type: Type.STRING,
-            description: `The generated catchy blog title starting with "${keyword}: "`
+            description: `A captivating, high-CTR blog title starting with "${keyword}: "`
           },
           excerpt: {
             type: Type.STRING,
-            description: "A compelling, high-CTR 1-2 sentence search engine summary."
+            description: "A compelling 2-sentence summary for search engines."
           },
           body: {
             type: Type.STRING,
-            description: "The full markdown content containing H2 headings, H3 subheadings, detailed paragraphs (approx. 500 words/chars per section), lists, text examples in blockquotes, and strategically placed [AD] tags."
+            description: "In-depth, rich markdown article (1,800 to 2,500 words) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, summary bullet list, blockquotes, internal links, external authoritative links, and 3 [AD] tags (no disclaimer)."
           },
           seoTitle: {
             type: Type.STRING,
-            description: "A perfect SEO title tag (max 60 characters), preferably matching or resembling the main title."
+            description: "SEO title tag under 60 characters."
           },
           metaDescription: {
             type: Type.STRING,
-            description: `A search snippet under 160 characters containing "${keyword}".`
+            description: `Meta description under 160 characters containing "${keyword}".`
           },
           keywords: {
             type: Type.STRING,
-            description: `A string of 3-5 comma-separated SEO keywords (e.g., "${keyword}, slang meaning, Gen Z slang, internet dictionary").`
+            description: `A string of 3-5 comma-separated SEO keywords for "${keyword}".`
           },
           imageUrl: {
             type: Type.STRING,
-            description: "The selected Unsplash image URL."
+            description: "Selected Unsplash image URL relevant to the topic."
           },
           imageAlt: {
             type: Type.STRING,
-            description: "The keyword-rich image description."
+            description: "Keyword-rich image alt text."
           }
         },
         required: ["title", "excerpt", "body", "seoTitle", "metaDescription", "keywords", "imageUrl", "imageAlt"]
@@ -481,6 +609,11 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
     };
 
     let response;
+    const isQuotaErr = (err: any) => {
+      const msg = (err?.message || err?.toString() || "").toLowerCase();
+      return msg.includes("quota") || msg.includes("exceeded") || msg.includes("429") || msg.includes("resource_exhausted");
+    };
+
     try {
       response = await ai.models.generateContent({
         model: "gemini-3.6-flash",
@@ -488,13 +621,31 @@ app.post(["/api/generate-article", "/generate-article"], async (req: any, res: a
         config: generationConfig
       });
     } catch (modelError: any) {
-      console.warn("Primary model gemini-3.6-flash failed, attempting fallback to gemini-2.5-flash:", modelError?.message || modelError);
-      response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: generationConfig
-      });
+      console.warn("Primary model gemini-3.6-flash failed, attempting fallback to gemini-3.1-pro-preview:", modelError?.message || modelError);
+      if (isQuotaErr(modelError)) {
+        return res.status(429).json({
+          error: "You exceeded your current quota. Please check your plan and billing details, or try again later."
+        });
+      }
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-3.1-pro-preview",
+          contents: prompt,
+          config: generationConfig
+        });
+      } catch (fallbackError: any) {
+        console.error("Both gemini-3.6-flash and gemini-3.1-pro-preview failed:", fallbackError?.message || fallbackError);
+        if (isQuotaErr(fallbackError)) {
+          return res.status(429).json({
+            error: "You exceeded your current quota. Please check your plan and billing details, or try again later."
+          });
+        }
+        return res.status(500).json({
+          error: `Gemini API call failed: ${modelError?.message || fallbackError?.message || "Model error"}`
+        });
+      }
     }
+
 
     const text = response.text || "{}";
     
@@ -677,14 +828,14 @@ async function getCachedSitemapXml(forceRefresh = false): Promise<string> {
 
 // Helper to construct sitemap XML string using retrieved database items
 function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
-  const domain = "https://whatsthatmean.com";
+  const domain = "https://www.whatsthatmean.com";
   const dateStr = new Date().toISOString().split("T")[0];
   
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   
   // 1. Core routes
-  const routes = ["", "/browse", "/quiz", "/blog"];
+  const routes = ["", "/browse", "/quiz", "/blog", "/about", "/editorial", "/privacy", "/terms"];
   routes.forEach(route => {
     xml += `  <url>\n`;
     xml += `    <loc>${domain}${route}</loc>\n`;

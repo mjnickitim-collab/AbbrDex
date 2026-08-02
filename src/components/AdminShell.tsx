@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Term, BlogPost, AdSlot, UserProfile } from "../types";
 import { CATEGORIES, TERMS } from "../data/seedData";
 import { CURATED_IMAGES, CuratedImage } from "../data/imagePool";
@@ -381,7 +382,7 @@ export default function AdminShell({
   const handleInsertSampleTemplate = () => {
     const sample = `In today's digital era, modern communication relies heavily on digital shorthand and acronyms.
 
-Check out our primary dictionary at [Explore whatsthatmean Dictionary](https://whatsthatmean.com/browse) to search and filter hundreds of curated slang terms!
+Check out our primary dictionary at [Explore whatsthatmean Dictionary](https://www.whatsthatmean.com/browse) to search and filter hundreds of curated slang terms!
 
 Here is an example visualization of digital workspace productivity:
 ![Workspace Collaboration Infographic](https://images.unsplash.com/photo-1531535934027-667f6db87540?auto=format&fit=crop&w=600&q=80)
@@ -897,30 +898,247 @@ Try writing your own content or edit this template using the helper buttons abov
     }
   };
 
+  // Direct client-side Gemini AI generator for static deployments (Cloudflare Pages, Vercel static build, etc.) where Express server backend is not running
+  const generateClientGeminiArticle = async (keyword: string) => {
+    let apiKey = 
+      import.meta.env.VITE_GEMINI_API_KEY ||
+      (typeof process !== "undefined" && process.env && process.env.GEMINI_API_KEY) ||
+      (typeof window !== "undefined" && (window as any).GEMINI_API_KEY) ||
+      localStorage.getItem("GEMINI_API_KEY") ||
+      "";
+
+    if (!apiKey) {
+      const userKey = window.prompt("Gemini API 키가 설정되지 않았습니다.\n\n클라우드플레어 / Vercel 정적 배포 환경에서 AI Studio Preview와 동일한 2,000자 이상 고품질 AI 글을 작성하려면 Google Gemini API 키가 필요합니다.\n\nGoogle AI Studio (aistudio.google.com)에서 무료 발급받은 API 키를 입력해 주세요 (입력 시 이 브라우저에 자동 저장됩니다):");
+      if (userKey && userKey.trim()) {
+        apiKey = userKey.trim();
+        localStorage.setItem("GEMINI_API_KEY", apiKey);
+      } else {
+        throw new Error("Gemini API 키가 입력되지 않아 AI 글 작성을 취소하였습니다.");
+      }
+    }
+
+    const prompt = `You are a top-tier expert SEO copywriter, Google AdSense revenue optimization specialist, and Growth Marketing Director specializing in creating top-ranking Google Search content with exceptional content depth (Depth) and reader readability (Readability).
+
+Your mission is to write an IN-DEPTH, EXHAUSTIVE, ORIGINAL, and HIGHLY ENGAGING blog article about the topic/keyword: "${keyword}".
+Never produce a shallow summary ("Thin Content"). Write like a seasoned industry expert delivering a masterclass feature article.
+
+TARGET LENGTH: 1,800 to 2,500 WORDS (strictly measured by WORD COUNT, NOT character count, matching top 10 Google search results).
+
+================================================================================
+1. TONE, VOICE & STYLE ("PROFESSIONAL YET APPROACHABLE")
+================================================================================
+- Authority & Trust: Demonstrate deep domain expertise and authority while remaining warm, accessible, and friendly.
+- Peer-to-Peer Tone: Speak to the reader like an experienced, helpful colleague explaining complex ideas clearly—never patronizing or preachy.
+- Jargon Clarity: Whenever specialized jargon or technical terms are introduced, immediately accompany them with a simple, intuitive explanation.
+- Decisive & Warm Endings: Sentences should conclude with clear conviction and warmth.
+- Native English: Written in 100% fluent, native-level English. Absolutely zero translation awkwardness or machine-generated feel.
+
+================================================================================
+2. TOPIC-SPECIFIC CUSTOM STRUCTURE (NO COOKIE-CUTTER TEMPLATES)
+================================================================================
+- DEEP TOPIC ANALYSIS: Analyze "${keyword}" to identify its true real-world domain (e.g., Global Sports Events, Financial Markets, Tech/AI, Health & Wellness, World History/News, or Slang/Acronyms).
+- NO GENERIC HEADINGS: Strictly forbidden from using generic boilerplate headers like "Practical Scenario A/B", "Executive Summary", "Fundamental Principles", or "Slang Meaning".
+- CRAFT 5–6 UNIQUE, TOPIC-SPECIFIC H2 & H3 HEADINGS:
+  * Example for "2026 World Cup":
+    - H1: 2026 World Cup: Complete Guide to Teams, Venues, Schedule & Format Expansion
+    - H2: Overview & Historic 48-Team Format Expansion
+    - H2: Host Cities & World-Class Stadium Venues across USA, Canada, and Mexico
+    - H2: Key Qualification Highlights, Favorite Contenders & Tactical Outlook
+    - H2: Fan Travel Guide, Ticket Expectations & Economic Impact
+    - H2: Frequently Asked Questions About the 2026 FIFA World Cup
+  * Example for "S&P 500":
+    - H1: S&P 500 Index: Historical Performance, Top Holdings & Investment Guide
+    - H2: What Is the S&P 500 and How Does It Work?
+    - H2: Top Sector Holdings, Weighting Methodology & Key Drivers
+    - H2: Historical Returns vs. Active Investing Strategies
+    - H2: Key Risks, Market Volatility & Long-Term Outlook
+    - H2: Frequently Asked Questions
+
+================================================================================
+3. INTERNAL PRE-RESEARCH & CONCRETE DEPTH (STEP 0 SIMULATION)
+================================================================================
+- Search Intent: Address the exact searcher intent (Informational, Transactional, Navigational).
+- Sub-Topic Breakdown: Address 5–8 critical sub-questions (e.g., background history, core mechanics, comparative breakdown, practical applications, costs/risks, real-world case studies, future trends, FAQs).
+- Specific Facts & Figures: Include specific statistics, years, concrete data points, or real-world comparison examples in at least 3 places (avoid vague generalities).
+- ABSOLUTELY FORBIDDEN CLICHES:
+  * "In today's fast-paced world"
+  * "It is important to note that"
+  * "Needless to say"
+  * "At the end of the day"
+  * "In conclusion" (Allowed AT MOST 1 time in the entire article)
+- NO DISCLAIMER: Do NOT include any "Disclaimer:", "YMYL Disclaimer", or legal notice text at the end or anywhere in the article.
+
+================================================================================
+4. READABILITY, PACING & FORMATTING RULES
+================================================================================
+1. Sentence Length:
+   - Sentences with 20+ words MUST NOT exceed 15% of total sentences.
+   - Over 75% of sentences must be under 15 words. Break complex sentences with clean periods.
+2. Transition Words:
+   - Use natural transition words (e.g., Therefore, Moreover, However, In contrast, For example, As a result, In fact, Meanwhile, Furthermore, In short, Ultimately, That said, Consequently, In addition, To sum up) in at least 30% of sentences.
+   - Limit transition word density to 1–2 per paragraph to avoid unnatural repetition.
+3. Paragraph Pacing:
+   - Keep paragraphs short (maximum 5–6 lines / 100–120 words per paragraph) for mobile ease.
+   - Each H2 section should be ~250–400 words to provide natural visual pacing for AdSense ad insertion.
+4. Introduction Hook & Key Takeaways:
+   - Introduction (first 100–150 words): Start with a compelling hook and an immediate summary answering search intent.
+   - Key Takeaways: Include a 3–5 point summary bullet list using standard Markdown dashes (- Point) BEFORE the first H2 heading.
+5. Content Elements & Formatting Strict Rules (STRICT PURE MARKDOWN ONLY):
+   - ABSOLUTELY NO RAW HTML TAGS: Strictly forbidden from writing raw HTML tags in the text like blockquote, ul, li, strong, or p. Always use standard Markdown formatting!
+   - BLOCKQUOTES SYNTAX: For quotes, expert insights, or case studies, use standard Markdown quote syntax starting with a greater-than symbol (> ) (e.g., > "AI tools do not replace human marketing strategy..."). NEVER write raw HTML blockquote tags!
+   - BULLET LISTS SYNTAX: Use standard Markdown dashes (- ) or asterisks (* ) for bullet lists.
+   - BOLD TEXT SYNTAX: Use double asterisks (**text**) for bolding key terms.
+   - NO MARKDOWN TABLES: Strictly forbidden from generating Markdown tables (using |---|---|). Tables frequently break and misalign on mobile viewports. Instead, represent comparative data, metrics, or summaries using clean Markdown bulleted lists (- ), numbered lists, bold key-value pairs (e.g., **Key Feature**: Explanation), or Markdown blockquotes (> ).
+   - Active Voice: Maintain active voice in over 90% of sentences.
+   - Key Terminology: Use **bold** for important keywords and concepts.
+   - FAQ Section Formatting (CRITICAL):
+     * Near the end, include an "## Frequently Asked Questions (FAQ)" heading.
+     * Include 3 to 5 long-tail questions using H3 format: "### Q: [Question text]".
+     * MANDATORY SPACING: You MUST insert a full blank line (empty newline) between the "### Q: [Question]" header and the answer paragraph.
+     * MANDATORY SPACING: You MUST insert a full blank line after the answer paragraph before starting the next question.
+     * Example FAQ format:
+       ## Frequently Asked Questions (FAQ)
+
+       ### Q: What makes this topic important for readers today?
+
+       Understanding this concept allows readers to make informed decisions by providing clear, actionable insights...
+
+       ### Q: How can I stay updated on future developments?
+
+       You can follow authoritative industry sources and explore our dictionary portal...
+
+================================================================================
+6. LINKING & ADSENSE ADS PLACEMENT
+================================================================================
+- Internal Links (STRICT CONTEXTUAL RELEVANCE RULES):
+  * Do NOT force unnatural or irrelevant internal links. Include internal links ONLY if they naturally fit the article context.
+  * ABSOLUTE RESTRICTION FOR GENERAL TOPICS: If "${keyword}" is a general topic (e.g., sports events like World Cup, financial markets, technology, health, news) and NOT an internet slang term or acronym, you MUST NOT include links to Slang/Acronym Quizzes (/quiz), Emoji Dictionaries (/emoji), or slang reference pages.
+  * Allowed optional internal links ONLY when relevant:
+    - Main Blog Hub: [whatsthatmean Blog](https://www.whatsthatmean.com/blog)
+    - Term Search (only if search/lookup is genuinely applicable): [Search "${keyword}"](https://www.whatsthatmean.com/?search=${encodeURIComponent(keyword)})
+  * If no internal link fits naturally without feeling forced, do NOT include any internal link.
+- External Links (1–2 authoritative, relevant HTTPS links):
+  - Must point to an established domain matching the topic (e.g. https://www.fifa.com, https://en.wikipedia.org, https://www.investopedia.com, https://www.cdc.gov, https://developer.mozilla.org, https://www.merriam-webster.com).
+- AdSense Ad Placeholders:
+  - Insert EXACTLY THREE (3) "[AD]" placeholders on empty lines between major sections (e.g., after the intro summary, after section 3, and before the FAQ). Strictly format as "[AD]" on its own line.
+- AdSense Policy Compliance: Zero ad click incentive phrases, zero clickbait or exaggerated claims.
+
+Return ONLY a raw valid JSON object matching the requested schema.`;
+
+    const ai = new GoogleGenAI({ apiKey });
+    const generationConfig = {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          title: {
+            type: Type.STRING,
+            description: `A captivating, high-CTR blog title starting with "${keyword}: "`
+          },
+          excerpt: {
+            type: Type.STRING,
+            description: "A compelling 2-sentence summary for search engines."
+          },
+          body: {
+            type: Type.STRING,
+            description: "In-depth, rich markdown article (1,800 to 2,500 words) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, summary bullet list, blockquotes, internal links, external authoritative links, and 3 [AD] tags (no disclaimer)."
+          },
+          seoTitle: {
+            type: Type.STRING,
+            description: "SEO title tag under 60 characters."
+          },
+          metaDescription: {
+            type: Type.STRING,
+            description: `Meta description under 160 characters containing "${keyword}".`
+          },
+          keywords: {
+            type: Type.STRING,
+            description: `A string of 3-5 comma-separated SEO keywords for "${keyword}".`
+          },
+          imageUrl: {
+            type: Type.STRING,
+            description: "Selected Unsplash image URL relevant to the topic."
+          },
+          imageAlt: {
+            type: Type.STRING,
+            description: "Keyword-rich image alt text."
+          }
+        },
+        required: ["title", "excerpt", "body", "seoTitle", "metaDescription", "keywords", "imageUrl", "imageAlt"]
+      }
+    };
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: prompt,
+        config: generationConfig
+      });
+    } catch (err1: any) {
+      console.warn("Client gemini-3.6-flash failed, trying gemini-2.5-flash:", err1);
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+          config: generationConfig
+        });
+      } catch (err2: any) {
+        console.warn("Client gemini-2.5-flash failed, trying gemini-2.0-flash:", err2);
+        try {
+          response = await ai.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: prompt,
+            config: generationConfig
+          });
+        } catch (err3: any) {
+          console.warn("Client gemini-2.0-flash failed, trying gemini-1.5-flash:", err3);
+          response = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: prompt,
+            config: generationConfig
+          });
+        }
+      }
+    }
+
+    const rawText = response.text || "{}";
+    let cleaned = rawText.trim();
+    if (cleaned.startsWith("```json")) cleaned = cleaned.substring(7);
+    else if (cleaned.startsWith("```")) cleaned = cleaned.substring(3);
+    if (cleaned.endsWith("```")) cleaned = cleaned.substring(0, cleaned.length - 3);
+    cleaned = cleaned.trim();
+
+    return JSON.parse(cleaned);
+  };
+
   const handleGenerateArticle = async () => {
     if (!aiKeyword.trim()) {
       alert("Please enter a keyword for article generation.");
       return;
     }
+    const targetKw = aiKeyword.trim();
     setGeneratingArticle(true);
+    let generatedData: any = null;
+
+    // 1. Try server endpoint
     try {
       let response = await fetch("/api/generate-article", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ keyword: aiKeyword.trim() }),
+        body: JSON.stringify({ keyword: targetKw }),
       });
 
       if (!response.ok) {
-        // Fallback retry with /generate-article if /api rewrite is restricted
         try {
           const fallbackResp = await fetch("/generate-article", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ keyword: aiKeyword.trim() }),
+            body: JSON.stringify({ keyword: targetKw }),
           });
           if (fallbackResp.ok) {
             response = fallbackResp;
@@ -928,48 +1146,89 @@ Try writing your own content or edit this template using the helper buttons abov
         } catch (_) {}
       }
 
-      if (!response.ok) {
-        let errMsg = `Failed to generate article (Status ${response.status})`;
-        try {
-          const errText = await response.text();
-          try {
-            const errData = JSON.parse(errText);
-            errMsg = errData.error || errMsg;
-          } catch (_) {
-            if (errText) errMsg = errText;
+      if (response.ok) {
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const data = await response.json().catch(() => null);
+          if (data && data.title && data.body) {
+            generatedData = data;
           }
-        } catch (_) {
-          errMsg = `Server returned status ${response.status}`;
         }
-        throw new Error(errMsg);
-      }
+      } else {
+        // Handle API error response, specifically Quota Exceeded (429)
+        const errText = await response.text().catch(() => "");
+        let errMsg = errText;
+        try {
+          const parsed = JSON.parse(errText);
+          if (parsed.error) errMsg = parsed.error;
+        } catch (_) {}
 
-      const data = await response.json();
-      
-      // Pre-fill fields and set to Draft
-      setBlogTitle(data.title || "");
-      setBlogExcerpt(data.excerpt || "");
-      setBlogBody(data.body || "");
-      setBlogSeoTitle(data.seoTitle || "");
-      setBlogMetaDescription(data.metaDescription || "");
-      setBlogKeywords(data.keywords || "");
-      setBlogImageUrl(data.imageUrl || "");
-      setBlogImageAlt(data.imageAlt || "");
-      setBlogDraft(true);
-      setAiKeyword("");
-      
-      const formElement = document.getElementById("blog-publisher-form");
-      if (formElement) {
-        formElement.scrollIntoView({ behavior: "smooth" });
+        const lowerMsg = errMsg.toLowerCase();
+        if (response.status === 429 || lowerMsg.includes("quota") || lowerMsg.includes("exceeded") || lowerMsg.includes("resource_exhausted")) {
+          alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량(Quota)을 초과하였거나 요청 빈도가 너무 높습니다. API 키 할당량을 확인하시거나 잠시 후 다시 시도해주시기 바랍니다.");
+          setGeneratingArticle(false);
+          return;
+        }
       }
-      
-      alert("Article successfully generated by Gemini AI and loaded into the publisher form below as a Draft! Please review, edit if necessary, and click publish.");
     } catch (err: any) {
-      console.error("AI Generation Error:", err);
-      alert(`AI Article Generation failed: ${err.message || err}`);
-    } finally {
-      setGeneratingArticle(false);
+      console.warn("Server AI generation endpoint error:", err);
+      const errStr = (err?.message || "").toLowerCase();
+      if (errStr.includes("quota") || errStr.includes("exceeded")) {
+        alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량을 확인해주시기 바랍니다.");
+        setGeneratingArticle(false);
+        return;
+      }
     }
+
+    // 2. If server endpoint failed or returned non-200 (e.g. Cloudflare Pages / Vercel static deployment), call client Gemini generator directly!
+    if (!generatedData) {
+      console.log("Server endpoint unavailable. Running direct client-side Gemini AI generator for:", targetKw);
+      try {
+        generatedData = await generateClientGeminiArticle(targetKw);
+      } catch (clientErr: any) {
+        console.error("Client Gemini generator error:", clientErr);
+        const errMsg = clientErr?.message || String(clientErr);
+        const errStr = errMsg.toLowerCase();
+        if (errStr.includes("quota") || errStr.includes("exceeded") || errStr.includes("429")) {
+          alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량을 확인해주시기 바랍니다.");
+        } else if (errStr.includes("api 키가 입력되지 않아")) {
+          // User cancelled prompt
+        } else if (errStr.includes("api_key_invalid") || errStr.includes("invalid api key") || errStr.includes("unauthorized") || errStr.includes("403")) {
+          localStorage.removeItem("GEMINI_API_KEY");
+          alert(`⚠️ Gemini API 키가 올바르지 않습니다.\n\n오류 내용: ${errMsg}\n\n저장된 키를 삭제하였습니다. 다시 시도할 때 올바른 Gemini API 키를 입력해 주세요.`);
+        } else {
+          alert(`⚠️ AI 글 작성 중 오류가 발생하였습니다:\n\n${errMsg}\n\nAPI 키 상태 및 네트워크 연결을 확인해 주세요.`);
+        }
+        setGeneratingArticle(false);
+        return;
+      }
+    }
+
+    if (!generatedData) {
+      alert("⚠️ AI 글 생성 데이터를 불러오지 못했습니다. 키워드를 확인 후 다시 시도해 주세요.");
+      setGeneratingArticle(false);
+      return;
+    }
+
+    // Pre-fill fields and set to Draft
+    setBlogTitle(generatedData.title || "");
+    setBlogExcerpt(generatedData.excerpt || "");
+    setBlogBody(generatedData.body || "");
+    setBlogSeoTitle(generatedData.seoTitle || "");
+    setBlogMetaDescription(generatedData.metaDescription || "");
+    setBlogKeywords(generatedData.keywords || "");
+    setBlogImageUrl(generatedData.imageUrl || "");
+    setBlogImageAlt(generatedData.imageAlt || "");
+    setBlogDraft(true);
+    setAiKeyword("");
+    setGeneratingArticle(false);
+
+    const formElement = document.getElementById("blog-publisher-form");
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: "smooth" });
+    }
+    
+    alert(`Article successfully generated for "${targetKw}" and loaded into the publisher form below as a Draft! Please review, edit if necessary, and click publish.`);
   };
 
   // Ad Slot Toggle helper
@@ -1010,7 +1269,7 @@ Try writing your own content or edit this template using the helper buttons abov
   };
 
   const generateSitemapXmlContent = () => {
-    const domain = "https://whatsthatmean.com";
+    const domain = "https://www.whatsthatmean.com";
     const dateStr = new Date().toISOString().split("T")[0];
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
@@ -1307,10 +1566,10 @@ Try writing your own content or edit this template using the helper buttons abov
                   이제 sitemap.xml을 수동으로 다운로드하고 업로드하실 필요가 없습니다! 블로그 글을 발행하거나 삭제할 때마다 실시간으로 반영되는 <strong>실시간 동적 Sitemap</strong> 기능이 서버에 적용되었습니다.
                 </p>
                 <div className="bg-paper p-3.5 rounded-lg border border-line text-xs font-mono break-all flex justify-between items-center gap-2 text-ink">
-                  <span>https://whatsthatmean.com/sitemap.xml</span>
+                  <span>https://www.whatsthatmean.com/sitemap.xml</span>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText("https://whatsthatmean.com/sitemap.xml");
+                      navigator.clipboard.writeText("https://www.whatsthatmean.com/sitemap.xml");
                       alert("Sitemap URL copied to clipboard!");
                     }}
                     className="text-[10px] font-sans font-bold text-indigo hover:text-indigo-dark whitespace-nowrap cursor-pointer underline"
@@ -1790,7 +2049,7 @@ Try writing your own content or edit this template using the helper buttons abov
               <div className="admin-card bg-card border border-line rounded-xl p-6 shadow-sm space-y-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-indigo animate-pulse" />
-                  <div className="font-display font-bold text-lg text-ink">AI Blog Article Generator (Gemini 3.5)</div>
+                  <div className="font-display font-bold text-lg text-ink">AI Blog Article Generator (Gemini 3.6 Flash)</div>
                 </div>
                 <p className="text-xs text-ink-soft leading-relaxed">
                   원하는 키워드 또는 주제를 입력하고 생성 버튼을 누르시면, 구글 검색(SEO) 최적화에 특화된 고품질 블로그 기사가 자동으로 생성됩니다. 
