@@ -46,26 +46,6 @@ import PolicyPagesView, { PolicyPageType } from "./components/PolicyPagesView";
 
 import { Loader2, Sparkles, BookOpen } from "lucide-react";
 
-// Determine which view a URL path corresponds to, synchronously, so the very
-// first render already matches the requested URL instead of always showing
-// "home" until the Firestore fetch resolves. This fixes both:
-//  1) a visible "flash of homepage" on every direct /blog/... or /term/... visit
-//  2) users/crawlers appearing stuck on the homepage if the Firestore fetch is
-//     slow or fails, since the correct view is now selected immediately.
-function getInitialViewFromPath(): string {
-  const p = window.location.pathname;
-  if (p === "/" || p === "/home" || p === "") return "home";
-  if (p === "/about") return "about";
-  if (p === "/editorial") return "editorial";
-  if (p === "/privacy") return "privacy";
-  if (p === "/terms") return "terms";
-  if (p === "/quiz") return "quiz";
-  if (p === "/blog" || p.startsWith("/blog/")) return "blog";
-  if (p === "/emoji" || p.startsWith("/browse")) return "browse";
-  if (p.startsWith("/term/")) return "term";
-  return "home";
-}
-
 export default function App() {
   // Application Data States
   const [terms, setTerms] = useState<Term[]>(initialTerms);
@@ -75,21 +55,11 @@ export default function App() {
   const [isDbLoaded, setIsDbLoaded] = useState(false);
   
   // Navigation & UI States
-  const [activeView, setActiveView] = useState<string>(getInitialViewFromPath);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
-    const p = window.location.pathname;
-    if (p === "/emoji") return "emoji";
-    if (p.startsWith("/browse/")) return p.substring(8);
-    return null;
-  });
-  const [searchQuery, setSearchQuery] = useState<string>(() => {
-    return new URLSearchParams(window.location.search).get("search") || "";
-  });
+  const [activeView, setActiveView] = useState<string>("home");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
-  const [selectedTermCode, setSelectedTermCode] = useState<string>(() => {
-    const p = window.location.pathname;
-    return p.startsWith("/term/") ? decodeURIComponent(p.substring(6)).toUpperCase() : "";
-  });
+  const [selectedTermCode, setSelectedTermCode] = useState<string>("");
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
   const [quizMode, setQuizMode] = useState<"abbreviation" | "emoji">("abbreviation");
 
