@@ -3,9 +3,19 @@ import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import fs from "fs";
+import { fileURLToPath } from "url";
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
+import { getFirestore, initializeFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
 import { generateTermArticle } from "./src/utils/termArticleGenerator";
+
+let __filename = "";
+let __dirname = "";
+try {
+  __filename = fileURLToPath(import.meta.url);
+  __dirname = path.dirname(__filename);
+} catch (e) {
+  __dirname = process.cwd();
+}
 
 dotenv.config();
 
@@ -108,7 +118,19 @@ const DEFAULT_FIREBASE_CONFIG = {
 
 let firebaseConfig = { ...DEFAULT_FIREBASE_CONFIG };
 try {
-  const configPath = path.join(projectRoot, "firebase-applet-config.json");
+  let configPath = path.join(projectRoot, "firebase-applet-config.json");
+  const possibleConfigPaths = [
+    configPath,
+    path.join(__dirname, "firebase-applet-config.json"),
+    path.join(__dirname, "../firebase-applet-config.json"),
+    path.join(__dirname, "../../firebase-applet-config.json")
+  ];
+  for (const p of possibleConfigPaths) {
+    if (fs.existsSync(p)) {
+      configPath = p;
+      break;
+    }
+  }
   if (fs.existsSync(configPath)) {
     const loaded = JSON.parse(fs.readFileSync(configPath, "utf8"));
     firebaseConfig = { ...DEFAULT_FIREBASE_CONFIG, ...loaded };
@@ -119,7 +141,16 @@ try {
 
 // Initialize server-side Firebase instance safely avoiding duplicate app error in serverless contexts
 const firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId);
+
+// Initialize Firestore safely with long polling to prevent WebSocket timeout/freeze in Serverless Functions
+let firestoreDb: any;
+try {
+  firestoreDb = initializeFirestore(firebaseApp, {
+    experimentalForceLongPolling: true,
+  }, firebaseConfig.firestoreDatabaseId || DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId);
+} catch (err) {
+  firestoreDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || DEFAULT_FIREBASE_CONFIG.firestoreDatabaseId);
+}
 
 // Helper to race Firestore async queries against a timeout so serverless functions never hang
 async function withFirestoreTimeout<T>(promise: Promise<T>, ms = 8000, fallback: T): Promise<T> {
@@ -990,13 +1021,20 @@ if (process.env.NODE_ENV === "production") {
   app.get("*", async (req, res) => {
     try {
       let indexHtmlPath = path.join(distPath, "index.html");
+      const possibleIndexPaths = [
+        indexHtmlPath,
+        path.join(process.cwd(), "dist/index.html"),
+        path.join(__dirname, "../dist/index.html"),
+        path.join(__dirname, "dist/index.html"),
+        path.join(__dirname, "../../dist/index.html"),
+        path.join(__dirname, "../../index.html")
+      ];
       
-      // Resilient paths for Vercel's serverless function layout
-      if (!fs.existsSync(indexHtmlPath)) {
-        indexHtmlPath = path.join(__dirname, "../dist/index.html");
-      }
-      if (!fs.existsSync(indexHtmlPath)) {
-        indexHtmlPath = path.join(__dirname, "dist/index.html");
+      for (const p of possibleIndexPaths) {
+        if (fs.existsSync(p)) {
+          indexHtmlPath = p;
+          break;
+        }
       }
       
       let html = "";
