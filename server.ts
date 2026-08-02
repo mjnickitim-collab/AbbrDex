@@ -30,17 +30,9 @@ app.use((req, res, next) => {
   if (req.url && req.url.startsWith("/api/index")) {
     try {
       const urlObj = new URL(req.url, "http://localhost");
-      const apiSubPath = urlObj.searchParams.get("path");
-      const pageSubPath = urlObj.searchParams.get("page");
-
-      if (apiSubPath !== null) {
-        // Real /api/* calls: /api/generate-article, /api/search-unsplash, /api/sitemap.xml
-        req.url = apiSubPath.startsWith("/") ? `/api${apiSubPath}` : `/api/${apiSubPath}`;
-      } else if (pageSubPath !== null) {
-        // Normal page routes forwarded from the vercel.json catch-all (e.g. /blog/xxx, /term/ABC, "" for "/")
-        const normalized = pageSubPath.startsWith("/") ? pageSubPath : `/${pageSubPath}`;
-        req.url = normalized + (urlObj.search ? urlObj.search.replace(/[?&]page=[^&]*/, "").replace(/^&/, "?") : "");
-        if (!req.url.startsWith("/")) req.url = "/" + req.url;
+      const subPath = urlObj.searchParams.get("path");
+      if (subPath) {
+        req.url = subPath.startsWith("/") ? `/api${subPath}` : `/api/${subPath}`;
       } else {
         const restored = req.url.replace(/^\/api\/index/, "");
         req.url = restored ? (restored.startsWith("/") ? `/api${restored}` : `/api/${restored}`) : "/api";
@@ -83,7 +75,7 @@ app.use((req, res, next) => {
   if (!isLocal && !isPreview && !isCanonical) {
     // 308 Permanent Redirect to canonical domain (www.whatsthatmean.com)
     console.log(`Redirecting non-canonical host ${host} to www.whatsthatmean.com`);
-    return res.redirect(308, `https://www.whatsthatmean.com${req.url}`);
+    return res.redirect(308, `https://www.whatsthatmean.com${req.originalUrl}`);
   }
   next();
 });
@@ -169,7 +161,6 @@ async function getBlogsFromFirestore() {
         title: data.title || "",
         draft: data.draft || false,
         excerpt: data.excerpt || "",
-        body: data.body || "",
         seoTitle: data.seoTitle || "",
         metaDescription: data.metaDescription || "",
         date: data.date || ""
@@ -316,29 +307,6 @@ async function getSeoMetadata(urlPath: string) {
           }
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(blogSchema)}</script>`;
-
-        // Build a plain-text, crawler-visible version of the article body so
-        // Google can read real content even before/without client-side JS execution.
-        const escapeHtml = (s: string) => s
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;");
-        const plainParagraphs = (foundBlog.body || "")
-          .split(/\n{2,}/)
-          .map((p: string) => p.replace(/[#*_>`\[\]]/g, "").trim())
-          .filter((p: string) => p.length > 0)
-          .map((p: string) => `<p>${escapeHtml(p)}</p>`)
-          .join("\n");
-
-        bodyArticleHtml = `
-          <div id="ssr-blog-article" style="display:none;" aria-hidden="true">
-            <article>
-              <h1>${escapeHtml(foundBlog.title)}</h1>
-              <p>${escapeHtml(foundBlog.excerpt || "")}</p>
-              ${plainParagraphs}
-            </article>
-          </div>
-        `;
       }
     } else if (pathname.startsWith("/term/")) {
       const code = decodeURIComponent(pathname.substring(6)).toUpperCase();
@@ -999,53 +967,35 @@ app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   }
 });
 
-// Serve assets / static app.
-// Runs both in the local/container Express server AND in the Vercel serverless
-// function (api/index.ts -> server.ts), since vercel.json now forwards normal
-// page routes ("/", "/blog/...", "/term/...") here instead of straight to the
-// static index.html. This is what allows per-page <title>/<meta description>/
-// JSON-LD to actually be injected before Google (or any crawler) sees the HTML.
-const distPath = path.join(process.cwd(), "dist");
-
-// IMPORTANT: only register this in production (Vercel or a built container).
-// dev-server.ts (used for local `npm run dev`) imports this same `app` and
-// registers its own catch-all that runs source files through Vite with HMR;
-// it must not be shadowed by this dist/index.html-reading route.
-if (process.env.NODE_ENV === "production") {
-  if (!process.env.VERCEL) {
-    // Locally-built / containerized run: serve the built JS/CSS assets directly.
-    // On Vercel, static assets are served by the CDN via the "/assets/(.*)"
-    // rewrite in vercel.json, so this isn't needed there.
-    app.use(express.static(distPath, { index: false })); // don't serve index.html directly
-  }
-
+// Serve assets / static app (Production container server only, not run on Vercel)
+if (!process.env.VERCEL && process.env.NODE_ENV === "production") {
+  const distPath = path.join(process.cwd(), "dist");
+  app.use(express.static(distPath, { index: false })); // don't serve index.html directly
+  
   app.get("*", async (req, res) => {
     try {
       const indexHtmlPath = path.join(distPath, "index.html");
       let html = await fs.promises.readFile(indexHtmlPath, "utf-8");
-
+      
       // Inject Google site verification meta tag
       const verificationCode = await getGoogleSiteVerification();
       if (verificationCode) {
         const metaTag = `<meta name="google-site-verification" content="${verificationCode}" />`;
         html = html.replace("<head>", `<head>\n    ${metaTag}`);
       }
-
-      // Inject dynamic, server-side rendered SEO meta tags per-URL
+      
+      // Inject dynamic, server-side rendered SEO meta tags
       html = await injectSeoMetadata(html, req.url);
-
+      
       res.send(html);
     } catch (err) {
-      console.error("SSR render error, falling back to static index.html:", err);
       res.sendFile(path.join(distPath, "index.html"));
     }
   });
 
-  if (!process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Production server running on port ${PORT}`);
-    });
-  }
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Production server running on port ${PORT}`);
+  });
 }
 
 export default app;

@@ -2,8 +2,7 @@
   "version": 2,
   "functions": {
     "api/index.ts": {
-      "maxDuration": 60,
-      "includeFiles": "dist/**"
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -24,20 +23,9 @@
       "destination": "/api/index?path=sitemap.xml"
     },
     {
-      "source": "/assets/(.*)",
-      "destination": "/assets/$1"
-    },
-    {
-      "source": "/favicon.svg",
-      "destination": "/favicon.svg"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "/robots.txt"
-    },
-    {
       "source": "/(.*)",
-      "destination": "/api/index?page=$1"
+      "destination": "/index.html"
     }
   ]
 }
+
