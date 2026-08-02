@@ -2,23 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Category, Term, BlogPost } from "../types";
 import { CATEGORIES } from "../data/seedData";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  ArrowRight, 
-  Search, 
-  BookOpen, 
-  Calendar, 
-  TrendingUp, 
-  Sparkles, 
-  RefreshCw, 
-  Grid, 
-  CheckCircle2, 
-  Quote, 
-  Info, 
-  Globe, 
-  Layers, 
-  ShieldCheck, 
-  Tag 
-} from "lucide-react";
+import { ArrowRight, Search, BookOpen, Calendar, TrendingUp, Sparkles, RefreshCw, Grid, Play } from "lucide-react";
 
 interface HomeViewProps {
   terms: Term[];
@@ -27,7 +11,6 @@ interface HomeViewProps {
   onSelectTerm: (term: Term) => void;
   blogs: BlogPost[];
   onSelectBlogPost: (post: BlogPost) => void;
-  onViewAllBlogs?: () => void;
   onSelectEmojiQuiz: () => void;
   onSelectEmojiDict: () => void;
 }
@@ -35,23 +18,26 @@ interface HomeViewProps {
 // Sliding reel order for live decoder
 const REEL_ORDER = ["FYI", "GG", "ASAP", "FOMO", "SNAFU", "HMU", "WFH", "TBH", "IMHO", "NSFW", "ETA", "GOAT", "TL;DR", "TBD"];
 
-// Category Descriptions (Human-written introductory guides without artificial counts)
-const CATEGORY_INTROS: { [key: string]: string } = {
-  internet: "Web slangs, online chat shorthands, and viral internet expressions used across forums and message boards.",
-  texting: "Text messaging abbreviations, SMS shorthand codes, and quick-reply text acronyms for fast messaging.",
-  social: "Social media lingo, trending hashtag abbreviations, and creator community expressions.",
-  business: "Corporate acronyms, office communication terms, and workplace jargon for professional email & meetings.",
-  gaming: "Gamer lingo, multiplayer callouts, esports terminology, and streaming community shorthands.",
-  military: "Tactical defense terminology, radio communication codes, and official military acronyms.",
-  emoji: "Emoji meanings, emotional symbol interpretations, and popular icon combo representations.",
-  sports: "Sports league abbreviations, performance stat tracking codes, and athletic tournament terms.",
-  companies: "Corporate entity abbreviations, ticker codes, and global company name short forms.",
-  countries: "ISO country codes, nation initials, and official geographic territory abbreviations.",
-  cities: "Major city shorthands, metro region codes, and international airport designations.",
-  medical: "Clinical abbreviations, healthcare record acronyms, and medical diagnostic terminology.",
-  finance: "Financial market terms, investment shorthand, and banking institution acronyms.",
-  currency: "Global currency ISO codes, monetary symbols, and foreign exchange shorthands.",
-  it_dev: "Software engineering terms, IT infrastructure codes, and developer programming acronyms.",
+// SEO Keyword-rich category descriptions for high click-through rates (CTR) and internal linking power
+const getCategoryDescription = (id: string, count: number): string => {
+  const map: { [key: string]: string } = {
+    internet: `Explore ${count}+ Web Slangs & Chat Acronyms`,
+    texting: `Discover ${count}+ Texting Shorthands & SMS Codes`,
+    social: `Browse ${count}+ Social Media Slangs & Viral Tags`,
+    business: `Decode ${count}+ Corporate Abbreviations & Jargons`,
+    gaming: `Master ${count}+ Gaming Terms & Esports Acronyms`,
+    military: `Learn ${count}+ Tactical Jargons & Defense Codes`,
+    emoji: `Decode ${count}+ Emoji Meanings & Combos`,
+    sports: `Look up ${count}+ Sports Leagues & Stats Codes`,
+    companies: `Identify ${count}+ Company Name Abbreviations`,
+    countries: `Browse ${count}+ Country Initials & ISO Codes`,
+    cities: `Find ${count}+ City Abbreviations & Airport Codes`,
+    medical: `Search ${count}+ Clinical & Healthcare Acronyms`,
+    finance: `Analyze ${count}+ Financial Terms & Stock Codes`,
+    currency: `Convert ${count}+ Global Currency Shorthands`,
+    it_dev: `Explore ${count}+ Tech Terms & Programming Acronyms`,
+  };
+  return map[id] || `Explore ${count}+ verified terms & abbreviations`;
 };
 
 export default function HomeView({ 
@@ -61,7 +47,6 @@ export default function HomeView({
   onSelectTerm, 
   blogs, 
   onSelectBlogPost,
-  onViewAllBlogs,
   onSelectEmojiQuiz,
   onSelectEmojiDict
 }: HomeViewProps) {
@@ -82,7 +67,7 @@ export default function HomeView({
   useEffect(() => {
     const nonEmojiTerms = terms.filter(t => t.cat !== "emoji");
     if (nonEmojiTerms.length > 0) {
-      const todayStr = new Date().toISOString().split("T")[0];
+      const todayStr = new Date().toISOString().split("T")[0]; // stable day index
       let hash = 0;
       for (let i = 0; i < todayStr.length; i++) {
         hash = todayStr.charCodeAt(i) + ((hash << 5) - hash);
@@ -100,16 +85,18 @@ export default function HomeView({
     }
   };
 
-  // Select 8 popular/trending acronyms randomly or by term flag
+  // Select 10 popular/trending acronyms randomly or by term flag
   const trendingTerms = useMemo(() => {
     const pool = terms.filter(t => t.cat !== "emoji");
     if (pool.length === 0) return [];
     
+    // Pick explicit trending or shuffle
     const explicit = pool.filter(t => t.trending);
-    const sourceList = explicit.length >= 8 ? explicit : pool;
+    const sourceList = explicit.length >= 10 ? explicit : pool;
     
+    // Pseudo-random shuffle based on seed
     const shuffled = [...sourceList].sort(() => 0.5 - (Math.random() + randomSeed * 0.01));
-    return shuffled.slice(0, 8);
+    return shuffled.slice(0, 10);
   }, [terms, randomSeed]);
 
   // Categories sorted by popularity (term count)
@@ -118,7 +105,7 @@ export default function HomeView({
       const countA = terms.filter(t => t.cat === a.id).length;
       const countB = terms.filter(t => t.cat === b.id).length;
       return countB - countA;
-    }).slice(0, 15);
+    }).slice(0, 15); // Exactly 15 items for 5x3 grid
   }, [terms]);
 
   // Find active reel term details
@@ -143,178 +130,131 @@ export default function HomeView({
 
   return (
     <div className="w-full space-y-12 pb-12">
-      
-      {/* 1. Publication Header Banner */}
-      <section className="bg-card border-b border-line py-10 px-6">
-        <div className="max-w-[1080px] mx-auto text-center space-y-5">
-          <div className="inline-flex items-center gap-2 font-mono font-semibold text-xs text-indigo bg-indigo/10 px-3.5 py-1.5 rounded-full border border-indigo/20 shadow-xs">
-            <Globe className="w-3.5 h-3.5 text-indigo" />
-            <span>Digital Communication & Acronym Encyclopedia</span>
+      {/* 1. Centered Hero Section */}
+      <section className="hero pt-12 pb-8 px-6 max-w-[960px] mx-auto text-center space-y-6">
+        <span className="eyebrow inline-flex items-center gap-1.5 font-mono font-semibold text-xs text-indigo bg-indigo/10 px-4 py-1.5 rounded-full border border-indigo/20 shadow-xs">
+          <Sparkles className="w-3.5 h-3.5 text-indigo animate-pulse" />
+          <span>{totalTermCount}+ abbreviations & acronyms</span>
+        </span>
+
+        <h1 className="font-display font-black text-3xl sm:text-4xl md:text-5xl leading-[1.15] text-ink tracking-tight max-w-[800px] mx-auto">
+          Online Abbreviation Dictionary & Acronym Finder
+        </h1>
+
+        <p className="sub text-base sm:text-lg text-ink-soft max-w-[720px] mx-auto leading-relaxed">
+          Decode 4,400+ text slang meanings, chat acronyms, gaming shorthands, business terms, and military jargon easily with whatsthatmean dictionary.
+        </p>
+
+        {/* Centered Search Bar */}
+        <form onSubmit={handleSearchSubmit} className="search-row flex flex-col sm:flex-row gap-2.5 max-w-[560px] mx-auto w-full pt-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft" />
+            <input
+              type="text"
+              placeholder="Search for a term, e.g. ASAP, WFH, FOMO..."
+              value={searchVal}
+              onChange={(e) => setSearchVal(e.target.value)}
+              className="w-full pl-11 pr-4 py-3.5 border-1.5 border-line rounded-xl bg-card text-sm font-mono text-ink shadow-sm focus:outline-none focus:border-indigo transition"
+            />
           </div>
+          <button type="submit" className="btn btn-solid font-display font-bold px-6 py-3.5 flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 transition">
+            <span>Search</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </form>
 
-          <h1 className="font-display font-black text-3xl sm:text-4xl md:text-5xl leading-[1.15] text-ink tracking-tight max-w-[840px] mx-auto">
-            Whatsthatmean Digital Reference Library
-          </h1>
-
-          <p className="text-base sm:text-lg text-ink-soft max-w-[780px] mx-auto leading-relaxed font-normal">
-            A comprehensive editorial reference guide explaining internet abbreviations, texting shorthands, professional workplace jargon, and modern digital expressions with verified definitions and contextual usage examples.
-          </p>
-
-          {/* Integrated Search Bar */}
-          <form onSubmit={handleSearchSubmit} className="pt-2 max-w-[620px] mx-auto w-full">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft" />
-                <input
-                  type="text"
-                  placeholder="Search dictionary for a term (e.g., WFH, FOMO, ASAP, GOAT)..."
-                  value={searchVal}
-                  onChange={(e) => setSearchVal(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 border-1.5 border-line rounded-xl bg-paper text-sm font-mono text-ink shadow-2xs focus:outline-none focus:border-indigo transition"
-                />
-              </div>
-              <button type="submit" className="btn btn-solid font-display font-bold px-7 py-3.5 flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95 transition shrink-0">
-                <span>Look Up</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Quick Keyword Tags */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5 pt-3 text-xs text-ink-soft">
-              <span className="font-semibold text-ink-soft/80">Trending Lookups:</span>
-              {["ASAP", "WFH", "FOMO", "TBH", "GOAT", "TL;DR"].map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => onSearch(code)}
-                  className="px-2.5 py-0.5 bg-paper hover:bg-indigo/10 border border-line hover:border-indigo/30 rounded-md text-xs font-mono font-bold text-ink hover:text-indigo transition cursor-pointer"
-                >
-                  #{code}
-                </button>
-              ))}
-            </div>
-          </form>
+        {/* Quick Tag Badges under Search */}
+        <div className="flex flex-wrap justify-center items-center gap-2 pt-1 text-xs text-ink-soft">
+          <span className="font-semibold text-ink-soft/80">Popular:</span>
+          {["ASAP", "WFH", "FOMO", "TBH", "GOAT", "TL;DR"].map((code) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => onSearch(code)}
+              className="px-2.5 py-1 bg-surface hover:bg-indigo/10 border border-line hover:border-indigo/30 rounded-lg text-xs font-mono font-bold text-ink hover:text-indigo transition cursor-pointer"
+            >
+              #{code}
+            </button>
+          ))}
         </div>
       </section>
 
-      {/* 2. Featured Word Analysis / Editorial Entry Spotlight */}
-      <section className="px-6 max-w-[1080px] mx-auto">
-        <div className="bg-gradient-to-br from-card via-card to-indigo-50/30 border border-indigo-100 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 bg-indigo/10 text-indigo rounded-lg">
-                <Sparkles className="w-4 h-4" />
-              </span>
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-indigo">
-                FEATURED ENTRY ANALYSIS • WORD OF THE DAY
-              </span>
+      {/* 2. Trending Acronyms Section (Boosts SEO & Dwell Time via Internal Links) */}
+      <section className="py-8 px-6 max-w-[1080px] mx-auto">
+        <div className="bg-surface/80 border border-line rounded-2xl p-6 md:p-8 space-y-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line/60 pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <h2 className="font-display font-bold text-xl text-ink">Trending Acronyms & Text Slang Meanings</h2>
+              </div>
+              <p className="text-xs text-ink-soft font-medium">
+                High-traffic shorthand terms decoded for instant lookups
+              </p>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-medium text-ink-soft">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Peer-reviewed by Editorial Staff</span>
-            </div>
+            <button
+              onClick={() => setRandomSeed(prev => prev + 1)}
+              className="self-start sm:self-auto flex items-center gap-1.5 text-xs font-bold text-indigo bg-indigo/10 hover:bg-indigo/20 px-3.5 py-2 rounded-xl transition cursor-pointer active:scale-95"
+              title="Shuffle acronyms"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Shuffle Acronyms</span>
+            </button>
           </div>
 
-          {dailyTerm && (
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-              <div className="md:col-span-8 space-y-4">
-                <div className="flex flex-wrap items-baseline gap-3">
-                  <h2 className="font-mono font-black text-3xl sm:text-4xl text-ink tracking-tight">
-                    {dailyTerm.code}
-                  </h2>
-                  <span className="text-base sm:text-lg font-display font-semibold text-indigo">
-                    — {dailyTerm.full}
-                  </span>
-                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-indigo/10 text-indigo border border-indigo/20">
-                    {CATEGORIES.find(c => c.id === dailyTerm.cat)?.name || dailyTerm.cat}
-                  </span>
-                </div>
-
-                {dailyTerm.ex && (
-                  <p className="text-sm sm:text-base text-ink leading-relaxed font-normal">
-                    <strong className="text-indigo font-semibold">Example Usage:</strong> "{dailyTerm.ex}"
-                  </p>
-                )}
-
-                {dailyTerm.ex && (
-                  <div className="bg-paper p-4 rounded-xl border-l-4 border-indigo border-y border-r border-line text-xs sm:text-sm text-ink space-y-1">
-                    <div className="font-mono font-bold text-[11px] text-indigo uppercase tracking-wider flex items-center gap-1">
-                      <Quote className="w-3 h-3" />
-                      <span>Contextual Usage Example</span>
+          {/* Acronym Grid Chips */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
+            {trendingTerms.map((term) => {
+              const catMeta = CATEGORIES.find(c => c.id === term.cat) || CATEGORIES[0];
+              return (
+                <button
+                  key={`trending-${term.code}`}
+                  onClick={() => onSelectTerm(term)}
+                  className="bg-card hover:bg-indigo-50/40 border border-line hover:border-indigo-300 rounded-xl p-3.5 text-left transition group cursor-pointer flex flex-col justify-between shadow-2xs hover:shadow-sm"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-mono font-bold text-base text-ink group-hover:text-indigo tracking-tight">
+                        {term.code}
+                      </span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono ${catMeta.tag}`}>
+                        {catMeta.name.split(" ")[0]}
+                      </span>
                     </div>
-                    <p className="italic text-ink-soft font-medium">
-                      "{dailyTerm.ex}"
+                    <p className="text-xs text-ink-soft line-clamp-2 font-medium leading-snug group-hover:text-ink">
+                      {term.full}
                     </p>
                   </div>
-                )}
-              </div>
-
-              <div className="md:col-span-4 bg-paper p-5 rounded-xl border border-line space-y-4 flex flex-col justify-between h-full">
-                <div className="space-y-2">
-                  <h3 className="font-display font-bold text-xs uppercase tracking-wider text-ink-soft">
-                    Reference Highlights
-                  </h3>
-                  <ul className="text-xs space-y-2 text-ink-soft">
-                    <li className="flex items-center justify-between border-b border-line/60 pb-1.5">
-                      <span>Category:</span>
-                      <strong className="text-ink font-mono">{dailyTerm.cat}</strong>
-                    </li>
-                    <li className="flex items-center justify-between border-b border-line/60 pb-1.5">
-                      <span>Status:</span>
-                      <strong className="text-emerald-600 font-semibold">Verified Entry</strong>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span>Format:</span>
-                      <strong className="text-ink font-mono">Abbreviation / Acronym</strong>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="pt-2 flex flex-col gap-2">
-                  <button
-                    onClick={() => onSelectTerm(dailyTerm)}
-                    className="w-full btn btn-solid font-display font-bold text-xs py-2.5 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <span>Read Full Term Page</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={handleShuffleDailyTerm}
-                    className="w-full py-2 rounded-lg text-xs font-bold text-ink-soft hover:text-indigo hover:bg-card transition cursor-pointer flex items-center justify-center gap-1"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Explore Next Term</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+                  <div className="pt-2 mt-2 border-t border-line/40 flex items-center justify-between text-[10px] font-bold text-indigo opacity-80 group-hover:opacity-100">
+                    <span>Decode</span>
+                    <span className="group-hover:translate-x-0.5 transition">→</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* 3. Digital Insights & Editorial Articles Section */}
-      <section className="px-6 max-w-[1080px] mx-auto space-y-6">
-        <div className="flex items-center justify-between border-b border-line pb-4">
+      {/* 3. Latest Insights (Blog) Section */}
+      <section className="section py-8 px-6 max-w-[1080px] mx-auto font-sans">
+        <div className="section-head flex items-center justify-between mb-6 border-b border-line pb-4">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-indigo/10 text-indigo rounded-lg">
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-2xl text-ink">Digital Insights & Editorial Guides</h2>
-              <p className="text-xs text-ink-soft font-medium">In-depth reference articles, internet culture trends, and expert educational guides</p>
+              <h2 className="font-display font-bold text-2xl text-ink">Latest Slang Trends & Abbreviation Guides</h2>
+              <p className="text-xs text-ink-soft font-medium">In-depth guides, internet culture trends, and expert explanations of modern shorthand</p>
             </div>
           </div>
           
           <button
-            onClick={() => {
-              if (onViewAllBlogs) {
-                onViewAllBlogs();
-              } else if (blogs.length > 0) {
-                onSelectBlogPost(blogs[0]);
-              }
-            }}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition cursor-pointer"
+            onClick={() => onSelectBlogPost(blogs[0])}
+            className="hidden sm:flex items-center gap-1 text-xs font-bold text-indigo hover:text-indigo-dark transition cursor-pointer"
           >
             <span>View All Insights</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -323,35 +263,31 @@ export default function HomeView({
 
         {blogs.length === 0 ? (
           <div className="text-center py-8 text-ink-soft text-sm">
-            No articles published yet.
+            No insights published yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="blog-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {blogs.slice(0, 3).map((post, idx) => (
               <button
                 key={post.id ? `home-blog-${post.id}` : `home-blog-${idx}-${post.title}`}
                 onClick={() => onSelectBlogPost(post)}
-                className="bg-card border border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:-translate-y-1 shadow-2xs flex flex-col justify-between cursor-pointer h-full group"
+                className="blog-card bg-card border-1.5 border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full group"
               >
                 <div className="space-y-3">
-                  <div className="flex items-center text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-indigo" />
-                      <span>{post.date}</span>
-                    </span>
+                  <div className="date flex items-center gap-1.5 text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
+                    <Calendar className="w-3.5 h-3.5 text-indigo" />
+                    <span>{post.date}</span>
                   </div>
-
                   <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] group-hover:text-indigo">
                     {post.title}
                   </h3>
-
                   <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
                     {post.excerpt}
                   </p>
                 </div>
 
                 <div className="pt-4 mt-5 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark">
-                  <span>Read Article</span>
+                  <span>Read Full Article</span>
                   <span className="text-base group-hover:translate-x-1 transition">→</span>
                 </div>
               </button>
@@ -360,71 +296,11 @@ export default function HomeView({
         )}
       </section>
 
-      {/* 4. Trending Decoded Terms (Rich Cards with Text Content) */}
-      <section className="px-6 max-w-[1080px] mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 bg-orange-100 text-orange-600 rounded-lg">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="font-display font-bold text-2xl text-ink">Trending Acronyms & Text Slang Meanings</h2>
-              <p className="text-xs text-ink-soft font-medium">Curated digital expressions decoded with clear definitions and context</p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setRandomSeed(prev => prev + 1)}
-            className="self-start sm:self-auto flex items-center gap-1.5 text-xs font-bold text-indigo bg-indigo/10 hover:bg-indigo/20 px-3.5 py-2 rounded-xl transition cursor-pointer active:scale-95"
-            title="Shuffle terms"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Shuffle Acronyms</span>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {trendingTerms.map((term) => {
-            const catMeta = CATEGORIES.find(c => c.id === term.cat) || CATEGORIES[0];
-            return (
-              <button
-                key={`trending-${term.code}`}
-                onClick={() => onSelectTerm(term)}
-                className="bg-card hover:bg-indigo-50/30 border border-line hover:border-indigo-300 rounded-2xl p-5 text-left transition group cursor-pointer flex flex-col justify-between shadow-2xs hover:shadow-sm h-full"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono font-black text-xl text-ink group-hover:text-indigo tracking-tight">
-                      {term.code}
-                    </span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase font-mono ${catMeta.tag}`}>
-                      {catMeta.name.split(" ")[0]}
-                    </span>
-                  </div>
-
-                  <p className="text-xs font-bold text-indigo leading-tight">
-                    {term.full}
-                  </p>
-
-                  <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed pt-1">
-                    {term.ex ? `"${term.ex}"` : "Explore entry definitions, context, and dialogue examples."}
-                  </p>
-                </div>
-
-                <div className="pt-3 mt-4 border-t border-line/60 flex items-center justify-between text-[11px] font-bold text-indigo group-hover:text-indigo-dark">
-                  <span>View Entry</span>
-                  <span className="group-hover:translate-x-1 transition">→</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 5. Live Decoder Reel */}
-      <section className="px-6 max-w-[1080px] mx-auto">
+      {/* 4. Live Decoder Reel (Placed directly above Popular Categories) */}
+      <section className="pt-4 pb-2 px-6 max-w-[1080px] mx-auto">
         <div className="w-full bg-ink text-white rounded-2xl p-4 md:px-6 shadow-md border border-ink-soft/30 flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden relative">
           
+          {/* Live Indicator Header */}
           <div className="flex items-center gap-2.5 shrink-0 border-b md:border-b-0 md:border-r border-white/15 pb-2 md:pb-0 md:pr-6">
             <span className="flex h-2.5 w-2.5 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -435,6 +311,7 @@ export default function HomeView({
             </span>
           </div>
 
+          {/* Single Line Animated Active Reel Term */}
           <div className="flex-1 min-w-0">
             <AnimatePresence mode="wait">
               <motion.div
@@ -465,6 +342,7 @@ export default function HomeView({
             </AnimatePresence>
           </div>
 
+          {/* Action Link */}
           <button
             onClick={() => onSelectTerm(activeReelTerm)}
             className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-yellow hover:text-white transition cursor-pointer self-end md:self-center"
@@ -475,146 +353,111 @@ export default function HomeView({
         </div>
       </section>
 
-      {/* 6. Popular Categories & Representative Acronyms */}
-      <section className="px-6 max-w-[1080px] mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-4">
+      {/* 5. Popular Categories Grid (5x3 Grid + View All Categories) */}
+      <section className="section py-8 px-6 max-w-[1080px] mx-auto font-sans">
+        <div className="section-head flex items-center justify-between mb-6 border-b border-line pb-4">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-indigo/10 text-indigo rounded-lg">
               <Grid className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="font-display font-bold text-2xl text-ink">Abbreviation & Slang Topics</h2>
-              <p className="text-xs text-ink-soft font-medium">Editorial category guides with top representative expressions</p>
+              <h2 className="font-display font-bold text-2xl text-ink">Browse Abbreviation Dictionary Categories</h2>
+              <p className="text-xs text-ink-soft font-medium">Browse abbreviations sorted by topic & domain</p>
             </div>
           </div>
+          <span className="count font-mono text-xs text-ink-soft font-bold bg-surface px-2.5 py-1 rounded-lg border border-line">
+            15 Categories
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* 5x3 Grid */}
+        <div className="cat-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 mb-8">
           {sortedCategories.map((c) => {
-            const catIntro = CATEGORY_INTROS[c.id] || "Curated reference entries and usage guides.";
-            // Filter 6-8 representative top terms for this category
-            const categoryTerms = terms.filter((t) => t.cat === c.id);
-            const representativeTerms = categoryTerms.slice(0, 7);
-
+            const count = terms.filter((t) => t.cat === c.id).length;
+            const desc = getCategoryDescription(c.id, count);
             return (
-              <div
-                key={`cat-card-${c.id}`}
-                className="bg-card border border-line rounded-2xl p-5 shadow-2xs flex flex-col justify-between space-y-4 hover:border-indigo/50 transition group"
+              <button
+                key={`cat-grid-${c.id}`}
+                onClick={() => onSelectCategory(c.id)}
+                className="cat-chip group bg-card border-1.5 border-line rounded-xl p-3.5 text-left transition hover:border-indigo hover:shadow-sm hover:-translate-y-0.5 cursor-pointer flex flex-col justify-between min-h-[128px] h-auto"
               >
-                <div className="space-y-3">
-                  {/* Category Header */}
-                  <div className="flex items-center justify-between gap-2 border-b border-line/60 pb-2.5">
-                    <h3 className="font-display font-bold text-base text-ink group-hover:text-indigo transition">
-                      {c.name}
-                    </h3>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase font-mono ${c.tag}`}>
-                      {c.id}
-                    </span>
+                <div>
+                  <div className="n font-display font-bold text-xs text-ink group-hover:text-indigo line-clamp-1">
+                    {c.name}
                   </div>
-
-                  {/* Category Introduction Paragraph */}
-                  <p className="text-xs text-ink-soft leading-relaxed font-normal">
-                    {catIntro}
-                  </p>
-
-                  {/* Representative Acronyms (5-8 Top Terms) */}
-                  <div className="pt-1 space-y-1.5">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink-soft/80 block">
-                      Representative Acronyms:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {representativeTerms.map((t) => (
-                        <button
-                          key={`rep-${c.id}-${t.code}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectTerm(t);
-                          }}
-                          className="px-2 py-1 bg-paper hover:bg-indigo/10 border border-line hover:border-indigo/30 rounded-md text-xs font-mono font-bold text-ink hover:text-indigo transition cursor-pointer"
-                          title={`View ${t.code} definition`}
-                        >
-                          {t.code}
-                        </button>
-                      ))}
-                      {categoryTerms.length > representativeTerms.length && (
-                        <span className="text-[10px] text-ink-soft font-mono self-center px-1">
-                          +more
-                        </span>
-                      )}
-                    </div>
+                  <div className="text-[10px] text-ink-soft leading-tight mt-1 line-clamp-2 font-medium group-hover:text-indigo/80">
+                    {desc}
                   </div>
                 </div>
-
-                {/* Footer Action to Full Internal Page Catalog */}
-                <div className="pt-3 border-t border-line/60">
-                  <button
-                    onClick={() => onSelectCategory(c.id)}
-                    className="w-full py-2.5 px-3 bg-paper hover:bg-indigo hover:text-white rounded-xl text-xs font-bold text-indigo border border-indigo/20 hover:border-indigo transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
-                  >
-                    <span>Browse Full {c.name} Catalog</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                <div className="flex items-center justify-between pt-2 border-t border-line/40 w-full mt-2">
+                  <span className="c font-mono text-[10px] text-ink-soft font-semibold">
+                    {count} terms
+                  </span>
+                  <span className="text-xs text-indigo opacity-0 group-hover:opacity-100 transition">→</span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
 
-        <div className="flex justify-center pt-2">
+        {/* View All Categories Button */}
+        <div className="flex justify-center">
           <button
             onClick={() => onSelectCategory("all")}
             className="btn btn-outline font-display font-bold text-xs px-8 py-3.5 rounded-xl flex items-center gap-2 hover:bg-indigo hover:text-white hover:border-indigo transition cursor-pointer shadow-2xs active:scale-95"
           >
             <Grid className="w-4 h-4" />
-            <span>Explore All Dictionary Categories in Browse Page</span>
+            <span>View All Categories</span>
           </button>
         </div>
       </section>
 
-      {/* 7. Publication Information & Editorial Standards Section */}
-      <section className="px-6 max-w-[1080px] mx-auto">
-        <div className="bg-card border border-line rounded-2xl p-6 sm:p-8 space-y-6">
-          <div className="border-b border-line pb-4 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-indigo" />
-            <h2 className="font-display font-bold text-xl text-ink">
-              About whatsthatmean.com Reference Dictionary
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-ink-soft leading-relaxed">
-            <div className="space-y-2">
-              <h3 className="font-display font-bold text-sm text-ink flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Human Research & Verification</span>
+      {/* Abbreviation of the Day Banner */}
+      <section className="py-2 px-6 max-w-[1080px] mx-auto">
+        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xs">
+          {dailyTerm ? (
+            <div className="space-y-2 flex-1 text-center md:text-left">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                <span className="inline-block text-[10px] font-bold text-indigo-700 bg-indigo-100/70 border border-indigo-200/50 px-2.5 py-1 rounded-full uppercase tracking-widest">
+                  💡 Abbreviation of the Day
+                </span>
+                <span className="inline-block text-[9.5px] font-bold text-blue-700 bg-blue-100/60 border border-blue-200/40 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                  {CATEGORIES.find(c => c.id === dailyTerm.cat)?.name || dailyTerm.cat}
+                </span>
+              </div>
+              <h3 className="font-mono font-black text-2xl text-indigo-950 flex items-center justify-center md:justify-start gap-2">
+                {dailyTerm.code}
               </h3>
-              <p>
-                Every entry in our reference portal undergoes human review. We research real-world usage across social media, texting culture, corporate communications, and online communities to ensure high factual accuracy.
+              <p className="text-sm font-display text-indigo-900 leading-relaxed font-semibold">
+                {dailyTerm.full}
               </p>
+              {dailyTerm.ex && (
+                <p className="text-xs text-ink-soft/90 italic leading-relaxed max-w-2xl bg-white/50 p-2.5 rounded-lg border border-indigo-100/40">
+                  Example: "{dailyTerm.ex}"
+                </p>
+              )}
             </div>
-
-            <div className="space-y-2">
-              <h3 className="font-display font-bold text-sm text-ink flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-indigo" />
-                <span>Comprehensive Context</span>
-              </h3>
-              <p>
-                Rather than providing single-word definitions, our dictionary offers full phonetic expansions, domain categories, real usage dialogues, and cultural background notes for complete clarity.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="font-display font-bold text-sm text-ink flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-blue-600" />
-                <span>Continuously Updated</span>
-              </h3>
-              <p>
-                As digital expressions and internet slangs evolve rapidly, our lexicographical database is updated daily with emerging acronyms, modern abbreviations, and shifting linguistic nuances.
-              </p>
-            </div>
+          ) : null}
+          <div className="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto shrink-0">
+            {dailyTerm && (
+              <button
+                onClick={() => onSelectTerm(dailyTerm)}
+                className="px-5 py-3 rounded-xl bg-indigo-600 text-white font-display font-bold text-xs hover:bg-indigo-700 transition cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-95 duration-100"
+              >
+                <span>View Details</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              onClick={handleShuffleDailyTerm}
+              className="px-4 py-3 rounded-xl bg-white text-indigo-950 border border-indigo-200 font-display font-bold text-xs hover:bg-indigo-50 transition cursor-pointer flex items-center justify-center gap-2 active:scale-95 duration-100"
+            >
+              <span>Show Another</span>
+            </button>
           </div>
         </div>
       </section>
-
     </div>
   );
 }
+

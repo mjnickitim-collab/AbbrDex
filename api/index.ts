@@ -1,11 +1,6 @@
-import app from "../server";
-
-export const config = {
-  maxDuration: 60,
-};
+import app from "../server.js";
 
 export default function handler(req: any, res: any) {
   return app(req, res);
 }
-
 

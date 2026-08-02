@@ -39,10 +39,9 @@ import AdPlaceholder from "./components/AdPlaceholder";
 import BrowseView from "./components/BrowseView";
 import QuizView from "./components/QuizView";
 import BlogView from "./components/BlogView";
-import TermDetailView from "./components/TermDetailView";
 import AdminShell from "./components/AdminShell";
 import LoginModal from "./components/LoginModal";
-import PolicyPagesView, { PolicyPageType } from "./components/PolicyPagesView";
+import TermDetailModal from "./components/TermDetailModal";
 
 import { Loader2, Sparkles, BookOpen } from "lucide-react";
 
@@ -59,7 +58,6 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
-  const [selectedTermCode, setSelectedTermCode] = useState<string>("");
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
   const [quizMode, setQuizMode] = useState<"abbreviation" | "emoji">("abbreviation");
 
@@ -68,13 +66,6 @@ export default function App() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [postToEdit, setPostToEdit] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const handleSelectTerm = (term: Term) => {
-    setSelectedTerm(term);
-    setSelectedTermCode(term.code);
-    setActiveView("term");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   useEffect(() => {
     if (activeView !== "blog") {
@@ -90,22 +81,6 @@ export default function App() {
 
     if (pathname === "/" || pathname === "/home" || pathname === "") {
       setActiveView("home");
-      setSelectedBlogPost(null);
-      setSelectedTerm(null);
-    } else if (pathname === "/about") {
-      setActiveView("about");
-      setSelectedBlogPost(null);
-      setSelectedTerm(null);
-    } else if (pathname === "/editorial") {
-      setActiveView("editorial");
-      setSelectedBlogPost(null);
-      setSelectedTerm(null);
-    } else if (pathname === "/privacy") {
-      setActiveView("privacy");
-      setSelectedBlogPost(null);
-      setSelectedTerm(null);
-    } else if (pathname === "/terms") {
-      setActiveView("terms");
       setSelectedBlogPost(null);
       setSelectedTerm(null);
     } else if (pathname === "/quiz") {
@@ -155,14 +130,21 @@ export default function App() {
       setSelectedTerm(null);
     } else if (pathname.startsWith("/term/")) {
       const code = decodeURIComponent(pathname.substring(6)).toUpperCase();
-      setActiveView("term");
-      setSelectedTermCode(code);
-      setSelectedBlogPost(null);
+      // Keep background as browse
+      setActiveView("browse");
+      setSelectedCategory(null);
       if (terms.length > 0) {
         const foundTerm = terms.find(t => t.code.toUpperCase() === code);
         if (foundTerm) {
           setSelectedTerm(foundTerm);
+          setSearchQuery("");
+        } else {
+          // Graceful fallback if term doesn't exist: search for the code
+          setSelectedTerm(null);
+          setSearchQuery(code);
         }
+      } else {
+        setSearchQuery(code);
       }
     }
   };
@@ -177,8 +159,6 @@ export default function App() {
     if (!isAdminMode) {
       if (activeView === "home") {
         newPath = "/";
-      } else if (["about", "editorial", "privacy", "terms"].includes(activeView)) {
-        newPath = `/${activeView}`;
       } else if (activeView === "quiz") {
         newPath = "/quiz";
       } else if (activeView === "blog") {
@@ -205,13 +185,11 @@ export default function App() {
         if (searchQuery) {
           params.set("search", searchQuery);
         }
-      } else if (activeView === "term") {
-        const code = selectedTerm ? selectedTerm.code : selectedTermCode;
-        if (code) {
-          newPath = `/term/${encodeURIComponent(code.toUpperCase())}`;
-        } else {
-          newPath = "/browse";
-        }
+      }
+
+      // Reflect current active details modal (e.g. /term/CODE) in the URL
+      if (selectedTerm) {
+        newPath = `/term/${encodeURIComponent(selectedTerm.code.toUpperCase())}`;
       }
     }
 
@@ -221,7 +199,7 @@ export default function App() {
     if (window.location.pathname + window.location.search !== finalUrl) {
       window.history.pushState(null, "", finalUrl);
     }
-  }, [activeView, selectedCategory, searchQuery, selectedTerm, selectedTermCode, selectedBlogPost, isAdminMode, isDbLoaded]);
+  }, [activeView, selectedCategory, searchQuery, selectedTerm, selectedBlogPost, isAdminMode, isDbLoaded]);
 
   // Synchronize initial page-load URL path to React states once DB is loaded
   useEffect(() => {
@@ -499,16 +477,11 @@ export default function App() {
                     terms={terms}
                     onSearch={handleHomeSearch}
                     onSelectCategory={handleHomeCategorySelect}
-                    onSelectTerm={handleSelectTerm}
+                    onSelectTerm={setSelectedTerm}
                     blogs={blogs.filter(b => !b.draft)}
                     onSelectBlogPost={(post) => {
                       setSelectedBlogPost(post);
                       setActiveView("blog");
-                    }}
-                    onViewAllBlogs={() => {
-                      setSelectedBlogPost(null);
-                      setActiveView("blog");
-                      window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
                     onSelectEmojiQuiz={() => {
                       setQuizMode("emoji");
@@ -539,26 +512,12 @@ export default function App() {
                         terms={terms}
                         initialCategory={selectedCategory}
                         initialQuery={searchQuery}
-                        onSelectTerm={handleSelectTerm}
+                        onSelectTerm={setSelectedTerm}
                       />
                     </div>
                     {/* Sidebar Ad Placement (Shown in browse section if toggled on) */}
                     <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
                   </div>
-                )}
-
-                {activeView === "term" && (
-                  <TermDetailView 
-                    code={selectedTerm ? selectedTerm.code : selectedTermCode}
-                    terms={terms}
-                    adSlots={adSlots}
-                    isDbLoaded={isDbLoaded}
-                    onSelectTerm={handleSelectTerm}
-                    onNavigate={(view) => {
-                      setActiveView(view);
-                      setSelectedTerm(null);
-                    }}
-                  />
                 )}
 
                 {activeView === "quiz" && (
@@ -571,19 +530,6 @@ export default function App() {
                     {/* Quiz Ad Placement (Shown during quiz questions if toggled on) */}
                     <AdPlaceholder slotName="Between quiz questions" adSlots={adSlots} isDbLoaded={isDbLoaded} />
                   </>
-                )}
-
-                {["about", "editorial", "privacy", "terms"].includes(activeView) && (
-                  <PolicyPagesView 
-                    currentPage={activeView as PolicyPageType}
-                    adSlots={adSlots}
-                    isDbLoaded={isDbLoaded}
-                    onNavigate={(view) => {
-                      setActiveView(view);
-                      setSelectedTerm(null);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  />
                 )}
 
                 {activeView === "blog" && (
@@ -618,57 +564,13 @@ export default function App() {
       {/* Footer Block */}
       {!isAdminMode && (
         <footer className="border-t border-line py-8 bg-paper text-center text-xs text-ink-soft">
-          <div className="max-w-[1080px] mx-auto px-6 space-y-3">
-            <div className="font-display font-bold text-ink text-sm">whatsthatmean — the complete abbreviation dictionary</div>
+          <div className="max-w-[1080px] mx-auto px-6 space-y-2">
+            <div className="font-display font-bold text-ink">whatsthatmean — the complete abbreviation dictionary</div>
             <p className="max-w-md mx-auto text-[11px] leading-relaxed">
-              Explore 4,400+ modern text slangs, gaming acronyms, corporate shorthand, and digital jargon.
+              Explore every modern abbreviation, text acronym, and digital shorthand.
             </p>
-            
-            {/* Publisher Compliance Navigation Links */}
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs pt-1 font-medium text-ink-soft">
-              <button 
-                onClick={() => {
-                  setActiveView("about");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }} 
-                className="hover:text-indigo underline cursor-pointer"
-              >
-                About Us
-              </button>
-              <span>•</span>
-              <button 
-                onClick={() => {
-                  setActiveView("editorial");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }} 
-                className="hover:text-indigo underline cursor-pointer"
-              >
-                Editorial Policy
-              </button>
-              <span>•</span>
-              <button 
-                onClick={() => {
-                  setActiveView("privacy");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }} 
-                className="hover:text-indigo underline cursor-pointer"
-              >
-                Privacy Policy
-              </button>
-              <span>•</span>
-              <button 
-                onClick={() => {
-                  setActiveView("terms");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }} 
-                className="hover:text-indigo underline cursor-pointer"
-              >
-                Terms of Service
-              </button>
-            </div>
-
-            <div className="pt-2 text-[10px] text-ink-soft">
-              &copy; 2026 whatsthatmean. All rights reserved. Verified lexicographical reference portal.
+            <div className="pt-3 text-[10px] text-ink-soft">
+              &copy; 2026 whatsthatmean. All rights reserved. Created for educational and presentation purposes.
             </div>
           </div>
         </footer>
@@ -680,6 +582,12 @@ export default function App() {
           isOpen={isLoginOpen}
           onClose={() => setIsLoginOpen(false)}
           onLoginSuccess={(profile) => setCurrentUser(profile)}
+        />
+
+        {/* Slang term details popup drawer */}
+        <TermDetailModal 
+          term={selectedTerm}
+          onClose={() => setSelectedTerm(null)}
         />
       </Suspense>
     </div>
