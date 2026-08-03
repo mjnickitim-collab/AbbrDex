@@ -226,15 +226,20 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
           const newSeoTitle = sanitizeText(originalSeoTitle);
           const newMetaDescription = sanitizeText(originalMetaDescription);
 
+          const originalSlug = data.slug || "";
+          const expectedSlug = generateSlug(newTitle || originalTitle);
+
           if (
             newTitle !== originalTitle ||
             newExcerpt !== originalExcerpt ||
             newBody !== originalBody ||
             newSeoTitle !== originalSeoTitle ||
-            newMetaDescription !== originalMetaDescription
+            newMetaDescription !== originalMetaDescription ||
+            !originalSlug
           ) {
             updateBatch.update(doc(db, "blogs", docSnap.id), {
               title: newTitle,
+              slug: expectedSlug,
               excerpt: newExcerpt,
               body: newBody,
               seoTitle: newSeoTitle,
@@ -310,6 +315,17 @@ export async function deleteTerm(id: string): Promise<void> {
   await deleteDoc(termRef);
 }
 
+export function generateSlug(title: string): string {
+  if (!title) return "";
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 // Blog Posts API
 export async function fetchBlogPosts(): Promise<BlogPost[]> {
   const blogsCol = collection(db, "blogs");
@@ -317,9 +333,12 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => {
     const data = doc.data();
+    const title = data.title || "";
+    const slug = data.slug || generateSlug(title);
     return {
       id: doc.id,
-      title: data.title || "",
+      title,
+      slug,
       date: data.date || "Just now",
       excerpt: data.excerpt || "",
       body: data.body || "",
@@ -336,8 +355,10 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
 
 export async function addBlogPost(post: Omit<BlogPost, "id">): Promise<string> {
   const blogsCol = collection(db, "blogs");
+  const slug = post.slug || generateSlug(post.title);
   const docRef = await addDoc(blogsCol, {
     ...post,
+    slug,
     createdAt: serverTimestamp()
   });
   return docRef.id;
@@ -350,7 +371,13 @@ export async function deleteBlogPost(id: string): Promise<void> {
 
 export async function updateBlogPost(id: string, updates: Partial<BlogPost>): Promise<void> {
   const blogRef = doc(db, "blogs", id);
-  await updateDoc(blogRef, updates);
+  const payload: any = { ...updates };
+  if (updates.slug) {
+    payload.slug = updates.slug;
+  } else if (updates.title) {
+    payload.slug = generateSlug(updates.title);
+  }
+  await updateDoc(blogRef, payload);
 }
 
 // Ad Slots API

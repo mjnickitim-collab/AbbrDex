@@ -16,7 +16,8 @@ import {
   updateUserProfile,
   deleteUserProfile,
   getSiteSettings,
-  updateSiteSettings
+  updateSiteSettings,
+  generateSlug
 } from "../data/dbService";
 import { 
   BarChart, 
@@ -90,6 +91,8 @@ export default function AdminShell({
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [previewPost, setPreviewPost] = useState<BlogPost | null>(null);
   const [blogTitle, setBlogTitle] = useState("");
+  const [blogSlug, setBlogSlug] = useState("");
+  const [isSlugUserModified, setIsSlugUserModified] = useState(false);
   const [blogCat, setBlogCat] = useState("internet");
   const [blogExcerpt, setBlogExcerpt] = useState("");
   const [blogBody, setBlogBody] = useState("");
@@ -399,6 +402,8 @@ Try writing your own content or edit this template using the helper buttons abov
   const handleStartEditPost = (post: BlogPost) => {
     setEditingPost(post);
     setBlogTitle(post.title);
+    setBlogSlug(post.slug || generateSlug(post.title));
+    setIsSlugUserModified(true);
     setBlogCat(post.cat || "internet");
     setBlogExcerpt(post.excerpt);
     setBlogBody(post.body);
@@ -430,6 +435,8 @@ Try writing your own content or edit this template using the helper buttons abov
   const handleCancelEditPost = () => {
     setEditingPost(null);
     setBlogTitle("");
+    setBlogSlug("");
+    setIsSlugUserModified(false);
     setBlogExcerpt("");
     setBlogBody("");
     setBlogCat("internet");
@@ -842,10 +849,13 @@ Try writing your own content or edit this template using the helper buttons abov
       return;
     }
 
+    const finalSlug = blogSlug.trim() || generateSlug(blogTitle.trim());
+
     try {
       if (editingPost && editingPost.id) {
         await updateBlogPost(editingPost.id, {
           title: blogTitle.trim(),
+          slug: finalSlug,
           excerpt: blogExcerpt.trim(),
           body: blogBody.trim(),
           cat: blogCat,
@@ -860,6 +870,7 @@ Try writing your own content or edit this template using the helper buttons abov
       } else {
         await addBlogPost({
           title: blogTitle.trim(),
+          slug: finalSlug,
           date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
           excerpt: blogExcerpt.trim(),
           body: blogBody.trim(),
@@ -873,6 +884,8 @@ Try writing your own content or edit this template using the helper buttons abov
         });
       }
       setBlogTitle("");
+      setBlogSlug("");
+      setIsSlugUserModified(false);
       setBlogExcerpt("");
       setBlogBody("");
       setBlogCat("internet");
@@ -2160,10 +2173,45 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
                       type="text"
                       placeholder="e.g. 10 texting abbreviations you should know"
                       value={blogTitle}
-                      onChange={(e) => setBlogTitle(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBlogTitle(val);
+                        if (!isSlugUserModified) {
+                          setBlogSlug(generateSlug(val));
+                        }
+                      }}
                       required
                       className="border border-line rounded-lg p-3 text-sm bg-paper text-ink focus:outline-none focus:border-indigo"
                     />
+                  </div>
+
+                  <div className="field flex flex-col">
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-semibold text-ink-soft">URL Slug (Firestore Saved)</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBlogSlug(generateSlug(blogTitle));
+                          setIsSlugUserModified(false);
+                        }}
+                        className="text-[10px] font-bold text-indigo hover:underline cursor-pointer"
+                      >
+                        Auto-generate from Title
+                      </button>
+                    </div>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-xs text-ink-soft font-mono select-none">/blog/</span>
+                      <input
+                        type="text"
+                        placeholder="e.g. 10-texting-abbreviations-you-should-know"
+                        value={blogSlug}
+                        onChange={(e) => {
+                          setBlogSlug(e.target.value);
+                          setIsSlugUserModified(true);
+                        }}
+                        className="border border-line rounded-lg py-3 pr-3 pl-16 text-sm bg-paper text-ink focus:outline-none focus:border-indigo w-full font-mono"
+                      />
+                    </div>
                   </div>
 
                   <div className="field flex flex-col">

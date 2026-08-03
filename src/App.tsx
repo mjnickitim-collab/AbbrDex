@@ -7,7 +7,8 @@ import {
   fetchBlogPosts, 
   fetchAdSlots, 
   fetchUserProfiles,
-  fetchUserProfile 
+  fetchUserProfile,
+  generateSlug
 } from "./data/dbService";
 import { Term, BlogPost, AdSlot, UserProfile } from "./types";
 // Define lightweight initial state fallbacks to achieve near-zero blocking time and tiny initial JS bundle size
@@ -83,10 +84,13 @@ export default function App() {
   }, [activeView]);
 
   // Parse the current URL path to set the matching React navigation states
-  const syncUrlToState = () => {
+  const syncUrlToState = (currentBlogs?: BlogPost[], currentTerms?: Term[]) => {
     const pathname = window.location.pathname;
     const searchParams = new URLSearchParams(window.location.search);
     const search = searchParams.get("search") || "";
+
+    const blogList = currentBlogs && currentBlogs.length > 0 ? currentBlogs : blogs;
+    const termList = currentTerms && currentTerms.length > 0 ? currentTerms : terms;
 
     if (pathname === "/" || pathname === "/home" || pathname === "") {
       setActiveView("home");
@@ -120,14 +124,9 @@ export default function App() {
       const slug = pathname.substring(6);
       setActiveView("blog");
       setSelectedTerm(null);
-      if (blogs.length > 0) {
-        const foundBlog = blogs.find(b => {
-          const s = (b.title || "")
-            .toLowerCase()
-            .trim()
-            .replace(/[^a-z0-9\s-]/g, "")
-            .replace(/\s+/g, "-")
-            .replace(/-+/g, "-");
+      if (blogList.length > 0) {
+        const foundBlog = blogList.find(b => {
+          const s = b.slug || generateSlug(b.title || "");
           return s === slug;
         });
         if (foundBlog) {
@@ -158,14 +157,19 @@ export default function App() {
       setActiveView("term");
       setSelectedTermCode(code);
       setSelectedBlogPost(null);
-      if (terms.length > 0) {
-        const foundTerm = terms.find(t => t.code.toUpperCase() === code);
+      if (termList.length > 0) {
+        const foundTerm = termList.find(t => t.code.toUpperCase() === code);
         if (foundTerm) {
           setSelectedTerm(foundTerm);
         }
       }
     }
   };
+
+  // Run immediate sync on initial mount so activeView matches URL before DB loads
+  useEffect(() => {
+    syncUrlToState();
+  }, []);
 
   // Sync state changes back to the browser's URL address bar
   useEffect(() => {
@@ -183,15 +187,15 @@ export default function App() {
         newPath = "/quiz";
       } else if (activeView === "blog") {
         if (selectedBlogPost) {
-          const slug = (selectedBlogPost.title || "")
-            .toLowerCase()
-            .trim()
-            .replace(/[^a-z0-9\s-]/g, "")
-            .replace(/\s+/g, "-")
-            .replace(/-+/g, "-");
+          const slug = selectedBlogPost.slug || generateSlug(selectedBlogPost.title || "");
           newPath = `/blog/${slug}`;
         } else {
-          newPath = "/blog";
+          // Guard: Preserve current path if address bar is already on /blog/:slug while DB or selection resolves
+          if (window.location.pathname.startsWith("/blog/")) {
+            newPath = window.location.pathname;
+          } else {
+            newPath = "/blog";
+          }
         }
       } else if (activeView === "browse") {
         if (selectedCategory === "emoji") {
@@ -209,6 +213,8 @@ export default function App() {
         const code = selectedTerm ? selectedTerm.code : selectedTermCode;
         if (code) {
           newPath = `/term/${encodeURIComponent(code.toUpperCase())}`;
+        } else if (window.location.pathname.startsWith("/term/")) {
+          newPath = window.location.pathname;
         } else {
           newPath = "/browse";
         }
@@ -226,9 +232,9 @@ export default function App() {
   // Synchronize initial page-load URL path to React states once DB is loaded
   useEffect(() => {
     if (isDbLoaded) {
-      syncUrlToState();
+      syncUrlToState(blogs, terms);
     }
-  }, [isDbLoaded]);
+  }, [isDbLoaded, blogs, terms]);
 
   // Handle browser back and forward actions (popstate events) and custom SPA navigation
   useEffect(() => {
@@ -592,6 +598,7 @@ export default function App() {
                       <BlogView 
                         posts={blogs.filter(b => !b.draft)} 
                         initialSelectedPost={selectedBlogPost}
+                        onSelectBlogPost={(post) => setSelectedBlogPost(post)}
                         onCloseSelectedPost={() => setSelectedBlogPost(null)}
                         adSlots={adSlots}
                         currentUser={currentUser}

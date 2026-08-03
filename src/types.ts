@@ -17,6 +17,7 @@ export interface Term {
 export interface BlogPost {
   id?: string;
   title: string;
+  slug?: string;
   date: string;
   excerpt: string;
   body: string;

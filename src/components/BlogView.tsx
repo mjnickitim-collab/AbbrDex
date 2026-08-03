@@ -7,6 +7,7 @@ import { CATEGORIES } from "../data/seedData";
 interface BlogViewProps {
   posts: BlogPost[];
   initialSelectedPost?: BlogPost | null;
+  onSelectBlogPost?: (post: BlogPost | null) => void;
   onCloseSelectedPost?: () => void;
   adSlots?: AdSlot[];
   currentUser?: UserProfile | null;
@@ -17,6 +18,7 @@ interface BlogViewProps {
 export default function BlogView({
   posts,
   initialSelectedPost = null,
+  onSelectBlogPost,
   onCloseSelectedPost,
   adSlots,
   currentUser,
@@ -92,6 +94,7 @@ export default function BlogView({
           <button
             onClick={() => {
               setSelectedPost(null);
+              onSelectBlogPost?.(null);
               onCloseSelectedPost?.();
             }}
             className="flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition group cursor-pointer"
@@ -207,7 +210,10 @@ export default function BlogView({
           {posts.map((post, index) => (
             <button
               key={post.id ? `blog-${post.id}` : `blog-${index}-${post.title}`}
-              onClick={() => setSelectedPost(post)}
+              onClick={() => {
+                setSelectedPost(post);
+                onSelectBlogPost?.(post);
+              }}
               className="blog-card bg-card border-1.5 border-line rounded-2xl overflow-hidden text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full"
             >
               <div className="w-full">

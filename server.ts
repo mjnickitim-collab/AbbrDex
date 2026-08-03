@@ -270,7 +270,7 @@ async function getSeoMetadata(urlPath: string) {
       const slug = pathname.substring(6);
       const blogs = await getBlogsFromFirestore();
       const foundBlog = blogs.find((b: any) => {
-        const s = (b.title || "")
+        const s = b.slug || (b.title || "")
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9\s-]/g, "")
@@ -868,12 +868,14 @@ function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
   blogs.forEach((blog: any) => {
     if (blog.draft) return;
     
-    const slug = (blog.title || "")
+    const slug = blog.slug || (blog.title || "")
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
+    
+    if (!slug) return;
     
     xml += `  <url>\n`;
     xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
