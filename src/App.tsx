@@ -10,13 +10,28 @@ import {
   fetchUserProfile,
   generateSlug
 } from "./data/dbService";
-import { TERMS, BLOG_SEED, AD_SLOTS } from "./data/seedData";
 import { Term, BlogPost, AdSlot, UserProfile } from "./types";
+// Define lightweight initial state fallbacks to achieve near-zero blocking time and tiny initial JS bundle size
+const initialTerms: Term[] = [
+  { id: "init-1", code: "FYI", full: "For your information", cat: "internet", ex: "FYI, the meeting moved to 3pm.", trending: true },
+  { id: "init-2", code: "GG", full: "Good game", cat: "gaming", ex: "GG, well played everyone!", trending: true },
+  { id: "init-3", code: "ASAP", full: "As soon as possible", cat: "internet", ex: "Please send me the report ASAP.", trending: true },
+  { id: "init-4", code: "FOMO", full: "Fear of missing out", cat: "social", ex: "I bought the ticket due to FOMO.", trending: true },
+  { id: "init-5", code: "SNAFU", full: "Situation normal: all fouled up", cat: "military", ex: "The system crashed again, a total SNAFU.", trending: true },
+  { id: "init-6", code: "HMU", full: "Hit me up", cat: "texting", ex: "HMU when you get to the mall.", trending: true },
+  { id: "init-7", code: "WFH", full: "Work from home", cat: "business", ex: "I love WFH on Fridays.", trending: true },
+  { id: "init-8", code: "TBH", full: "To be honest", cat: "internet", ex: "TBH I forgot we had a call.", trending: true }
+];
 
-// Full dictionary data hardcoded directly in application code for instant offline/standalone loading
-const initialTerms: Term[] = TERMS;
-const initialBlogs: BlogPost[] = BLOG_SEED;
-const initialAdSlots: AdSlot[] = AD_SLOTS;
+const initialBlogs: BlogPost[] = [
+  { id: "init-b1", title: "Modern Slang Decoded", excerpt: "An introduction to internet abbreviations.", body: "", cat: "internet", date: "Just now", draft: false, keywords: "slang, modern, chat", metaDescription: "An introduction to internet abbreviations.", seoTitle: "Modern Slang Decoded" }
+];
+
+const initialAdSlots: AdSlot[] = [
+  { id: "init-ad1", name: "Header banner", desc: "Top of the page banner", on: false, network: "adsense" },
+  { id: "init-ad2", name: "Sidebar", desc: "Sidebar ad space", on: false, network: "adsense" },
+  { id: "init-ad3", name: "Between quiz questions", desc: "Ad shown between quiz rounds", on: false, network: "adsense" }
+];
 
 // Components
 import Navbar from "./components/Navbar";
@@ -313,64 +328,56 @@ export default function App() {
   // 1. Initial Seeding and Database Loading
   const loadDatabaseData = async () => {
     try {
+      // Fetch public lists concurrently to dramatically reduce latency and parallelize database queries
       const [fetchedTerms, fetchedBlogs, fetchedAdSlots] = await Promise.all([
         fetchTerms(),
         fetchBlogPosts(),
         fetchAdSlots()
       ]);
       
-      if (fetchedTerms && fetchedTerms.length > 0) setTerms(fetchedTerms);
-      if (fetchedBlogs && fetchedBlogs.length > 0) setBlogs(fetchedBlogs);
-      if (fetchedAdSlots && fetchedAdSlots.length > 0) setAdSlots(fetchedAdSlots);
-    } catch (err) {
-      console.warn("Using built-in code dictionary dataset fallback:", err);
-    } finally {
+      setTerms(fetchedTerms);
+      setBlogs(fetchedBlogs);
+      setAdSlots(fetchedAdSlots);
       setIsDbLoaded(true);
+    } catch (err) {
+      console.error("Error loading whatsthatmean database:", err);
     }
   };
 
   useEffect(() => {
-    /* 
-      FIREBASE DB BACKEND INTEGRATION (Disabled for current standalone distribution)
-      To re-enable live Firebase Firestore database sync, uncomment the initializeApp code below:
-      
-      const initializeApp = async () => {
-        try {
-          await loadDatabaseData();
-        } catch (err) {
-          console.error("Failed background database sync:", err);
-        }
-        seedDatabaseIfEmpty()
-          .then((didChange) => {
-            if (didChange || terms.length === 0 || blogs.length === 0) {
-              loadDatabaseData();
-            }
-          })
-          .catch(err => console.error("Async background seeding check failed:", err));
-      };
-      initializeApp();
-    */
+    const initializeApp = async () => {
+      // Fetch public lists asynchronously in the background so that pages render instantly
+      try {
+        await loadDatabaseData();
+      } catch (err) {
+        console.error("Failed background database sync:", err);
+      }
 
-    // Set DB loaded state to true immediately to use built-in dataset without waiting for network
-    setIsDbLoaded(true);
+      // Perform background seeding & self-healing asynchronously without blocking layout load
+      seedDatabaseIfEmpty()
+        .then((didChange) => {
+          // If the collections were completely empty or any changes occurred during self-healing, trigger a reload
+          if (didChange || terms.length === 0 || blogs.length === 0) {
+            loadDatabaseData();
+          }
+        })
+        .catch(err => console.error("Async background seeding check failed:", err));
+    };
+    initializeApp();
   }, []);
 
   // 2. Track Firebase Auth state change and fetch custom roles
   useEffect(() => {
-    /* 
-      FIREBASE AUTH SYNC (Disabled for current standalone distribution)
-      To re-enable login and auth state tracking, uncomment below:
-
-      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
-          const profile = await fetchUserProfile(firebaseUser.uid);
-          setCurrentUser(profile);
-        } else {
-          setCurrentUser(null);
-        }
-      });
-      return () => unsubscribe();
-    */
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Fetch role & custom profile from Firestore
+        const profile = await fetchUserProfile(firebaseUser.uid);
+        setCurrentUser(profile);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   // 3. Trigger refreshing of all lists (invoked by Admin after CRUD changes)
@@ -572,7 +579,7 @@ export default function App() {
                   </>
                 )}
 
-                {["about", "editorial", "privacy", "terms", "contact"].includes(activeView) && (
+                {["about", "editorial", "privacy", "terms"].includes(activeView) && (
                   <PolicyPagesView 
                     currentPage={activeView as PolicyPageType}
                     adSlots={adSlots}
@@ -584,10 +591,6 @@ export default function App() {
                     }}
                   />
                 )}
-
-                {/* 
-                  BLOG VIEW (Disabled for current standalone distribution)
-                  Uncomment below to restore Blog view rendering:
 
                 {activeView === "blog" && (
                   <div className="flex gap-6 max-w-[1080px] mx-auto">
@@ -606,10 +609,10 @@ export default function App() {
                         }}
                       />
                     </div>
+                    {/* Sidebar Ad Placement (Shown in blog section if toggled on) */}
                     <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
                   </div>
                 )}
-                */}
               </Suspense>
             </div>
           </div>
@@ -669,16 +672,6 @@ export default function App() {
               >
                 Terms of Service
               </button>
-              <span>•</span>
-              <button 
-                onClick={() => {
-                  setActiveView("contact");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }} 
-                className="hover:text-indigo underline cursor-pointer"
-              >
-                Contact Us
-              </button>
             </div>
 
             <div className="pt-2 text-[10px] text-ink-soft">
@@ -688,10 +681,7 @@ export default function App() {
         </footer>
       )}
 
-      {/* 
-        Auth Login Dialog popup (Disabled for current standalone distribution)
-        Uncomment to restore Login Modal popup:
-
+      {/* Auth Login Dialog popup */}
       <Suspense fallback={null}>
         <LoginModal 
           isOpen={isLoginOpen}
@@ -699,7 +689,6 @@ export default function App() {
           onLoginSuccess={(profile) => setCurrentUser(profile)}
         />
       </Suspense>
-      */}
     </div>
   );
 }

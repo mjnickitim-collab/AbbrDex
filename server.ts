@@ -6,7 +6,6 @@ import fs from "fs";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
 import { generateTermArticle } from "./src/utils/termArticleGenerator";
-import { BLOG_SEED, TERMS } from "./src/data/seedData";
 
 dotenv.config();
 
@@ -152,57 +151,27 @@ function getGoogleGenAI() {
 
 // Helper to fetch blogs from Firestore securely using Firebase JS SDK
 async function getBlogsFromFirestore() {
-  const result = await withFirestoreTimeout((async () => {
+  return withFirestoreTimeout((async () => {
     const blogsCol = collection(firestoreDb, "blogs");
     const q = query(blogsCol, orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => {
       const data = doc.data();
-      const title = data.title || "";
-      const slug = data.slug || (title
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/^-+|-+$/g, ""));
       return {
-        title,
-        slug,
+        title: data.title || "",
         draft: data.draft || false,
         excerpt: data.excerpt || "",
-        body: data.body || "",
         seoTitle: data.seoTitle || "",
         metaDescription: data.metaDescription || "",
         date: data.date || ""
       };
     });
   })(), 3500, []);
-
-  if (!result || result.length === 0) {
-    return BLOG_SEED.map(b => ({
-      title: b.title,
-      slug: b.slug || (b.title
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/^-+|-+$/g, "")),
-      draft: false,
-      excerpt: b.excerpt,
-      body: b.body,
-      seoTitle: b.seoTitle || "",
-      metaDescription: b.metaDescription || "",
-      date: b.date || ""
-    }));
-  }
-  return result;
 }
 
 // Helper to fetch a single term by its code securely from Firestore
 async function getTermFromFirestoreByCode(code: string) {
-  const result = await withFirestoreTimeout((async () => {
+  return withFirestoreTimeout((async () => {
     const termsCol = collection(firestoreDb, "terms");
     const q = query(termsCol, where("code", "==", code.toUpperCase().trim()), limit(1));
     const snapshot = await getDocs(q);
@@ -218,24 +187,11 @@ async function getTermFromFirestoreByCode(code: string) {
     }
     return null;
   })(), 3500, null);
-
-  if (!result) {
-    const found = TERMS.find(t => t.code.toUpperCase() === code.toUpperCase().trim());
-    if (found) {
-      return {
-        code: found.code,
-        full: found.full,
-        cat: found.cat,
-        ex: found.ex
-      };
-    }
-  }
-  return result;
 }
 
 // Helper to fetch slang terms and emojis from Firestore securely using Firebase JS SDK (without costly database-side sorting)
 async function getTermsFromFirestore() {
-  const result = await withFirestoreTimeout((async () => {
+  return withFirestoreTimeout((async () => {
     const termsCol = collection(firestoreDb, "terms");
     const q = query(termsCol);
     const snapshot = await getDocs(q);
@@ -249,11 +205,6 @@ async function getTermsFromFirestore() {
       };
     });
   })(), 3500, []);
-
-  if (!result || result.length === 0) {
-    return TERMS;
-  }
-  return result;
 }
 
 // Helper to resolve SEO metadata based on URL path

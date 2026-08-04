@@ -287,23 +287,13 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
 
 // Terms API
 export async function fetchTerms(): Promise<Term[]> {
-  try {
-    const termsCol = collection(db, "terms");
-    const q = query(termsCol, orderBy("code", "asc"));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-      const { TERMS } = await import("./seedData");
-      return TERMS;
-    }
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Term[];
-  } catch (err) {
-    console.warn("Firestore fetchTerms error, using local fallback TERMS seed:", err);
-    const { TERMS } = await import("./seedData");
-    return TERMS;
-  }
+  const termsCol = collection(db, "terms");
+  const q = query(termsCol, orderBy("code", "asc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  })) as Term[];
 }
 
 export async function addTerm(term: Omit<Term, "id">): Promise<string> {
@@ -338,47 +328,29 @@ export function generateSlug(title: string): string {
 
 // Blog Posts API
 export async function fetchBlogPosts(): Promise<BlogPost[]> {
-  try {
-    const blogsCol = collection(db, "blogs");
-    const q = query(blogsCol, orderBy("createdAt", "desc"));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-      const { BLOG_SEED } = await import("./seedData");
-      return BLOG_SEED.map((b, idx) => ({
-        ...b,
-        id: `seed-blog-${idx}`,
-        slug: b.slug || generateSlug(b.title)
-      }));
-    }
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      const title = data.title || "";
-      const slug = data.slug || generateSlug(title);
-      return {
-        id: doc.id,
-        title,
-        slug,
-        date: data.date || "Just now",
-        excerpt: data.excerpt || "",
-        body: data.body || "",
-        cat: data.cat || "internet",
-        seoTitle: data.seoTitle || "",
-        metaDescription: data.metaDescription || "",
-        keywords: data.keywords || "",
-        draft: data.draft || false,
-        imageUrl: data.imageUrl || "",
-        imageAlt: data.imageAlt || "",
-      };
-    }) as BlogPost[];
-  } catch (err) {
-    console.warn("Firestore fetchBlogPosts error, using local fallback BLOG_SEED:", err);
-    const { BLOG_SEED } = await import("./seedData");
-    return BLOG_SEED.map((b, idx) => ({
-      ...b,
-      id: `seed-blog-${idx}`,
-      slug: b.slug || generateSlug(b.title)
-    }));
-  }
+  const blogsCol = collection(db, "blogs");
+  const q = query(blogsCol, orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    const title = data.title || "";
+    const slug = data.slug || generateSlug(title);
+    return {
+      id: doc.id,
+      title,
+      slug,
+      date: data.date || "Just now",
+      excerpt: data.excerpt || "",
+      body: data.body || "",
+      cat: data.cat || "internet",
+      seoTitle: data.seoTitle || "",
+      metaDescription: data.metaDescription || "",
+      keywords: data.keywords || "",
+      draft: data.draft || false,
+      imageUrl: data.imageUrl || "",
+      imageAlt: data.imageAlt || "",
+    };
+  }) as BlogPost[];
 }
 
 export async function addBlogPost(post: Omit<BlogPost, "id">): Promise<string> {
@@ -410,22 +382,12 @@ export async function updateBlogPost(id: string, updates: Partial<BlogPost>): Pr
 
 // Ad Slots API
 export async function fetchAdSlots(): Promise<AdSlot[]> {
-  try {
-    const adSlotsCol = collection(db, "ad_slots");
-    const snapshot = await getDocs(adSlotsCol);
-    if (snapshot.empty) {
-      const { AD_SLOTS } = await import("./seedData");
-      return AD_SLOTS;
-    }
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as AdSlot[];
-  } catch (err) {
-    console.warn("Firestore fetchAdSlots error, using local fallback AD_SLOTS seed:", err);
-    const { AD_SLOTS } = await import("./seedData");
-    return AD_SLOTS;
-  }
+  const adSlotsCol = collection(db, "ad_slots");
+  const snapshot = await getDocs(adSlotsCol);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  })) as AdSlot[];
 }
 
 export async function updateAdSlotStatus(id: string, on: boolean): Promise<void> {
@@ -480,22 +442,12 @@ export async function resetTermsDatabase(newTerms: Term[]): Promise<void> {
 
 // Users API
 export async function fetchUserProfiles(): Promise<UserProfile[]> {
-  try {
-    const usersCol = collection(db, "users");
-    const snapshot = await getDocs(usersCol);
-    if (snapshot.empty) {
-      const { MOCK_USERS } = await import("./seedData");
-      return MOCK_USERS;
-    }
-    return snapshot.docs.map(doc => ({
-      uid: doc.id,
-      ...doc.data()
-    })) as UserProfile[];
-  } catch (err) {
-    console.warn("Firestore fetchUserProfiles error, using local fallback MOCK_USERS seed:", err);
-    const { MOCK_USERS } = await import("./seedData");
-    return MOCK_USERS;
-  }
+  const usersCol = collection(db, "users");
+  const snapshot = await getDocs(usersCol);
+  return snapshot.docs.map(doc => ({
+    uid: doc.id,
+    ...doc.data()
+  })) as UserProfile[];
 }
 
 export async function updateUserProfile(uid: string, profile: Partial<UserProfile>): Promise<void> {
@@ -504,36 +456,30 @@ export async function updateUserProfile(uid: string, profile: Partial<UserProfil
 }
 
 export async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
-  try {
-    const userRef = doc(db, "users", uid);
-    const docSnap = await getDoc(userRef);
-    
-    if (docSnap.exists()) {
-      const data = docSnap.data() as UserProfile;
-      if (data.email?.toLowerCase().trim() === "mjnickitim@gmail.com" && data.role !== "Admin") {
-        data.role = "Admin";
-        try { await updateDoc(userRef, { role: "Admin" }); } catch (_) {}
-      }
-      return { uid: docSnap.id, ...data } as UserProfile;
-    }
-    
-    // Backup: query where uid field is matches (for legacy or mock users seed matching)
-    const usersCol = collection(db, "users");
-    const q = query(usersCol, where("uid", "==", uid));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    const legacyDoc = snapshot.docs[0];
-    const data = legacyDoc.data() as UserProfile;
+  const userRef = doc(db, "users", uid);
+  const docSnap = await getDoc(userRef);
+  
+  if (docSnap.exists()) {
+    const data = docSnap.data() as UserProfile;
     if (data.email?.toLowerCase().trim() === "mjnickitim@gmail.com" && data.role !== "Admin") {
       data.role = "Admin";
-      try { await updateDoc(doc(db, "users", legacyDoc.id), { role: "Admin" }); } catch (_) {}
+      await updateDoc(userRef, { role: "Admin" });
     }
-    return { uid: legacyDoc.id, ...data } as UserProfile;
-  } catch (err) {
-    console.warn("Firestore fetchUserProfile error (using offline fallback):", err);
-    const { MOCK_USERS } = await import("./seedData");
-    return MOCK_USERS.find(u => u.uid === uid) || null;
+    return { uid: docSnap.id, ...data } as UserProfile;
   }
+  
+  // Backup: query where uid field is matches (for legacy or mock users seed matching)
+  const usersCol = collection(db, "users");
+  const q = query(usersCol, where("uid", "==", uid));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  const legacyDoc = snapshot.docs[0];
+  const data = legacyDoc.data() as UserProfile;
+  if (data.email?.toLowerCase().trim() === "mjnickitim@gmail.com" && data.role !== "Admin") {
+    data.role = "Admin";
+    await updateDoc(doc(db, "users", legacyDoc.id), { role: "Admin" });
+  }
+  return { uid: legacyDoc.id, ...data } as UserProfile;
 }
 
 export async function createUserProfile(uid: string, profile: Omit<UserProfile, "uid">): Promise<void> {
@@ -551,18 +497,14 @@ export async function deleteUserProfile(uid: string): Promise<void> {
 
 // Quiz records
 export async function recordQuizScore(uid: string, score: number, streak: number, categoryId: string): Promise<void> {
-  try {
-    const scoresCol = collection(db, "quiz_scores");
-    await addDoc(scoresCol, {
-      uid,
-      score,
-      streak,
-      categoryId,
-      timestamp: serverTimestamp()
-    });
-  } catch (err) {
-    console.warn("Could not record quiz score to Firestore:", err);
-  }
+  const scoresCol = collection(db, "quiz_scores");
+  await addDoc(scoresCol, {
+    uid,
+    score,
+    streak,
+    categoryId,
+    timestamp: serverTimestamp()
+  });
 }
 
 // Global Site Settings for SEO/Google Search Console
@@ -575,7 +517,7 @@ export async function getSiteSettings(): Promise<{ googleSiteVerification?: stri
     }
     return {};
   } catch (err) {
-    console.warn("Error fetching site settings (using fallback):", err);
+    console.error("Error fetching site settings:", err);
     return {};
   }
 }

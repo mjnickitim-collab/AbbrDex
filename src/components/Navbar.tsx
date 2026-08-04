@@ -58,7 +58,7 @@ export default function Navbar({
           </span>
         </button>
 
-        {/* Navigation Links - Hidden on mobile */}
+        {/* Navigation Links - Hidden on mobile, original layout had display:none on md */}
         {!isAdminMode && (
           <div className="hidden md:flex items-center gap-1 nav-links">
             {[
@@ -66,7 +66,7 @@ export default function Navbar({
               { id: "browse", label: "Explore Dictionary" },
               { id: "emoji", label: "Emoji" },
               { id: "quiz", label: "Quiz" },
-              /* { id: "blog", label: "Blog" } - Disabled for standalone distribution. Uncomment to restore */
+              { id: "blog", label: "Blog" }
             ].map((view) => (
               <button
                 key={view.id}
@@ -108,12 +108,52 @@ export default function Navbar({
             </button>
           )}
 
-          {/* 
-            FIREBASE AUTH & USER LOGIN (Disabled for current standalone distribution)
-            To re-enable login button and user dropdown profile, uncomment the block below:
-            
-            {currentUser ? ( ... ) : ( <button onClick={onOpenLogin}>Log in</button> )}
-          */}
+          {currentUser ? (
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="btn btn-solid btn-sm font-display font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 max-w-[95px] sm:max-w-[150px] overflow-hidden"
+              >
+                <span className="truncate max-w-[50px] sm:max-w-[100px] block">{currentUser.name}</span>
+                <span className="text-[8px] sm:text-[10px] flex-shrink-0">▼</span>
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-card border border-line rounded-xl shadow-lg py-2 text-sm z-50">
+                  <div className="px-4 py-2 border-b border-line text-xs">
+                    <p className="font-semibold text-ink text-ellipsis overflow-hidden">{currentUser.name}</p>
+                    <p className="text-ink-soft text-ellipsis overflow-hidden">{currentUser.email}</p>
+                    <p className="mt-1 font-mono text-[10px] text-indigo bg-indigo/5 px-1.5 py-0.5 rounded-md inline-block">
+                      {currentUser.role}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                       setActiveView("quiz");
+                       setDropdownOpen(false);
+                       setIsAdminMode(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 hover:bg-paper text-ink transition"
+                  >
+                    Quiz History
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2.5 hover:bg-paper text-coral-ink font-semibold transition"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={onOpenLogin}
+              className="btn btn-solid btn-sm font-display font-semibold px-5 shadow-sm"
+            >
+              Log in
+            </button>
+          )}
 
           {/* Hamburger Menu Button */}
           {!isAdminMode && (
@@ -144,7 +184,7 @@ export default function Navbar({
                 { id: "browse", label: "Explore Dictionary" },
                 { id: "emoji", label: "Emoji" },
                 { id: "quiz", label: "Quiz" },
-                /* { id: "blog", label: "Blog" } - Disabled for standalone distribution. */
+                { id: "blog", label: "Blog" }
               ].map((view) => (
                 <button
                   key={view.id}
