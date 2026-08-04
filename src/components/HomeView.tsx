@@ -293,7 +293,10 @@ export default function HomeView({
         </div>
       </section>
 
-      {/* 3. Digital Insights & Editorial Articles Section */}
+      {/* 
+        3. Digital Insights & Editorial Articles Section (Disabled for current standalone distribution)
+        Uncomment block below when blog features are re-enabled:
+
       <section className="px-6 max-w-[1080px] mx-auto space-y-6">
         <div className="flex items-center justify-between border-b border-line pb-4">
           <div className="flex items-center gap-2.5">
@@ -359,6 +362,7 @@ export default function HomeView({
           </div>
         )}
       </section>
+      */}
 
       {/* 4. Trending Decoded Terms (Rich Cards with Text Content) */}
       <section className="px-6 max-w-[1080px] mx-auto space-y-6">

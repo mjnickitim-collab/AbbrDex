@@ -92,7 +92,7 @@ export default function FooterPagesModal({ activePage, onClose }: FooterPagesMod
         </div>
 
         {/* Modal Scrollable Content Body */}
-        <div className="p-6 sm:p-8 overflow-y-auto space-y-6 text-ink text-sm leading-relaxed">
+        <div className="p-4 sm:p-8 overflow-y-auto space-y-4 sm:space-y-6 text-ink text-xs sm:text-sm leading-relaxed">
           
           {/* ABOUT US TAB */}
           {currentTab === "about" && (

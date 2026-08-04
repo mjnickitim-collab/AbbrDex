@@ -263,9 +263,9 @@ export default function TermDetailView({ code, terms, adSlots = [], isDbLoaded =
                 </div>
 
                 <div className="space-y-2.5">
-                  {relatedTerms.map((rt) => (
+                  {relatedTerms.map((rt, idx) => (
                     <a
-                      key={rt.id}
+                      key={rt.id || `${rt.code}-${idx}`}
                       href={`/term/${encodeURIComponent(rt.code.toUpperCase())}`}
                       onClick={(e) => {
                         e.preventDefault();

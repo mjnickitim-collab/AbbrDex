@@ -851,18 +851,21 @@ export const TERMS: Term[] = [
 export const BLOG_SEED: BlogPost[] = [
   {
     title: "10 texting abbreviations Gen Z uses that you don't",
+    slug: "10-texting-abbreviations-gen-z-uses-that-you-dont",
     date: "Jul 2, 2026",
     excerpt: "From HMU to IYKYK, a quick guide to staying current in group chats.",
     body: "Internet culture shifts rapidly. Terms like HMU, IYKYK, FRFR, and No Cap dominate the conversation. Understanding Gen Z slang is essential for modern digital communication. In this guide, we dive deep into the origins, meanings, and social norms of these key phrases."
   },
   {
     title: "Why business acronyms took over the workplace",
+    slug: "why-business-acronyms-took-over-the-workplace",
     date: "Jun 24, 2026",
     excerpt: "ASAP, EOD, KPI — how office shorthand became its own language.",
     body: "From the corporate boardroom to remote Slack channels, corporate acronyms like WFH, OOO, ETA, and ROI are ubiquitous. Why do we speak this way? This post tracks the efficiency drive of modern corporations and explores how professional shorthand builds workplace identity."
   },
   {
     title: "The military origins of everyday internet slang",
+    slug: "the-military-origins-of-everyday-internet-slang",
     date: "Jun 15, 2026",
     excerpt: "SNAFU and FUBAR started in the armed forces. Here's how they spread.",
     body: "You might use terms like SNAFU, FUBAR, or SITREP without realizing they originated during intense periods of wartime history. These military-grade acronyms describe critical states of order, chaos, and communication, finding their way into civilian life and finally onto modern social platforms."
