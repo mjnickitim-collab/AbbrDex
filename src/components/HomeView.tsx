@@ -118,7 +118,7 @@ export default function HomeView({
       const countA = terms.filter(t => t.cat === a.id).length;
       const countB = terms.filter(t => t.cat === b.id).length;
       return countB - countA;
-    }).slice(0, 15);
+    }).slice(0, 9);
   }, [terms]);
 
   // Find active reel term details

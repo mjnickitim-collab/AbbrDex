@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { UserProfile } from "../types";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
-import { Menu, X } from "lucide-react";
+import { CATEGORIES } from "../data/seedData";
+import { Menu, X, ChevronDown, BookOpen, Tag } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface NavbarProps {
@@ -13,6 +14,7 @@ interface NavbarProps {
   onOpenLogin: () => void;
   isAdminMode: boolean;
   setIsAdminMode: (admin: boolean) => void;
+  onSelectCategory?: (catId: string | null) => void;
 }
 
 export default function Navbar({
@@ -22,10 +24,13 @@ export default function Navbar({
   onLogout,
   onOpenLogin,
   isAdminMode,
-  setIsAdminMode
+  setIsAdminMode,
+  onSelectCategory
 }: NavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [catMenuOpen, setCatMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCatOpen, setMobileCatOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -36,6 +41,28 @@ export default function Navbar({
     } catch (err) {
       console.error("Error signing out", err);
     }
+  };
+
+  const handleExploreClick = () => {
+    if (onSelectCategory) {
+      onSelectCategory(null);
+    } else {
+      setActiveView("browse");
+    }
+    setCatMenuOpen(false);
+    setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCategorySelect = (catId: string | null) => {
+    if (onSelectCategory) {
+      onSelectCategory(catId);
+    } else {
+      setActiveView("browse");
+    }
+    setCatMenuOpen(false);
+    setMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -58,28 +85,134 @@ export default function Navbar({
           </span>
         </button>
 
-        {/* Navigation Links - Hidden on mobile, original layout had display:none on md */}
+        {/* Navigation Links - Hidden on mobile */}
         {!isAdminMode && (
           <div className="hidden md:flex items-center gap-1 nav-links">
-            {[
-              { id: "home", label: "Home" },
-              { id: "browse", label: "Explore Dictionary" },
-              { id: "emoji", label: "Emoji" },
-              { id: "quiz", label: "Quiz" },
-              { id: "blog", label: "Blog" }
-            ].map((view) => (
-              <button
-                key={view.id}
-                onClick={() => setActiveView(view.id)}
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
-                  ${activeView === view.id 
-                    ? "bg-line/60 text-ink font-semibold" 
-                    : "text-ink-soft hover:bg-line/40 hover:text-ink"
-                  }`}
-              >
-                {view.label}
-              </button>
-            ))}
+            {/* Home */}
+            <button
+              onClick={() => setActiveView("home")}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
+                ${activeView === "home" 
+                  ? "bg-line/60 text-ink font-semibold" 
+                  : "text-ink-soft hover:bg-line/40 hover:text-ink"
+                }`}
+            >
+              Home
+            </button>
+
+            {/* Explore Dictionary Dropdown Button */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setCatMenuOpen(true)}
+              onMouseLeave={() => setCatMenuOpen(false)}
+            >
+              <div className="flex items-center">
+                <button
+                  onClick={handleExploreClick}
+                  className={`pl-3.5 pr-1.5 py-2 rounded-l-lg text-sm font-medium transition cursor-pointer flex items-center gap-1
+                    ${activeView === "browse" 
+                      ? "bg-line/60 text-ink font-semibold" 
+                      : "text-ink-soft hover:bg-line/40 hover:text-ink"
+                    }`}
+                >
+                  <span>Explore Dictionary</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCatMenuOpen(!catMenuOpen)}
+                  className={`pr-2.5 pl-0.5 py-2 rounded-r-lg text-sm transition cursor-pointer
+                    ${activeView === "browse" 
+                      ? "bg-line/60 text-ink font-semibold" 
+                      : "text-ink-soft hover:bg-line/40 hover:text-ink"
+                    }`}
+                  aria-label="Toggle category menu"
+                >
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${catMenuOpen ? "rotate-180 text-indigo" : ""}`} />
+                </button>
+              </div>
+
+              {/* Category Dropdown Menu */}
+              <AnimatePresence>
+                {catMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 top-full mt-1 w-[460px] sm:w-[500px] bg-card border border-line rounded-2xl shadow-xl p-3 z-50"
+                  >
+                    <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-ink-soft border-b border-line/60 flex items-center justify-between mb-2">
+                      <span>Explore Categories</span>
+                      <span className="text-[10px] text-indigo font-normal">All 15 Hubs</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCategorySelect(null)}
+                      className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-bold text-indigo bg-indigo/5 hover:bg-indigo/10 transition flex items-center gap-2 cursor-pointer mb-2"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-indigo" />
+                      <span>All Categories (Full Dictionary)</span>
+                    </button>
+
+                    <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-line/40">
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          key={`nav-cat-${cat.id}`}
+                          type="button"
+                          onClick={() => handleCategorySelect(cat.id)}
+                          className="text-left px-2.5 py-2 rounded-xl text-xs font-medium text-ink hover:bg-paper hover:text-indigo transition flex items-center justify-between cursor-pointer group"
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            <Tag className="w-3 h-3 text-ink-soft group-hover:text-indigo transition shrink-0" />
+                            <span className="truncate">{cat.name}</span>
+                          </span>
+                          <span className={`tag ${cat.tag} text-[9px] py-0 px-1.5 shrink-0`}>
+                            {cat.id}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Emoji */}
+            <button
+              onClick={() => handleCategorySelect("emoji")}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
+                ${activeView === "browse" && false
+                  ? "bg-line/60 text-ink font-semibold" 
+                  : "text-ink-soft hover:bg-line/40 hover:text-ink"
+                }`}
+            >
+              Emoji
+            </button>
+
+            {/* Quiz */}
+            <button
+              onClick={() => setActiveView("quiz")}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
+                ${activeView === "quiz" 
+                  ? "bg-line/60 text-ink font-semibold" 
+                  : "text-ink-soft hover:bg-line/40 hover:text-ink"
+                }`}
+            >
+              Quiz
+            </button>
+
+            {/* Blog */}
+            <button
+              onClick={() => setActiveView("blog")}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
+                ${activeView === "blog" 
+                  ? "bg-line/60 text-ink font-semibold" 
+                  : "text-ink-soft hover:bg-line/40 hover:text-ink"
+                }`}
+            >
+              Blog
+            </button>
           </div>
         )}
 
@@ -179,28 +312,83 @@ export default function Navbar({
             className="md:hidden overflow-hidden border-t border-line bg-paper/95 backdrop-blur-md"
           >
             <div className="px-6 py-4 flex flex-col gap-1.5">
-              {[
-                { id: "home", label: "Home" },
-                { id: "browse", label: "Explore Dictionary" },
-                { id: "emoji", label: "Emoji" },
-                { id: "quiz", label: "Quiz" },
-                { id: "blog", label: "Blog" }
-              ].map((view) => (
-                <button
-                  key={view.id}
-                  onClick={() => {
-                    setActiveView(view.id);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-xl text-base font-semibold transition cursor-pointer
-                    ${activeView === view.id 
-                      ? "bg-indigo/10 text-indigo" 
-                      : "text-ink hover:bg-line/30"
-                    }`}
-                >
-                  {view.label}
-                </button>
-              ))}
+              {/* Home */}
+              <button
+                onClick={() => {
+                  setActiveView("home");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-4 py-3 rounded-xl text-base font-semibold transition cursor-pointer
+                  ${activeView === "home" ? "bg-indigo/10 text-indigo" : "text-ink hover:bg-line/30"}`}
+              >
+                Home
+              </button>
+
+              {/* Explore Dictionary */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={handleExploreClick}
+                    className={`flex-1 text-left px-4 py-3 rounded-xl text-base font-semibold transition cursor-pointer
+                      ${activeView === "browse" ? "bg-indigo/10 text-indigo" : "text-ink hover:bg-line/30"}`}
+                  >
+                    Explore Dictionary (All)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileCatOpen(!mobileCatOpen)}
+                    className="p-3 text-ink-soft hover:text-ink cursor-pointer"
+                  >
+                    <ChevronDown className={`w-4 h-4 transition-transform ${mobileCatOpen ? "rotate-180 text-indigo" : ""}`} />
+                  </button>
+                </div>
+
+                {mobileCatOpen && (
+                  <div className="ml-4 my-1 pl-3 border-l-2 border-indigo/20 space-y-1 py-1 max-h-48 overflow-y-auto">
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={`mob-cat-${cat.id}`}
+                        onClick={() => handleCategorySelect(cat.id)}
+                        className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-soft hover:text-indigo hover:bg-line/30 transition cursor-pointer"
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Emoji */}
+              <button
+                onClick={() => handleCategorySelect("emoji")}
+                className={`w-full text-left px-4 py-3 rounded-xl text-base font-semibold transition cursor-pointer text-ink hover:bg-line/30`}
+              >
+                Emoji
+              </button>
+
+              {/* Quiz */}
+              <button
+                onClick={() => {
+                  setActiveView("quiz");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-4 py-3 rounded-xl text-base font-semibold transition cursor-pointer
+                  ${activeView === "quiz" ? "bg-indigo/10 text-indigo" : "text-ink hover:bg-line/30"}`}
+              >
+                Quiz
+              </button>
+
+              {/* Blog */}
+              <button
+                onClick={() => {
+                  setActiveView("blog");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-4 py-3 rounded-xl text-base font-semibold transition cursor-pointer
+                  ${activeView === "blog" ? "bg-indigo/10 text-indigo" : "text-ink hover:bg-line/30"}`}
+              >
+                Blog
+              </button>
             </div>
           </motion.div>
         )}

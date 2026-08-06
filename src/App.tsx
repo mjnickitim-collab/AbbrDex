@@ -467,7 +467,14 @@ export default function App() {
               setSelectedBlogPost(null);
             }
             setActiveView(view);
+            window.scrollTo({ top: 0, behavior: "smooth" });
           }
+        }}
+        onSelectCategory={(catId) => {
+          setSelectedCategory(catId);
+          setSearchQuery("");
+          setActiveView("browse");
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         currentUser={currentUser}
         onLogout={() => setCurrentUser(null)}

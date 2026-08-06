@@ -80,80 +80,136 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const activeCatMeta = selectedCat ? CATEGORIES.find(c => c.id === selectedCat) : null;
+
   return (
-    <div className="max-w-[1080px] mx-auto px-6 py-12">
-      {/* Title & Filter Options */}
-      <div className="space-y-6 mb-8">
-        <div>
-          <h2 className="font-display font-bold text-3xl text-ink">Explore Abbreviations</h2>
-          <p className="text-sm text-ink-soft mt-1">Search through texting acronyms, internet shorthand, and business workspace terms.</p>
-        </div>
-
-        {/* Search Row */}
-        <div className="relative max-w-lg">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft" />
-          <input
-            type="text"
-            placeholder="Search all terms (e.g., POV, ROI, WFH...)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-10 py-3.5 border-1.5 border-line rounded-xl bg-card text-sm font-mono text-ink shadow-sm focus:outline-none focus:border-indigo"
-          />
-          {searchQuery && (
+    <div className="max-w-[1080px] mx-auto px-6 py-10">
+      {/* CASE A: SPECIFIC CATEGORY SELECTED */}
+      {selectedCat ? (
+        <div className="space-y-8">
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-2 text-xs text-ink-soft">
             <button 
-              onClick={() => setSearchQuery("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink transition"
+              type="button"
+              onClick={() => setSelectedCat(null)} 
+              className="hover:text-indigo font-medium cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              Home
             </button>
-          )}
-        </div>
+            <span>/</span>
+            <button 
+              type="button"
+              onClick={() => setSelectedCat(null)} 
+              className="hover:text-indigo font-medium cursor-pointer"
+            >
+              Explore Dictionary
+            </button>
+            <span>/</span>
+            <span className="text-ink font-bold">{activeCatMeta?.name || selectedCat}</span>
+          </div>
 
-        {/* Category Filters Grid */}
-        <div className="space-y-2">
-          <div className="text-xs font-semibold uppercase tracking-wider text-ink-soft">Filter by Category:</div>
-          <div className="flex flex-wrap gap-2.5">
-            <button
-              onClick={() => setSelectedCat(null)}
-              className={`px-4 py-2.5 rounded-full text-xs font-semibold border-1.5 transition cursor-pointer
-                ${!selectedCat 
-                  ? "bg-indigo text-white border-indigo" 
-                  : "bg-card text-ink border-line hover:border-ink"
-                }`}
-            >
-              All Categories
-            </button>
-            {CATEGORIES.map((cat) => {
-              const isActive = selectedCat === cat.id;
-              const termCount = terms.filter((t) => t.cat === cat.id).length;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleCategoryToggle(cat.id)}
-                  className={`px-4 py-2.5 rounded-full text-xs font-semibold border-1.5 transition cursor-pointer flex items-center gap-1.5
-                    ${isActive 
-                      ? "bg-indigo text-white border-indigo" 
-                      : "bg-card text-ink border-line hover:border-ink"
-                    }`}
+          {/* 1) Category SEO Header & Hub Overview Block (Rendered First on Category Page) */}
+          <CategorySeoBlock 
+            selectedCategory={selectedCat}
+            terms={terms}
+            onSelectCategory={(catId) => setSelectedCat(catId)}
+            onSelectTerm={onSelectTerm}
+          />
+
+          {/* 2) Category Search Bar */}
+          <div className="bg-card border border-line rounded-2xl p-5 sm:p-6 shadow-xs">
+            <div className="relative w-full max-w-xl">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft" />
+              <input
+                type="text"
+                placeholder={`Search ${activeCatMeta?.name || "category"} terms...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-10 py-3.5 border-1.5 border-line rounded-xl bg-paper text-sm font-mono text-ink shadow-xs focus:outline-none focus:border-indigo"
+              />
+              {searchQuery && (
+                <button 
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink transition cursor-pointer"
                 >
-                  <span>{cat.name}</span>
-                  <span className={`text-[10px] rounded-full px-1.5 py-0.2 font-mono ${isActive ? "bg-white/20 text-white" : "bg-paper text-ink-soft"}`}>
-                    {termCount}
-                  </span>
+                  <X className="w-4 h-4" />
                 </button>
-              );
-            })}
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        /* CASE B: ALL CATEGORIES VIEW */
+        <div className="space-y-8">
+          {/* Main Title & Search */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-display font-bold text-3xl text-ink">Explore Abbreviations Dictionary</h2>
+              <p className="text-sm text-ink-soft mt-1">Search through texting acronyms, internet shorthand, military codes, and business terms.</p>
+            </div>
 
-      {/* SEO-Enhanced Category Hub Block */}
-      <CategorySeoBlock 
-        selectedCategory={selectedCat}
-        terms={terms}
-        onSelectCategory={(catId) => setSelectedCat(catId)}
-        onSelectTerm={onSelectTerm}
-      />
+            {/* Search Row */}
+            <div className="relative max-w-lg">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink-soft" />
+              <input
+                type="text"
+                placeholder="Search all terms (e.g., POV, ROI, WFH, AWOL...)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-10 py-3.5 border-1.5 border-line rounded-xl bg-card text-sm font-mono text-ink shadow-sm focus:outline-none focus:border-indigo"
+              />
+              {searchQuery && (
+                <button 
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Category Filters Grid */}
+            <div className="space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-ink-soft">Filter by Category:</div>
+              <div className="flex flex-wrap gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCat(null)}
+                  className="px-4 py-2.5 rounded-full text-xs font-semibold border-1.5 bg-indigo text-white border-indigo transition cursor-pointer shadow-xs"
+                >
+                  All Categories ({terms.length})
+                </button>
+                {CATEGORIES.map((cat) => {
+                  const termCount = terms.filter((t) => t.cat === cat.id).length;
+                  return (
+                    <button
+                      key={`all-${cat.id}`}
+                      type="button"
+                      onClick={() => setSelectedCat(cat.id)}
+                      className="px-4 py-2.5 rounded-full text-xs font-semibold border-1.5 bg-card text-ink border-line hover:border-ink transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>{cat.name}</span>
+                      <span className="text-[10px] rounded-full px-1.5 py-0.2 font-mono bg-paper text-ink-soft">
+                        {termCount}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* General SEO Block */}
+          <CategorySeoBlock 
+            selectedCategory={null}
+            terms={terms}
+            onSelectCategory={(catId) => setSelectedCat(catId)}
+            onSelectTerm={onSelectTerm}
+          />
+        </div>
+      )}
 
       {/* Results Section */}
       <div className="border-t border-line pt-6">

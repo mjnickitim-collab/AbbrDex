@@ -60,12 +60,12 @@ export default function CategorySeoBlock({
       {/* Decorative accent background badge */}
       <div className="absolute -top-12 -right-12 w-40 h-40 bg-indigo/5 rounded-full blur-2xl pointer-events-none" />
 
-      {/* 1) Category Hub Header & Intro Paragraph */}
+      {/* 1) Category Header & Intro Paragraph */}
       <div className="space-y-2 border-b border-line pb-5">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo/10 text-indigo text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Category Hub</span>
+            <span>{catMeta ? `${catMeta.name} Category` : "Category Overview"}</span>
           </span>
           {catMeta && (
             <span className={`tag ${catMeta.tag} text-[10px] uppercase tracking-wider font-semibold`}>
@@ -83,11 +83,34 @@ export default function CategorySeoBlock({
         </p>
       </div>
 
-      {/* 2) Category Internal Links Section */}
+      {/* 2) Category Structured Context & Breakdown */}
+      <div className="bg-card border border-line/80 rounded-xl p-4 sm:p-5 space-y-2 text-xs sm:text-sm text-ink-soft">
+        <div className="flex items-center gap-2 font-display font-bold text-ink text-sm sm:text-base mb-1">
+          <Layers className="w-4 h-4 text-indigo" />
+          <span>Category Structure & Overview</span>
+        </div>
+
+        <p className="leading-relaxed text-ink">
+          <strong className="text-indigo font-semibold">Terms Included: </strong>
+          This category hub contains <strong className="text-ink font-bold">{categoryTerms.length}</strong> verified {catName} abbreviations and technical terms.
+        </p>
+
+        <p className="leading-relaxed">
+          <strong className="text-ink font-semibold">Structural Classification: </strong>
+          {seoData.structureText}
+        </p>
+
+        <p className="leading-relaxed">
+          <strong className="text-ink font-semibold">Scope & Context: </strong>
+          {seoData.scopeText}
+        </p>
+      </div>
+
+      {/* 3) Category Internal Links Section */}
       <div className="bg-paper/80 border border-line rounded-xl p-4 space-y-3">
         <div className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
           <LinkIcon className="w-3.5 h-3.5 text-indigo" />
-          <span>Category Navigation & Internal Links:</span>
+          <span>Quick Navigation & Related Links:</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 text-xs">
@@ -98,7 +121,7 @@ export default function CategorySeoBlock({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo text-white font-semibold hover:bg-indigo-dark transition cursor-pointer shadow-xs"
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>View All Abbreviations ({terms.length})</span>
+            <span>Full Dictionary ({terms.length} terms)</span>
           </button>
 
           {/* Related Category Pills */}
@@ -133,7 +156,7 @@ export default function CategorySeoBlock({
         </div>
       </div>
 
-      {/* 3) Representative Terms Section */}
+      {/* 4) Representative Terms Section */}
       {representativeTerms.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -177,29 +200,6 @@ export default function CategorySeoBlock({
           </div>
         </div>
       )}
-
-      {/* 4) Category Structured Context & Breakdown */}
-      <div className="bg-card border border-line/80 rounded-xl p-4 sm:p-5 space-y-2 text-xs sm:text-sm text-ink-soft">
-        <div className="flex items-center gap-2 font-display font-bold text-ink text-sm sm:text-base mb-1">
-          <Layers className="w-4 h-4 text-indigo" />
-          <span>Category Structure & Overview</span>
-        </div>
-
-        <p className="leading-relaxed text-ink">
-          <strong className="text-indigo font-semibold">Terms Included: </strong>
-          This category hub contains <strong className="text-ink font-bold">{categoryTerms.length}</strong> verified {catName} abbreviations and technical terms.
-        </p>
-
-        <p className="leading-relaxed">
-          <strong className="text-ink font-semibold">Structural Classification: </strong>
-          {seoData.structureText}
-        </p>
-
-        <p className="leading-relaxed">
-          <strong className="text-ink font-semibold">Scope & Context: </strong>
-          {seoData.scopeText}
-        </p>
-      </div>
     </div>
   );
 }
