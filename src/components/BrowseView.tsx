@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Category, Term } from "../types";
 import { CATEGORIES } from "../data/seedData";
+import CategorySeoBlock from "./CategorySeoBlock";
 import { Search, X, BookOpen, AlertCircle } from "lucide-react";
 
 interface BrowseViewProps {
@@ -145,6 +146,14 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
           </div>
         </div>
       </div>
+
+      {/* SEO-Enhanced Category Hub Block */}
+      <CategorySeoBlock 
+        selectedCategory={selectedCat}
+        terms={terms}
+        onSelectCategory={(catId) => setSelectedCat(catId)}
+        onSelectTerm={onSelectTerm}
+      />
 
       {/* Results Section */}
       <div className="border-t border-line pt-6">
