@@ -1168,7 +1168,7 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
           }
         }
       } else {
-        // Handle API error response, specifically Quota Exceeded (429)
+        // Handle API error response, specifically Quota Exceeded (429) or Auth error (401)
         const errText = await response.text().catch(() => "");
         let errMsg = errText;
         try {
@@ -1177,6 +1177,11 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
         } catch (_) {}
 
         const lowerMsg = errMsg.toLowerCase();
+        if (response.status === 401 || lowerMsg.includes("unauthenticated") || lowerMsg.includes("access_token_type_unsupported") || lowerMsg.includes("gemini_api_key_invalid")) {
+          alert("⚠️ Gemini API 인증 오류 (401 UNAUTHENTICATED)\n\n배포 환경(Vercel / custom domain)의 GEMINI_API_KEY가 설정되지 않았거나 유효하지 않은 키/토큰입니다.\n\n[해결 방법]\n1. Vercel Project Settings -> Environment Variables 이동\n2. GEMINI_API_KEY 에 Google AI Studio (aistudio.google.com)에서 무료 발급받은 유효한 API 키(AIzaSy...)를 설정\n3. Redeploy (재배포) 실행");
+          setGeneratingArticle(false);
+          return;
+        }
         if (response.status === 429 || lowerMsg.includes("quota") || lowerMsg.includes("exceeded") || lowerMsg.includes("resource_exhausted")) {
           alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량(Quota)을 초과하였거나 요청 빈도가 너무 높습니다. API 키 할당량을 확인하시거나 잠시 후 다시 시도해주시기 바랍니다.");
           setGeneratingArticle(false);
@@ -1186,6 +1191,11 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
     } catch (err: any) {
       console.warn("Server AI generation endpoint error:", err);
       const errStr = (err?.message || "").toLowerCase();
+      if (errStr.includes("unauthenticated") || errStr.includes("401") || errStr.includes("access_token_type_unsupported")) {
+        alert("⚠️ Gemini API 인증 오류 (401 UNAUTHENTICATED)\n\n배포 환경(Vercel / custom domain)의 GEMINI_API_KEY가 유효하지 않습니다. Vercel 설정에서 GEMINI_API_KEY를 확인해주세요.");
+        setGeneratingArticle(false);
+        return;
+      }
       if (errStr.includes("quota") || errStr.includes("exceeded")) {
         alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량을 확인해주시기 바랍니다.");
         setGeneratingArticle(false);
@@ -1206,9 +1216,9 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
           alert("⚠️ Gemini API 호출 한도(Quota)를 초과하였습니다.\n\n[You exceeded your current quota]\nGoogle API 키의 할당량을 확인해주시기 바랍니다.");
         } else if (errStr.includes("api 키가 입력되지 않아")) {
           // User cancelled prompt
-        } else if (errStr.includes("api_key_invalid") || errStr.includes("invalid api key") || errStr.includes("unauthorized") || errStr.includes("403")) {
+        } else if (errStr.includes("unauthenticated") || errStr.includes("401") || errStr.includes("access_token_type_unsupported") || errStr.includes("api_key_invalid") || errStr.includes("invalid api key") || errStr.includes("unauthorized") || errStr.includes("403")) {
           localStorage.removeItem("GEMINI_API_KEY");
-          alert(`⚠️ Gemini API 키가 올바르지 않습니다.\n\n오류 내용: ${errMsg}\n\n저장된 키를 삭제하였습니다. 다시 시도할 때 올바른 Gemini API 키를 입력해 주세요.`);
+          alert("⚠️ Gemini API 인증 오류 (401 UNAUTHENTICATED)\n\n저장된 API 키가 유효하지 않습니다.\n\nGoogle AI Studio (aistudio.google.com)에서 무료 발급받은 올바른 Gemini API 키(AIzaSy...)를 입력하여 다시 시도해 주세요.");
         } else {
           alert(`⚠️ AI 글 작성 중 오류가 발생하였습니다:\n\n${errMsg}\n\nAPI 키 상태 및 네트워크 연결을 확인해 주세요.`);
         }

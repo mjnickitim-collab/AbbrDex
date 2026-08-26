@@ -158,11 +158,14 @@ async function getBlogsFromFirestore() {
     return snapshot.docs.map(doc => {
       const data = doc.data();
       return {
+        id: doc.id,
         title: data.title || "",
         draft: data.draft || false,
         excerpt: data.excerpt || "",
+        content: data.content || "",
         seoTitle: data.seoTitle || "",
         metaDescription: data.metaDescription || "",
+        category: data.category || "General",
         date: data.date || ""
       };
     });
@@ -307,6 +310,23 @@ async function getSeoMetadata(urlPath: string) {
           }
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(blogSchema)}</script>`;
+
+        // Build SSR HTML text block for blog posts
+        bodyArticleHtml = `
+          <div id="ssr-blog-article">
+            <article style="max-width: 800px; margin: 0 auto; padding: 24px; font-family: sans-serif; line-height: 1.6;">
+              <header>
+                <p style="color: #4f46e5; font-weight: bold; text-transform: uppercase; font-size: 14px;">${foundBlog.category || 'Article'}</p>
+                <h1 style="font-size: 32px; margin: 12px 0;">${foundBlog.title}</h1>
+                <p style="color: #64748b; font-size: 14px;">Published on ${foundBlog.date || 'whatsthatmean'}</p>
+              </header>
+              ${foundBlog.excerpt ? `<p style="font-size: 18px; color: #334155; font-weight: 500; margin: 16px 0;">${foundBlog.excerpt}</p>` : ''}
+              <div style="font-size: 16px; color: #1e293b; margin-top: 20px;">
+                ${(foundBlog.content || '').split('\n\n').map((p: string) => `<p style="margin-bottom: 16px;">${p}</p>`).join('')}
+              </div>
+            </article>
+          </div>
+        `;
       }
     } else if (pathname.startsWith("/term/")) {
       const code = decodeURIComponent(pathname.substring(6)).toUpperCase();
@@ -364,9 +384,9 @@ async function getSeoMetadata(urlPath: string) {
 
         // Build SSR HTML text block for AdSense and search engine crawlers
         bodyArticleHtml = `
-          <div id="ssr-term-article" style="display:none;" aria-hidden="true">
-            <article>
-              <h1>What Does ${foundTerm.code} Mean? Definition, Origin & Usage</h1>
+          <div id="ssr-term-article">
+            <article style="max-width: 800px; margin: 0 auto; padding: 24px; font-family: sans-serif; line-height: 1.6;">
+              <h1 style="font-size: 32px; margin-bottom: 12px;">What Does ${foundTerm.code} Mean? Definition, Origin & Usage</h1>
               <p><strong>Spelled-out phrase:</strong> ${foundTerm.full}</p>
               <p><strong>Category:</strong> ${categoryName}</p>
               <h2>Overview</h2>
@@ -374,7 +394,7 @@ async function getSeoMetadata(urlPath: string) {
               <h2>Etymology & History</h2>
               <p>${articleData.etymology}</p>
               <h2>Usage Scenarios</h2>
-              ${articleData.usageScenarios.map(s => `<h3>${s.title}</h3><p>${s.desc}</p><pre>${s.example}</pre>`).join("")}
+              ${articleData.usageScenarios.map(s => `<h3>${s.title}</h3><p>${s.desc}</p><pre style="background: #f1f5f9; padding: 12px; border-radius: 8px;">${s.example}</pre>`).join("")}
               <h2>Comparisons</h2>
               ${articleData.comparisons.map(c => `<h3>${c.term}</h3><p>${c.difference}</p>`).join("")}
               <h2>Common Pitfalls</h2>
@@ -382,7 +402,7 @@ async function getSeoMetadata(urlPath: string) {
               <h2>Cultural Context</h2>
               <p>${articleData.culturalLore}</p>
               <h2>Frequently Asked Questions</h2>
-              ${articleData.faqs.map(f => `<details><summary>${f.question}</summary><p>${f.answer}</p></details>`).join("")}
+              ${articleData.faqs.map(f => `<details style="margin-bottom: 12px;"><summary style="font-weight: bold; cursor: pointer;">${f.question}</summary><p style="margin-top: 6px;">${f.answer}</p></details>`).join("")}
             </article>
           </div>
         `;
@@ -614,6 +634,11 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
       return msg.includes("quota") || msg.includes("exceeded") || msg.includes("429") || msg.includes("resource_exhausted");
     };
 
+    const isAuthErr = (err: any) => {
+      const msg = (err?.message || err?.toString() || "").toLowerCase();
+      return msg.includes("unauthenticated") || msg.includes("401") || msg.includes("invalid authentication") || msg.includes("access_token_type_unsupported") || msg.includes("api_key_invalid");
+    };
+
     try {
       response = await ai.models.generateContent({
         model: "gemini-3.6-flash",
@@ -622,6 +647,11 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
       });
     } catch (modelError: any) {
       console.warn("Primary model gemini-3.6-flash failed, attempting fallback to gemini-3.1-pro-preview:", modelError?.message || modelError);
+      if (isAuthErr(modelError)) {
+        return res.status(401).json({
+          error: "GEMINI_API_KEY_INVALID: 서버 환경변수(Vercel Environment Variables)에 설정된 GEMINI_API_KEY가 올바르지 않거나 401 인증 오류가 발생하였습니다. Vercel 설정에서 유효한 Gemini API 키를 다시 등록해 주세요."
+        });
+      }
       if (isQuotaErr(modelError)) {
         return res.status(429).json({
           error: "You exceeded your current quota. Please check your plan and billing details, or try again later."
@@ -635,6 +665,11 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
         });
       } catch (fallbackError: any) {
         console.error("Both gemini-3.6-flash and gemini-3.1-pro-preview failed:", fallbackError?.message || fallbackError);
+        if (isAuthErr(fallbackError)) {
+          return res.status(401).json({
+            error: "GEMINI_API_KEY_INVALID: 서버 환경변수(Vercel Environment Variables)에 설정된 GEMINI_API_KEY가 올바르지 않거나 401 인증 오류가 발생하였습니다. Vercel 설정에서 유효한 Gemini API 키를 다시 등록해 주세요."
+          });
+        }
         if (isQuotaErr(fallbackError)) {
           return res.status(429).json({
             error: "You exceeded your current quota. Please check your plan and billing details, or try again later."
