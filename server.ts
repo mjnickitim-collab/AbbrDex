@@ -357,16 +357,17 @@ async function getSeoMetadata(urlPath: string) {
         desc = `Explore the best dictionary for ${categoryName} abbreviations, acronyms, and modern chat terms. Learn their meanings and real-world examples.`;
       }
     } else if (pathname.startsWith("/blog/")) {
-      const slug = pathname.substring(6);
+      const rawSlug = pathname.substring(6);
+      const slug = decodeURIComponent(rawSlug).replace(/\/+$/, "").trim().toLowerCase();
       const blogs = await getBlogsFromFirestore();
       const foundBlog = blogs.find((b: any) => {
-        const s = b.slug || (b.title || "")
+        const s = (b.slug || (b.title || "")
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9\s-]/g, "")
           .replace(/\s+/g, "-")
-          .replace(/-+/g, "-");
-        return s === slug;
+          .replace(/-+/g, "-")).toLowerCase().trim();
+        return s === slug || b.id === rawSlug || (b.slug && b.slug.toLowerCase() === slug);
       });
       if (foundBlog && !foundBlog.draft) {
         title = foundBlog.seoTitle || foundBlog.title || title;

@@ -117,13 +117,14 @@ export default function App() {
       setSelectedBlogPost(null);
       setSelectedTerm(null);
     } else if (pathname.startsWith("/blog/")) {
-      const slug = pathname.substring(6);
+      const rawSlug = pathname.substring(6);
+      const slug = decodeURIComponent(rawSlug).replace(/\/+$/, "").trim().toLowerCase();
       setActiveView("blog");
       setSelectedTerm(null);
       if (blogList.length > 0) {
         const foundBlog = blogList.find(b => {
-          const s = b.slug || generateSlug(b.title || "");
-          return s === slug;
+          const s = (b.slug || generateSlug(b.title || "")).toLowerCase().trim();
+          return s === slug || b.id === rawSlug || (b.slug && b.slug.toLowerCase() === slug);
         });
         if (foundBlog) {
           setSelectedBlogPost(foundBlog);

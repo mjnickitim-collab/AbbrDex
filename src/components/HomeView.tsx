@@ -351,27 +351,48 @@ export default function HomeView({
                     window.history.pushState(null, "", postUrl);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="bg-card border border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:-translate-y-1 shadow-2xs flex flex-col justify-between cursor-pointer h-full group no-underline"
+                  className="bg-card border border-line rounded-2xl overflow-hidden text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-2xs flex flex-col justify-between cursor-pointer h-full group no-underline"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-center text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-indigo" />
-                        <span>{post.date}</span>
-                      </span>
+                  <div className="w-full">
+                    {post.imageUrl && (
+                      <div className="w-full h-44 overflow-hidden border-b border-line bg-line/20">
+                        <img
+                          src={post.imageUrl}
+                          alt={post.imageAlt || post.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+                    <div className="p-6 space-y-3">
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-indigo" />
+                          <span>{post.date}</span>
+                        </span>
+                        {post.cat && (
+                          <>
+                            <span className="w-1 h-1 rounded-full bg-line" />
+                            <span className="px-1.5 py-0.5 rounded font-bold text-[9px] bg-indigo/5 text-indigo border border-indigo/10">
+                              {CATEGORIES.find(c => c.id === post.cat)?.name || "Insights"}
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] group-hover:text-indigo transition">
+                        {post.title}
+                      </h3>
+
+                      <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
+                        {post.excerpt}
+                      </p>
                     </div>
-
-                    <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] group-hover:text-indigo">
-                      {post.title}
-                    </h3>
-
-                    <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
-                      {post.excerpt}
-                    </p>
                   </div>
 
-                  <div className="pt-4 mt-5 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark">
-                    <span>Read Article</span>
+                  <div className="px-6 pb-6 pt-4 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark transition">
+                    <span>Read Full Article</span>
                     <span className="text-base group-hover:translate-x-1 transition">→</span>
                   </div>
                 </a>
