@@ -3,6 +3,7 @@ import { BlogPost, AdSlot, UserProfile } from "../types";
 import { Calendar, ChevronLeft, BookOpen, Edit3 } from "lucide-react";
 import { renderBlogPostContent } from "../utils/blogParser";
 import { CATEGORIES } from "../data/seedData";
+import { generateSlug } from "../data/dbService";
 
 interface BlogViewProps {
   posts: BlogPost[];
@@ -207,51 +208,59 @@ export default function BlogView({
         </div>
       ) : (
         <div className="blog-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post, index) => (
-            <button
-              key={post.id ? `blog-${post.id}` : `blog-${index}-${post.title}`}
-              onClick={() => {
-                setSelectedPost(post);
-                onSelectBlogPost?.(post);
-              }}
-              className="blog-card bg-card border-1.5 border-line rounded-2xl overflow-hidden text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full"
-            >
-              <div className="w-full">
-                {post.imageUrl && (
-                  <div className="w-full h-44 overflow-hidden border-b border-line">
-                    <img
-                      src={post.imageUrl}
-                      alt={post.imageAlt || post.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition duration-300 hover:scale-105"
-                      referrerPolicy="no-referrer"
-                    />
+          {posts.map((post, index) => {
+            const slug = post.slug || generateSlug(post.title || "");
+            const blogUrl = `/blog/${slug}`;
+            return (
+              <a
+                key={post.id ? `blog-${post.id}` : `blog-${index}-${post.title}`}
+                href={blogUrl}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedPost(post);
+                  onSelectBlogPost?.(post);
+                  window.history.pushState(null, "", blogUrl);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="blog-card bg-card border-1.5 border-line rounded-2xl overflow-hidden text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-sm flex flex-col justify-between cursor-pointer h-full no-underline"
+              >
+                <div className="w-full">
+                  {post.imageUrl && (
+                    <div className="w-full h-44 overflow-hidden border-b border-line">
+                      <img
+                        src={post.imageUrl}
+                        alt={post.imageAlt || post.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition duration-300 hover:scale-105"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  )}
+                  <div className="p-6 space-y-3">
+                    <div className="date flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft">
+                      <Calendar className="w-3 h-3" />
+                      <span>{post.date}</span>
+                      <span className="w-1 h-1 rounded-full bg-line" />
+                      <span className="px-1.5 py-0.5 rounded font-bold text-[9px] bg-indigo/5 text-indigo border border-indigo/10">
+                        {CATEGORIES.find(c => c.id === post.cat)?.name || "Internet & chat"}
+                      </span>
+                    </div>
+                    <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] hover:text-indigo transition">
+                      {post.title}
+                    </h3>
+                    <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
+                      {post.excerpt}
+                    </p>
                   </div>
-                )}
-                <div className="p-6 space-y-3">
-                  <div className="date flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft">
-                    <Calendar className="w-3 h-3" />
-                    <span>{post.date}</span>
-                    <span className="w-1 h-1 rounded-full bg-line" />
-                    <span className="px-1.5 py-0.5 rounded font-bold text-[9px] bg-indigo/5 text-indigo border border-indigo/10">
-                      {CATEGORIES.find(c => c.id === post.cat)?.name || "Internet & chat"}
-                    </span>
-                  </div>
-                  <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] hover:text-indigo transition">
-                    {post.title}
-                  </h3>
-                  <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
-                    {post.excerpt}
-                  </p>
                 </div>
-              </div>
 
-              <div className="px-6 pb-6 pt-4 border-t border-line flex items-center justify-between text-xs font-bold text-indigo hover:text-indigo-dark transition w-full">
-                <span>Read Full Article</span>
-                <span className="text-base">→</span>
-              </div>
-            </button>
-          ))}
+                <div className="px-6 pb-6 pt-4 border-t border-line flex items-center justify-between text-xs font-bold text-indigo hover:text-indigo-dark transition w-full">
+                  <span>Read Full Article</span>
+                  <span className="text-base">→</span>
+                </div>
+              </a>
+            );
+          })}
         </div>
       )}
     </div>

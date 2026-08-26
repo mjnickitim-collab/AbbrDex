@@ -640,45 +640,57 @@ export default function App() {
             
             {/* Publisher Compliance Navigation Links */}
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs pt-1 font-medium text-ink-soft">
-              <button 
-                onClick={() => {
+              <a 
+                href="/about"
+                onClick={(e) => {
+                  e.preventDefault();
                   setActiveView("about");
+                  window.history.pushState(null, "", "/about");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }} 
                 className="hover:text-indigo underline cursor-pointer"
               >
                 About Us
-              </button>
+              </a>
               <span>•</span>
-              <button 
-                onClick={() => {
+              <a 
+                href="/editorial"
+                onClick={(e) => {
+                  e.preventDefault();
                   setActiveView("editorial");
+                  window.history.pushState(null, "", "/editorial");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }} 
                 className="hover:text-indigo underline cursor-pointer"
               >
                 Editorial Policy
-              </button>
+              </a>
               <span>•</span>
-              <button 
-                onClick={() => {
+              <a 
+                href="/privacy"
+                onClick={(e) => {
+                  e.preventDefault();
                   setActiveView("privacy");
+                  window.history.pushState(null, "", "/privacy");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }} 
                 className="hover:text-indigo underline cursor-pointer"
               >
                 Privacy Policy
-              </button>
+              </a>
               <span>•</span>
-              <button 
-                onClick={() => {
+              <a 
+                href="/terms"
+                onClick={(e) => {
+                  e.preventDefault();
                   setActiveView("terms");
+                  window.history.pushState(null, "", "/terms");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }} 
                 className="hover:text-indigo underline cursor-pointer"
               >
                 Terms of Service
-              </button>
+              </a>
             </div>
 
             <div className="pt-2 text-[10px] text-ink-soft">

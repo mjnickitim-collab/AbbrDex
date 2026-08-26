@@ -328,29 +328,62 @@ export function generateSlug(title: string): string {
 
 // Blog Posts API
 export async function fetchBlogPosts(): Promise<BlogPost[]> {
-  const blogsCol = collection(db, "blogs");
-  const q = query(blogsCol, orderBy("createdAt", "desc"));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
-    const title = data.title || "";
-    const slug = data.slug || generateSlug(title);
-    return {
-      id: doc.id,
-      title,
-      slug,
-      date: data.date || "Just now",
-      excerpt: data.excerpt || "",
-      body: data.body || "",
-      cat: data.cat || "internet",
-      seoTitle: data.seoTitle || "",
-      metaDescription: data.metaDescription || "",
-      keywords: data.keywords || "",
-      draft: data.draft || false,
-      imageUrl: data.imageUrl || "",
-      imageAlt: data.imageAlt || "",
-    };
-  }) as BlogPost[];
+  try {
+    const blogsCol = collection(db, "blogs");
+    // Fetch all blogs without strict order requirement to avoid index failures, then sort in memory
+    const snapshot = await getDocs(blogsCol);
+    if (!snapshot.empty) {
+      const list = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const title = data.title || "";
+        const slug = data.slug || generateSlug(title);
+        return {
+          id: doc.id,
+          title,
+          slug,
+          date: data.date || "Just now",
+          excerpt: data.excerpt || "",
+          body: data.body || "",
+          cat: data.cat || "internet",
+          seoTitle: data.seoTitle || "",
+          metaDescription: data.metaDescription || "",
+          keywords: data.keywords || "",
+          draft: data.draft || false,
+          imageUrl: data.imageUrl || "",
+          imageAlt: data.imageAlt || "",
+          createdAt: data.createdAt
+        };
+      }) as (BlogPost & { createdAt?: any })[];
+
+      // Sort by createdAt desc or date
+      list.sort((a, b) => {
+        const timeA = a.createdAt?.seconds || 0;
+        const timeB = b.createdAt?.seconds || 0;
+        return timeB - timeA;
+      });
+
+      try {
+        localStorage.setItem("CACHED_BLOGS", JSON.stringify(list));
+      } catch (_) {}
+
+      return list;
+    }
+  } catch (err) {
+    console.warn("fetchBlogPosts from Firestore failed, trying localStorage cache:", err);
+  }
+
+  // Fallback from localStorage cache
+  try {
+    const cached = localStorage.getItem("CACHED_BLOGS");
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (_) {}
+
+  return [];
 }
 
 export async function addBlogPost(post: Omit<BlogPost, "id">): Promise<string> {

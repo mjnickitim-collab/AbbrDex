@@ -153,22 +153,32 @@ function getGoogleGenAI() {
 async function getBlogsFromFirestore() {
   return withFirestoreTimeout((async () => {
     const blogsCol = collection(firestoreDb, "blogs");
-    const q = query(blogsCol, orderBy("createdAt", "desc"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => {
+    const snapshot = await getDocs(blogsCol);
+    const list = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
         title: data.title || "",
         draft: data.draft || false,
         excerpt: data.excerpt || "",
-        content: data.content || "",
+        content: data.body || data.content || "",
         seoTitle: data.seoTitle || "",
         metaDescription: data.metaDescription || "",
-        category: data.category || "General",
-        date: data.date || ""
+        category: data.cat || data.category || "General",
+        date: data.date || "",
+        slug: data.slug || "",
+        createdAt: data.createdAt
       };
     });
+
+    // Sort in memory safely
+    list.sort((a: any, b: any) => {
+      const timeA = a.createdAt?.seconds || 0;
+      const timeB = b.createdAt?.seconds || 0;
+      return timeB - timeA;
+    });
+
+    return list;
   })(), 3500, []);
 }
 
@@ -261,6 +271,36 @@ async function getSeoMetadata(urlPath: string) {
     } else if (pathname === "/blog") {
       title = "Word Feed Blog | whatsthatmean - Insightful Slang Articles & Trends";
       desc = "Stay up to date with deep-dives into modern internet culture, business acronym origins, and the evolution of digital shorthand.";
+
+      const blogs = await getBlogsFromFirestore();
+      const publishedBlogs = blogs.filter((b: any) => !b.draft);
+
+      bodyArticleHtml = `
+        <div id="ssr-blog-list" style="max-width: 1080px; margin: 0 auto; padding: 32px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
+          <header style="margin-bottom: 32px;">
+            <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Word Feed Blog</h1>
+            <p style="color: #64748b; font-size: 16px;">Explore comprehensive guides and insights on the evolution of internet slang, business jargon, and digital communication patterns.</p>
+          </header>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            ${publishedBlogs.map((post: any) => {
+              const slug = post.slug || (post.title || "")
+                .toLowerCase()
+                .trim()
+                .replace(/[^a-z0-9\s-]/g, "")
+                .replace(/\s+/g, "-")
+                .replace(/-+/g, "-");
+              return `
+                <article style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                  <div style="font-size: 12px; font-weight: 700; color: #4f46e5; text-transform: uppercase; margin-bottom: 8px;">${post.category || 'Article'} • ${post.date || 'whatsthatmean'}</div>
+                  <h2 style="font-size: 20px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.3;"><a href="/blog/${slug}" style="color: #0f172a; text-decoration: none;">${post.title}</a></h2>
+                  <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 16px;">${post.excerpt || ''}</p>
+                  <a href="/blog/${slug}" style="color: #4338ca; font-size: 13px; font-weight: 700; text-decoration: none;">Read Full Article →</a>
+                </article>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `;
     } else if (pathname === "/emoji") {
       title = "Emoji Meanings & Dictionary | whatsthatmean";
       desc = "Browse modern emojis, their actual slang meanings, examples, and texting context in our ultimate real-time emoji dictionary.";

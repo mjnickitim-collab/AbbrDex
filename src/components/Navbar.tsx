@@ -89,16 +89,22 @@ export default function Navbar({
         {!isAdminMode && (
           <div className="hidden md:flex items-center gap-1 nav-links">
             {/* Home */}
-            <button
-              onClick={() => setActiveView("home")}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveView("home");
+                window.history.pushState(null, "", "/");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer no-underline
                 ${activeView === "home" 
                   ? "bg-line/60 text-ink font-semibold" 
                   : "text-ink-soft hover:bg-line/40 hover:text-ink"
                 }`}
             >
               Home
-            </button>
+            </a>
 
             {/* Explore Dictionary Dropdown Button */}
             <div 
@@ -107,16 +113,20 @@ export default function Navbar({
               onMouseLeave={() => setCatMenuOpen(false)}
             >
               <div className="flex items-center">
-                <button
-                  onClick={handleExploreClick}
-                  className={`pl-3.5 pr-1.5 py-2 rounded-l-lg text-sm font-medium transition cursor-pointer flex items-center gap-1
+                <a
+                  href="/browse"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleExploreClick();
+                  }}
+                  className={`pl-3.5 pr-1.5 py-2 rounded-l-lg text-sm font-medium transition cursor-pointer flex items-center gap-1 no-underline
                     ${activeView === "browse" 
                       ? "bg-line/60 text-ink font-semibold" 
                       : "text-ink-soft hover:bg-line/40 hover:text-ink"
                     }`}
                 >
                   <span>Explore Dictionary</span>
-                </button>
+                </a>
                 <button
                   type="button"
                   onClick={() => setCatMenuOpen(!catMenuOpen)}
@@ -146,22 +156,28 @@ export default function Navbar({
                       <span className="text-[10px] text-indigo font-normal">All 15 Hubs</span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleCategorySelect(null)}
-                      className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-bold text-indigo bg-indigo/5 hover:bg-indigo/10 transition flex items-center gap-2 cursor-pointer mb-2"
+                    <a
+                      href="/browse"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleCategorySelect(null);
+                      }}
+                      className="w-full text-left px-3.5 py-2 rounded-xl text-xs font-bold text-indigo bg-indigo/5 hover:bg-indigo/10 transition flex items-center gap-2 cursor-pointer mb-2 no-underline"
                     >
                       <BookOpen className="w-3.5 h-3.5 text-indigo" />
                       <span>All Categories (Full Dictionary)</span>
-                    </button>
+                    </a>
 
                     <div className="grid grid-cols-2 gap-1.5 pt-2 border-t border-line/40">
                       {CATEGORIES.map((cat) => (
-                        <button
+                        <a
                           key={`nav-cat-${cat.id}`}
-                          type="button"
-                          onClick={() => handleCategorySelect(cat.id)}
-                          className="text-left px-2.5 py-2 rounded-xl text-xs font-medium text-ink hover:bg-paper hover:text-indigo transition flex items-center justify-between cursor-pointer group"
+                          href={cat.id === "emoji" ? "/emoji" : `/browse/${cat.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleCategorySelect(cat.id);
+                          }}
+                          className="text-left px-2.5 py-2 rounded-xl text-xs font-medium text-ink hover:bg-paper hover:text-indigo transition flex items-center justify-between cursor-pointer group no-underline"
                         >
                           <span className="flex items-center gap-2 min-w-0">
                             <Tag className="w-3 h-3 text-ink-soft group-hover:text-indigo transition shrink-0" />
@@ -170,7 +186,7 @@ export default function Navbar({
                           <span className={`tag ${cat.tag} text-[9px] py-0 px-1.5 shrink-0`}>
                             {cat.id}
                           </span>
-                        </button>
+                        </a>
                       ))}
                     </div>
                   </motion.div>
@@ -179,40 +195,56 @@ export default function Navbar({
             </div>
 
             {/* Emoji */}
-            <button
-              onClick={() => handleCategorySelect("emoji")}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
+            <a
+              href="/emoji"
+              onClick={(e) => {
+                e.preventDefault();
+                handleCategorySelect("emoji");
+              }}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer no-underline
                 ${activeView === "browse" && false
                   ? "bg-line/60 text-ink font-semibold" 
                   : "text-ink-soft hover:bg-line/40 hover:text-ink"
                 }`}
             >
               Emoji
-            </button>
+            </a>
 
             {/* Quiz */}
-            <button
-              onClick={() => setActiveView("quiz")}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
+            <a
+              href="/quiz"
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveView("quiz");
+                window.history.pushState(null, "", "/quiz");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer no-underline
                 ${activeView === "quiz" 
                   ? "bg-line/60 text-ink font-semibold" 
                   : "text-ink-soft hover:bg-line/40 hover:text-ink"
                 }`}
             >
               Quiz
-            </button>
+            </a>
 
             {/* Blog */}
-            <button
-              onClick={() => setActiveView("blog")}
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer
+            <a
+              href="/blog"
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveView("blog");
+                window.history.pushState(null, "", "/blog");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition cursor-pointer no-underline
                 ${activeView === "blog" 
                   ? "bg-line/60 text-ink font-semibold" 
                   : "text-ink-soft hover:bg-line/40 hover:text-ink"
                 }`}
             >
               Blog
-            </button>
+            </a>
           </div>
         )}
 

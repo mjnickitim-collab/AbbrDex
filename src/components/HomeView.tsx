@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Category, Term, BlogPost } from "../types";
 import { CATEGORIES } from "../data/seedData";
+import { generateSlug } from "../data/dbService";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ArrowRight, 
@@ -272,13 +273,19 @@ export default function HomeView({
                 </div>
 
                 <div className="pt-2 flex flex-col gap-2">
-                  <button
-                    onClick={() => onSelectTerm(dailyTerm)}
-                    className="w-full btn btn-solid font-display font-bold text-xs py-2.5 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                  <a
+                    href={`/term/${encodeURIComponent(dailyTerm.code)}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onSelectTerm(dailyTerm);
+                      window.history.pushState(null, "", `/term/${encodeURIComponent(dailyTerm.code)}`);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="w-full btn btn-solid font-display font-bold text-xs py-2.5 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs no-underline"
                   >
                     <span>Read Full Term Page</span>
                     <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  </a>
                   <button
                     onClick={handleShuffleDailyTerm}
                     className="w-full py-2 rounded-lg text-xs font-bold text-ink-soft hover:text-indigo hover:bg-card transition cursor-pointer flex items-center justify-center gap-1"
@@ -306,19 +313,23 @@ export default function HomeView({
             </div>
           </div>
           
-          <button
-            onClick={() => {
+          <a
+            href="/blog"
+            onClick={(e) => {
+              e.preventDefault();
               if (onViewAllBlogs) {
                 onViewAllBlogs();
               } else if (blogs.length > 0) {
                 onSelectBlogPost(blogs[0]);
               }
+              window.history.pushState(null, "", "/blog");
+              window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition cursor-pointer no-underline"
           >
             <span>View All Insights</span>
             <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          </a>
         </div>
 
         {blogs.length === 0 ? (
@@ -327,35 +338,45 @@ export default function HomeView({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {blogs.slice(0, 3).map((post, idx) => (
-              <button
-                key={post.id ? `home-blog-${post.id}` : `home-blog-${idx}-${post.title}`}
-                onClick={() => onSelectBlogPost(post)}
-                className="bg-card border border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:-translate-y-1 shadow-2xs flex flex-col justify-between cursor-pointer h-full group"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-indigo" />
-                      <span>{post.date}</span>
-                    </span>
+            {blogs.slice(0, 3).map((post, idx) => {
+              const slug = post.slug || generateSlug(post.title || "");
+              const postUrl = `/blog/${slug}`;
+              return (
+                <a
+                  key={post.id ? `home-blog-${post.id}` : `home-blog-${idx}-${post.title}`}
+                  href={postUrl}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onSelectBlogPost(post);
+                    window.history.pushState(null, "", postUrl);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="bg-card border border-line rounded-2xl p-6 text-left transition hover:border-indigo hover:-translate-y-1 shadow-2xs flex flex-col justify-between cursor-pointer h-full group no-underline"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-indigo" />
+                        <span>{post.date}</span>
+                      </span>
+                    </div>
+
+                    <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] group-hover:text-indigo">
+                      {post.title}
+                    </h3>
+
+                    <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
+                      {post.excerpt}
+                    </p>
                   </div>
 
-                  <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] group-hover:text-indigo">
-                    {post.title}
-                  </h3>
-
-                  <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
-                    {post.excerpt}
-                  </p>
-                </div>
-
-                <div className="pt-4 mt-5 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark">
-                  <span>Read Article</span>
-                  <span className="text-base group-hover:translate-x-1 transition">→</span>
-                </div>
-              </button>
-            ))}
+                  <div className="pt-4 mt-5 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark">
+                    <span>Read Article</span>
+                    <span className="text-base group-hover:translate-x-1 transition">→</span>
+                  </div>
+                </a>
+              );
+            })}
           </div>
         )}
       </section>
@@ -386,11 +407,18 @@ export default function HomeView({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {trendingTerms.map((term) => {
             const catMeta = CATEGORIES.find(c => c.id === term.cat) || CATEGORIES[0];
+            const termUrl = `/term/${encodeURIComponent(term.code)}`;
             return (
-              <button
+              <a
                 key={`trending-${term.code}`}
-                onClick={() => onSelectTerm(term)}
-                className="bg-card hover:bg-indigo-50/30 border border-line hover:border-indigo-300 rounded-2xl p-5 text-left transition group cursor-pointer flex flex-col justify-between shadow-2xs hover:shadow-sm h-full"
+                href={termUrl}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelectTerm(term);
+                  window.history.pushState(null, "", termUrl);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="bg-card hover:bg-indigo-50/30 border border-line hover:border-indigo-300 rounded-2xl p-5 text-left transition group cursor-pointer flex flex-col justify-between shadow-2xs hover:shadow-sm h-full no-underline"
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
@@ -415,7 +443,7 @@ export default function HomeView({
                   <span>View Entry</span>
                   <span className="group-hover:translate-x-1 transition">→</span>
                 </div>
-              </button>
+              </a>
             );
           })}
         </div>

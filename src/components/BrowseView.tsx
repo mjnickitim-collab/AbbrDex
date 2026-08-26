@@ -240,11 +240,18 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
             <div className="word-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {paginatedTerms.map((t, idx) => {
                 const catMeta = CATEGORIES.find((c) => c.id === t.cat) || CATEGORIES[0];
+                const termUrl = `/term/${encodeURIComponent(t.code)}`;
                 return (
-                  <button
+                  <a
                     key={t.id ? `term-${t.id}` : `term-${t.code}-${idx}`}
-                    onClick={() => onSelectTerm(t)}
-                    className="word-card group bg-card border-1.5 border-line rounded-xl p-5 text-left transition hover:border-ink cursor-pointer flex flex-col justify-between"
+                    href={termUrl}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onSelectTerm(t);
+                      window.history.pushState(null, "", termUrl);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="word-card group bg-card border-1.5 border-line rounded-xl p-5 text-left transition hover:border-ink cursor-pointer flex flex-col justify-between no-underline"
                   >
                     <div>
                       <div className="top flex items-center justify-between gap-2 border-b border-line pb-2 mb-3">
@@ -264,7 +271,7 @@ export default function BrowseView({ terms, initialCategory, initialQuery = "", 
                         "{t.ex}"
                       </p>
                     )}
-                  </button>
+                  </a>
                 );
               })}
             </div>
