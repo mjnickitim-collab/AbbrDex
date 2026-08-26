@@ -6,6 +6,7 @@ import fs from "fs";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
 import { generateTermArticle } from "./src/utils/termArticleGenerator";
+import { PUBLISHED_BLOGS } from "./src/data/publishedBlogs";
 
 dotenv.config();
 
@@ -151,9 +152,26 @@ function getGoogleGenAI() {
 
 // Helper to fetch blogs from Firestore securely using Firebase JS SDK
 async function getBlogsFromFirestore() {
+  const fallbackList = PUBLISHED_BLOGS.map(b => ({
+    id: b.id,
+    title: b.title || "",
+    draft: b.draft || false,
+    excerpt: b.excerpt || "",
+    content: b.body || "",
+    seoTitle: b.seoTitle || "",
+    metaDescription: b.metaDescription || "",
+    category: b.cat || "General",
+    date: b.date || "",
+    slug: b.slug || "",
+    createdAt: { seconds: (b as any).createdAtSeconds || 0 }
+  }));
+
   return withFirestoreTimeout((async () => {
     const blogsCol = collection(firestoreDb, "blogs");
     const snapshot = await getDocs(blogsCol);
+    if (snapshot.empty) {
+      return fallbackList;
+    }
     const list = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -178,8 +196,8 @@ async function getBlogsFromFirestore() {
       return timeB - timeA;
     });
 
-    return list;
-  })(), 3500, []);
+    return list.length > 0 ? list : fallbackList;
+  })(), 3500, fallbackList);
 }
 
 // Helper to fetch a single term by its code securely from Firestore
