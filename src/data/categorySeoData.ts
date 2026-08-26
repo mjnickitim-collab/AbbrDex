@@ -74,12 +74,12 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySEOInfo> = {
   },
   sports: {
     id: "sports",
-    seoTitle: "Sports Terminology & League Acronyms Dictionary",
-    intro: "A database of sports abbreviations, tournament codes, statistical acronyms, and league names for soccer, basketball, baseball, golf, and combat sports.",
-    structureText: "Sports acronyms are structured into four main sports pillars: Leagues & Federations, Player Awards & Statistics, Game Rules & Officiating, and Positions & Tactics.",
-    scopeText: "Features commentary terms and official shorthand used in Olympic games, FIFA World Cup, NBA, Premier League, and major sports broadcasts.",
-    representativeCodes: ["GOAT", "MVP", "NBA", "VAR", "PGA", "UFC"],
-    relatedCategories: ["social", "companies", "countries"]
+    seoTitle: "Sports, Soccer Club & Football Team Abbreviations Dictionary",
+    intro: "A dedicated reference hub for sports abbreviations, football club 3-letter codes (Premier League, La Liga, Champions League), World Cup rules (VAR, FT, xG), and international league acronyms.",
+    structureText: "Sports and football abbreviations are structured into four core domains: Club & Team Codes (EPL, La Liga, Serie A), Match Status & Rules (VAR, HT, FT, ET), Advanced Analytics (xG, xA, G/A), and Governing Leagues & Tournaments (FIFA, UEFA, NBA, NFL).",
+    scopeText: "Provides verified explanations for 3-letter scoreboard abbreviations, player statistics, and broadcast graphics used worldwide across football, basketball, baseball, and combat sports.",
+    representativeCodes: ["VAR", "EPL", "ARS", "MCI", "MUN", "CHE", "FCB", "RMA", "xG", "FIFA"],
+    relatedCategories: ["countries", "social", "companies", "gaming"]
   },
   companies: {
     id: "companies",

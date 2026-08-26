@@ -7,6 +7,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
 import { generateTermArticle } from "./src/utils/termArticleGenerator";
 import { PUBLISHED_BLOGS } from "./src/data/publishedBlogs";
+import { TERMS } from "./src/data/seedData";
 
 dotenv.config();
 
@@ -202,9 +203,10 @@ async function getBlogsFromFirestore() {
 
 // Helper to fetch a single term by its code securely from Firestore
 async function getTermFromFirestoreByCode(code: string) {
-  return withFirestoreTimeout((async () => {
+  const normalizedCode = (code || "").toUpperCase().trim();
+  const dbTerm = await withFirestoreTimeout((async () => {
     const termsCol = collection(firestoreDb, "terms");
-    const q = query(termsCol, where("code", "==", code.toUpperCase().trim()), limit(1));
+    const q = query(termsCol, where("code", "==", normalizedCode), limit(1));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
@@ -218,11 +220,25 @@ async function getTermFromFirestoreByCode(code: string) {
     }
     return null;
   })(), 3500, null);
+
+  if (dbTerm) return dbTerm;
+
+  // Immediate static seed fallback (ensures 100% SSR coverage for all 4,500+ terms including sports & countries)
+  const found = TERMS.find((t: any) => t.code && t.code.toUpperCase().trim() === normalizedCode);
+  if (found) {
+    return {
+      code: found.code,
+      full: found.full,
+      cat: found.cat,
+      ex: found.ex
+    };
+  }
+  return null;
 }
 
 // Helper to fetch slang terms and emojis from Firestore securely using Firebase JS SDK (without costly database-side sorting)
 async function getTermsFromFirestore() {
-  return withFirestoreTimeout((async () => {
+  const dbTerms = await withFirestoreTimeout((async () => {
     const termsCol = collection(firestoreDb, "terms");
     const q = query(termsCol);
     const snapshot = await getDocs(q);
@@ -236,6 +252,8 @@ async function getTermsFromFirestore() {
       };
     });
   })(), 3500, []);
+
+  return dbTerms.length > 0 ? dbTerms : TERMS;
 }
 
 // Helper to resolve SEO metadata based on URL path
@@ -323,10 +341,21 @@ async function getSeoMetadata(urlPath: string) {
       title = "Emoji Meanings & Dictionary | whatsthatmean";
       desc = "Browse modern emojis, their actual slang meanings, examples, and texting context in our ultimate real-time emoji dictionary.";
     } else if (pathname.startsWith("/browse/")) {
-      const category = decodeURIComponent(pathname.substring(8));
-      const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
-      title = `${categoryName} Abbreviations & Meanings | whatsthatmean`;
-      desc = `Explore the best dictionary for ${categoryName} abbreviations, acronyms, and modern chat terms. Learn their meanings and real-world examples.`;
+      const category = decodeURIComponent(pathname.substring(8)).toLowerCase();
+      if (category === "sports") {
+        title = "Sports & Football Team Abbreviations Dictionary (EPL, Clubs & Rules) | whatsthatmean";
+        desc = "Discover 3-letter football club abbreviations (ARS, MCI, CHE, FCB, RMA), World Cup country codes, and match acronyms (VAR, FT, xG) decoded with real examples.";
+      } else if (category === "business") {
+        title = "Business Acronyms & Workplace Slang Dictionary (SOP, KPI, ROI, EOD) | whatsthatmean";
+        desc = "Comprehensive dictionary of business acronyms, corporate operations shorthand, financial metrics, and executive meeting abbreviations.";
+      } else if (category === "countries") {
+        title = "Country Codes & FIFA 3-Letter Abbreviations Directory | whatsthatmean";
+        desc = "Browse official 3-letter country codes, ISO nation standards, and international tournament abbreviations decoded with full names.";
+      } else {
+        const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
+        title = `${categoryName} Abbreviations & Meanings | whatsthatmean`;
+        desc = `Explore the best dictionary for ${categoryName} abbreviations, acronyms, and modern chat terms. Learn their meanings and real-world examples.`;
+      }
     } else if (pathname.startsWith("/blog/")) {
       const slug = pathname.substring(6);
       const blogs = await getBlogsFromFirestore();
@@ -392,8 +421,21 @@ async function getSeoMetadata(urlPath: string) {
       if (foundTerm) {
         const categoryName = foundTerm.cat ? (foundTerm.cat.charAt(0).toUpperCase() + foundTerm.cat.slice(1)) : "Slang";
         const articleData = generateTermArticle(foundTerm);
-        title = `${foundTerm.code} Meaning: What Does ${foundTerm.code} Mean? | whatsthatmean`;
-        desc = `What does ${foundTerm.code} stand for? It means "${foundTerm.full}". Learn its definition, etymology, tone guide, and see real-world texting examples.`;
+        const codeUpper = foundTerm.code.toUpperCase();
+
+        if (foundTerm.cat === "sports") {
+          title = `${codeUpper} Meaning: What Does ${codeUpper} Stand For in Football & Sports? | whatsthatmean`;
+          desc = `What does ${codeUpper} mean in football and sports? ${codeUpper} stands for "${foundTerm.full}". Discover its full definition, scoreboard usage, and real examples.`;
+        } else if (foundTerm.cat === "countries") {
+          title = `${codeUpper} Country Code: What Country Does ${codeUpper} Stand For? | whatsthatmean`;
+          desc = `What country is ${codeUpper}? ${codeUpper} is the official 3-letter FIFA and ISO country code for "${foundTerm.full}". Learn its international tournament usage.`;
+        } else if (foundTerm.cat === "business") {
+          title = `${codeUpper} Meaning: What Does the Business Acronym ${codeUpper} Stand For? | whatsthatmean`;
+          desc = `What does ${codeUpper} stand for in business operations? It means "${foundTerm.full}". Discover its corporate definition, workflow context, and real examples.`;
+        } else {
+          title = `${foundTerm.code} Meaning: What Does ${foundTerm.code} Mean? | whatsthatmean`;
+          desc = `What does ${foundTerm.code} stand for? It means "${foundTerm.full}". Learn its definition, etymology, tone guide, and see real-world texting examples.`;
+        }
         
         const cleanFull = foundTerm.full ? foundTerm.full.replace(/"/g, '\\"') : "";
         
@@ -473,17 +515,29 @@ async function getSeoMetadata(urlPath: string) {
   return { title, desc, schemaMarkup, bodyArticleHtml };
 }
 
+// Helper to safely escape strings for HTML attributes
+function escapeHtmlAttr(str: string): string {
+  return (str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 // Injects dynamic metadata tags in HTML head and body
 async function injectSeoMetadata(html: string, urlPath: string): Promise<string> {
   const { title, desc, schemaMarkup, bodyArticleHtml } = await getSeoMetadata(urlPath);
   
   let updatedHtml = html;
+  const escapedTitle = escapeHtmlAttr(title);
+  const escapedDesc = escapeHtmlAttr(desc);
   
   // Replace standard tags cleanly
   updatedHtml = updatedHtml.replace(/<title>[^<]*<\/title>/i, `<title>${title}</title>`);
-  updatedHtml = updatedHtml.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i, `<meta name="description" content="${desc}" />`);
-  updatedHtml = updatedHtml.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${title}" />`);
-  updatedHtml = updatedHtml.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${desc}" />`);
+  updatedHtml = updatedHtml.replace(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i, `<meta name="description" content="${escapedDesc}" />`);
+  updatedHtml = updatedHtml.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${escapedTitle}" />`);
+  updatedHtml = updatedHtml.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${escapedDesc}" />`);
   
   // Inject schema markup if available
   if (schemaMarkup) {

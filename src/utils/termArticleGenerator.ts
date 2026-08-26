@@ -30,10 +30,18 @@ export function generateTermArticle(term: Term): TermArticle {
   let platformContext = "Text Messaging, iMessage, WhatsApp, TikTok, X (Twitter), and Reddit";
   let originEra = "the early days of SMS messaging and IRC chatrooms (1990s-2000s)";
 
-  if (term.cat === "business") {
-    formality = "Professional / Workplace Communication";
-    platformContext = "Corporate Emails, Slack, Microsoft Teams, Asana, and Executive Meetings";
-    originEra = "20th-century corporate memo culture and modern tech startup workflows";
+  if (term.cat === "sports") {
+    formality = "Sports, Football & Broadcast Commentary Shorthand";
+    platformContext = "Live Match Scoreboards, Premier League (EPL), UEFA Champions League, FIFA World Cup broadcasts, ESPN, Sky Sports, and fan communities";
+    originEra = "television scoreboard overlays (chyrons), official league rulebooks, and international tournament federations";
+  } else if (term.cat === "countries") {
+    formality = "FIFA 3-Letter Country Codes & ISO International Nation Standards";
+    platformContext = "World Cup broadcasts, Olympic scoreboards, international fixtures, and diplomatic rosters";
+    originEra = "FIFA tournament regulations and the International Organization for Standardization (ISO 3166)";
+  } else if (term.cat === "business") {
+    formality = "Professional / Workplace & Corporate Operations Communication";
+    platformContext = "Corporate Emails, Standard Operating Procedures, Slack, Microsoft Teams, Asana, and Executive Meetings";
+    originEra = "20th-century corporate memo culture, industrial engineering, and modern tech startup workflows";
   } else if (term.cat === "gaming") {
     formality = "Gamers / Esports Community Shorthand";
     platformContext = "Discord, Twitch Chat, In-game Voice, Reddit, and Gaming Forums";
@@ -108,22 +116,44 @@ export function generateTermArticle(term: Term): TermArticle {
   const culturalLore = `In modern internet culture, terms like "${code}" frequently appear in memes, viral TikTok audio clips, YouTube commentary, and Reddit threads. As online communication trends towards shorter attention spans and visual-first feeds, "${code}" acts as a shared cultural signal. Recognizing terms like "${code}" reflects high digital literacy and fluency in modern internet etiquette.`;
 
   // 7. Frequently Asked Questions (FAQ)
+  let faqQuestion1 = `What does ${code} stand for?`;
+  let faqAnswer1 = `${code} stands for "${full}".`;
+  let faqQuestion2 = `Where is ${code} commonly used?`;
+  let faqAnswer2 = `"${code}" is widely used across ${platformContext}.`;
+
+  if (term.cat === "sports") {
+    faqQuestion1 = `What does ${code} mean in sports and football?`;
+    faqAnswer1 = `In sports and football broadcasting, ${code} stands for "${full}". It is commonly displayed on live match scoreboards, team rosters, and analytical stats tables.`;
+    faqQuestion2 = `Which team, competition, or rule uses the abbreviation ${code}?`;
+    faqAnswer2 = `"${code}" represents "${full}", recognized across Premier League, UEFA Champions League, and international sports tournaments.`;
+  } else if (term.cat === "countries") {
+    faqQuestion1 = `What country does the 3-letter code ${code} stand for?`;
+    faqAnswer1 = `The 3-letter country code ${code} represents "${full}".`;
+    faqQuestion2 = `Where is ${code} used in FIFA World Cup and international matches?`;
+    faqAnswer2 = `"${code}" is the official FIFA and international tournament country abbreviation for "${full}", featured on international broadcast graphics and Olympic rosters.`;
+  } else if (term.cat === "business") {
+    faqQuestion1 = `What does the business acronym ${code} mean?`;
+    faqAnswer1 = `In corporate and workplace operations, ${code} stands for "${full}".`;
+    faqQuestion2 = `When should I use ${code} in professional communication?`;
+    faqAnswer2 = `"${code}" is commonly used in company memos, Slack channels, and standard operating documentation. For formal external client proposals, spelling out "${full}" on first reference is recommended.`;
+  }
+
   const faqs = [
     {
-      question: `What does ${code} stand for in texting and slang?`,
-      answer: `${code} stands for "${full}". It is widely used in digital communication as a quick shorthand for "${full}".`
+      question: faqQuestion1,
+      answer: faqAnswer1
     },
     {
-      question: `Is it appropriate to use ${code} in professional emails?`,
-      answer: `It depends on your organizational culture. In fast-paced startup or team messaging channels (like Slack), "${code}" is generally acceptable. However, in formal client proposals or external emails, it is safer to write out "${full}".`
+      question: faqQuestion2,
+      answer: faqAnswer2
     },
     {
-      question: `How do you pronounce ${code}?`,
-      answer: `Most people pronounce "${code}" either by spelling out the individual letters ("${code.split("").join("-")}") or by reading out the complete phrase "${full}".`
+      question: `How do you pronounce or spell ${code}?`,
+      answer: `Most people pronounce "${code}" by spelling out each letter individually ("${code.split("").join("-")}") or by reading out the complete phrase "${full}".`
     },
     {
       question: `What category does ${code} belong to?`,
-      answer: `"${code}" is categorized under ${catName}, representing ${formality.toLowerCase()}.`
+      answer: `"${code}" is officially categorized under ${catName} in the whatsthatmean dictionary.`
     }
   ];
 

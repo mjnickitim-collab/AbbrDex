@@ -23,6 +23,7 @@ export interface BlogPost {
   body: string;
   cat?: string; // category id
   createdAt?: any;
+  createdAtSeconds?: number;
   seoTitle?: string;
   metaDescription?: string;
   keywords?: string;
