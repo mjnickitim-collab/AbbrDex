@@ -30,7 +30,24 @@ export function generateTermArticle(term: Term): TermArticle {
   let platformContext = "Text Messaging, iMessage, WhatsApp, TikTok, X (Twitter), and Reddit";
   let originEra = "the early days of SMS messaging and IRC chatrooms (1990s-2000s)";
 
-  if (term.cat === "sports") {
+  const isConsumerKeyword = 
+    code.toUpperCase() === "CONS" || 
+    code.toUpperCase() === "CSMR" || 
+    code.toUpperCase() === "CON" ||
+    code.toUpperCase() === "B2C" || 
+    code.toUpperCase() === "D2C" || 
+    code.toUpperCase() === "DTC" || 
+    code.toUpperCase() === "CX" || 
+    code.toUpperCase() === "CPG" || 
+    code.toUpperCase() === "FMCG" || 
+    code.toUpperCase() === "CPI" || 
+    full.toLowerCase().includes("consumer");
+
+  if (isConsumerKeyword) {
+    formality = "Commercial, Economic & Consumer Commerce Shorthand";
+    platformContext = "Retail Analytics, Commerce Dashboards, Economic Inflation Reports (CPI), Supply Chain Manifests, B2C E-commerce, Financial Ledgers, and Executive Business Memos";
+    originEra = "commercial bookkeeping, macroeconomics research (GDP formula components), modern retail inventory categorization, and direct-to-consumer digital commerce";
+  } else if (term.cat === "sports") {
     formality = "Sports, Football & Broadcast Commentary Shorthand";
     platformContext = "Live Match Scoreboards, Premier League (EPL), UEFA Champions League, FIFA World Cup broadcasts, ESPN, Sky Sports, and fan communities";
     originEra = "television scoreboard overlays (chyrons), official league rulebooks, and international tournament federations";
@@ -121,7 +138,12 @@ export function generateTermArticle(term: Term): TermArticle {
   let faqQuestion2 = `Where is ${code} commonly used?`;
   let faqAnswer2 = `"${code}" is widely used across ${platformContext}.`;
 
-  if (term.cat === "sports") {
+  if (isConsumerKeyword) {
+    faqQuestion1 = `What is the abbreviation or short form for "Consumer"?`;
+    faqAnswer1 = `In business, finance, and commerce, "Consumer" is most commonly abbreviated as "${code}" (alongside "CONS.", "CSMR", and "CON"). In commercial models, it is represented in acronyms like B2C (Business-to-Consumer) and D2C (Direct-to-Consumer).`;
+    faqQuestion2 = `How is ${code} used in retail, economic reports, and contracts?`;
+    faqAnswer2 = `"${code}" is used across ${platformContext} to denote end-user buyers, consumer price indexes (CPI), or retail spending metrics without cluttering financial statements and inventory databases.`;
+  } else if (term.cat === "sports") {
     faqQuestion1 = `What does ${code} mean in sports and football?`;
     faqAnswer1 = `In sports and football broadcasting, ${code} stands for "${full}". It is commonly displayed on live match scoreboards, team rosters, and analytical stats tables.`;
     faqQuestion2 = `Which team, competition, or rule uses the abbreviation ${code}?`;

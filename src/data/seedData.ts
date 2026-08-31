@@ -2,6 +2,7 @@ import { Category, Term, BlogPost, AdSlot, UserProfile } from "../types";
 import { NEW_TERMS } from "./newTermsData";
 import { ATTACHED_TERMS } from "./attachedTermsData";
 import { SPORTS_TERMS } from "./sportsTermsData";
+import { CONSUMER_TERMS } from "./consumerTermsData";
 
 export const CATEGORIES: Category[] = [
   { id: "internet", name: "Internet & chat", tag: "tag-internet" },
@@ -22,6 +23,7 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const TERMS: Term[] = [
+  ...CONSUMER_TERMS,
   ...SPORTS_TERMS,
   ...ATTACHED_TERMS,
   ...NEW_TERMS,

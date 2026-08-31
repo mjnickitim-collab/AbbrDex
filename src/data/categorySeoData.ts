@@ -20,11 +20,11 @@ export const CATEGORY_SEO_DATA: Record<string, CategorySEOInfo> = {
   },
   business: {
     id: "business",
-    seoTitle: "Business & Workspace Acronyms Dictionary",
-    intro: "A central hub for essential business terms, corporate acronyms, and workplace jargon commonly found in corporate emails, Slack messages, project proposals, and executive meetings.",
-    structureText: "Business terminology is organized into four main operational areas: Management, Finance & Marketing, Operations & Collaboration, and Communication.",
-    scopeText: "Provides practical abbreviations crucial for working in global startups, multinational corporations, and modern enterprise environments.",
-    representativeCodes: ["ROI", "KPI", "WFH", "ASAP", "B2B", "ETA"],
+    seoTitle: "Business, Consumer & Workplace Acronyms Dictionary",
+    intro: "A central hub for essential business terms, corporate abbreviations, consumer short forms (CONS, CSMR, B2C, D2C), and workplace jargon commonly found in commerce reports, corporate emails, Slack messages, project proposals, and executive meetings.",
+    structureText: "Business terminology is organized into four main operational areas: Consumer & Commerce (B2C, D2C, CONS, CX), Management & Strategy, Finance & Marketing, and Workplace Operations.",
+    scopeText: "Provides practical abbreviations and consumer short forms crucial for working in retail e-commerce, global startups, multinational corporations, and modern enterprise environments.",
+    representativeCodes: ["CONS", "B2C", "D2C", "CX", "ROI", "KPI", "WFH", "ASAP"],
     relatedCategories: ["finance", "it_dev", "companies", "texting"]
   },
   internet: {

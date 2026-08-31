@@ -183,7 +183,7 @@ export default function HomeView({
             {/* Quick Keyword Tags */}
             <div className="flex flex-wrap items-center justify-center gap-1.5 pt-3 text-xs text-ink-soft">
               <span className="font-semibold text-ink-soft/80">Trending Lookups:</span>
-              {["ASAP", "WFH", "FOMO", "TBH", "GOAT", "TL;DR"].map((code) => (
+              {["CONS", "B2C", "ASAP", "WFH", "FOMO", "TBH", "GOAT", "TL;DR"].map((code) => (
                 <button
                   key={code}
                   type="button"

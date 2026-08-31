@@ -255,6 +255,41 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
         await updateBatch.commit();
         didChange = true;
       }
+
+      // Sync missing seed blogs that do not yet exist in Firestore
+      const currentBlogTitles = new Set<string>();
+      blogsSnapshot.docs.forEach(docSnap => {
+        if (!toDeleteBlog.includes(docSnap.id)) {
+          const data = docSnap.data();
+          const title = (data.title || "").toLowerCase().trim();
+          currentBlogTitles.add(title);
+        }
+      });
+
+      const missingBlogs = BLOG_SEED.filter(b => !currentBlogTitles.has(b.title.toLowerCase().trim()));
+      if (missingBlogs.length > 0) {
+        console.log(`Syncing ${missingBlogs.length} newly added seed blogs/drafts to Firestore...`);
+        let addBlogBatch = writeBatch(db);
+        let bCount = 0;
+        for (const b of missingBlogs) {
+          const docRef = doc(blogsCol);
+          addBlogBatch.set(docRef, {
+            ...b,
+            slug: b.slug || generateSlug(b.title),
+            createdAt: serverTimestamp()
+          });
+          bCount++;
+          if (bCount % 40 === 0) {
+            await addBlogBatch.commit();
+            addBlogBatch = writeBatch(db);
+          }
+        }
+        if (bCount % 40 !== 0) {
+          await addBlogBatch.commit();
+        }
+        console.log(`Successfully synced ${missingBlogs.length} new blogs/drafts!`);
+        didChange = true;
+      }
     }
 
     // 4. Seed User Profiles

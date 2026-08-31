@@ -144,6 +144,43 @@ export default function TermDetailView({ code, terms, adSlots = [], isDbLoaded =
             {article.overview}
           </p>
         </div>
+
+        {/* Consumer-Specific SEO / Lexical Quick Reference Guide */}
+        {(term.code.toUpperCase() === "CONS" ||
+          term.code.toUpperCase() === "CSMR" ||
+          term.code.toUpperCase() === "CON" ||
+          term.code.toUpperCase() === "B2C" ||
+          term.code.toUpperCase() === "D2C" ||
+          term.code.toUpperCase() === "DTC" ||
+          term.full.toLowerCase().includes("consumer")) && (
+          <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-5 space-y-3 text-ink">
+            <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+              <BookOpen className="w-4 h-4 text-emerald-600" />
+              <span>Consumer Abbreviations & Short Forms Quick Reference</span>
+            </div>
+            <p className="text-xs text-ink-soft leading-relaxed">
+              When referring to a <strong>Consumer</strong> in business documentation, financial ledgers, or database schemas, multiple standard short forms exist:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 pt-1">
+              <div className="bg-white/90 p-2.5 rounded-lg border border-emerald-100 shadow-2xs">
+                <span className="font-mono font-bold text-emerald-700 text-sm">CONS. / CONS</span>
+                <p className="text-[11px] text-ink-soft">Standard commercial & business abbreviation</p>
+              </div>
+              <div className="bg-white/90 p-2.5 rounded-lg border border-emerald-100 shadow-2xs">
+                <span className="font-mono font-bold text-emerald-700 text-sm">CSMR</span>
+                <p className="text-[11px] text-ink-soft">ERP, SQL & data analytics abbreviation</p>
+              </div>
+              <div className="bg-white/90 p-2.5 rounded-lg border border-emerald-100 shadow-2xs">
+                <span className="font-mono font-bold text-emerald-700 text-sm">B2C / D2C</span>
+                <p className="text-[11px] text-ink-soft">Business-to-Consumer / Direct-to-Consumer</p>
+              </div>
+              <div className="bg-white/90 p-2.5 rounded-lg border border-emerald-100 shadow-2xs">
+                <span className="font-mono font-bold text-emerald-700 text-sm">C (Macro)</span>
+                <p className="text-[11px] text-ink-soft">GDP formula consumer consumption</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Top Ad Banner Slot for AdSense */}
