@@ -3,6 +3,7 @@ import { NEW_TERMS } from "./newTermsData";
 import { ATTACHED_TERMS } from "./attachedTermsData";
 import { SPORTS_TERMS } from "./sportsTermsData";
 import { CONSUMER_TERMS } from "./consumerTermsData";
+import { CHAT_SLANG_TERMS } from "./chatSlangTermsData";
 
 export const CATEGORIES: Category[] = [
   { id: "internet", name: "Internet & chat", tag: "tag-internet" },
@@ -23,6 +24,7 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const TERMS: Term[] = [
+  ...CHAT_SLANG_TERMS,
   ...CONSUMER_TERMS,
   ...SPORTS_TERMS,
   ...ATTACHED_TERMS,

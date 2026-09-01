@@ -633,5 +633,157 @@ The **yield spread** (or credit spread) is the percentage gap in yield between h
     imageUrl: "",
     imageAlt: "Financial market comparison chart between investment-grade corporate bonds and high-yield junk bonds",
     createdAtSeconds: Math.floor(Date.now() / 1000) - 1400
+  },
+
+  // 6. SPORTS & COMBAT: What Does MMA Stand For & How Does It Work?
+  {
+    id: "draft-how-mma-works-and-acronym-guide",
+    title: "What Does MMA Stand For & How Does It Work? (History, Rules, Scoring & Facts Explained)",
+    slug: "what-does-mma-stand-for-and-how-does-it-work",
+    date: "Sep 2, 2026",
+    excerpt: "Wondering what MMA stands for and how mixed martial arts fights actually work? Explore the full history, Unified Rules, scoring system (KO, TKO, Submissions), and essential combat acronyms.",
+    body: `If you have ever watched a high-stakes combat fight or heard commentators break down octagon action, you have encountered the acronym **MMA**. But what does MMA actually stand for, how do mixed martial arts bouts work, and what rules govern the world's fastest-growing combat sport?
+
+In this definitive guide, we explain everything you need to know about Mixed Martial Arts: from its ancient roots and modern Unified Rules to weight classes, scoring criteria, and essential fight terminology.
+
+### Key Takeaways
+- **What MMA Stands For**: **MMA** is an acronym for **Mixed Martial Arts**, a full-contact combat sport allowing both striking and grappling techniques (standing and on the ground).
+- **Core Disciplines**: Modern fighters cross-train in **Muay Thai & Boxing** (striking), **Freestyle & Greco-Roman Wrestling** (takedowns & control), and **Brazilian Jiu-Jitsu (BJJ)** (submissions & ground defense).
+- **How Fights Work**: Bouts take place inside an enclosed octagon or ring over three to five 5-minute rounds, scored round-by-round by three neutral ringside judges using the **10-Point Must System**.
+- **Ways a Fight Ends**: Knockout (**KO**), Technical Knockout (**TKO**), Submission (**SUB**), Judges' Decision (**UD, SD, MD**), Disqualification (**DQ**), or No Contest (**NC**).
+- **MMA vs UFC**: MMA is the **sport** (like basketball), while the UFC (Ultimate Fighting Championship) is the premier **promotional league** (like the NBA).
+
+[AD]
+
+## What Does MMA Stand For? (Definition & Pronunciation)
+
+**MMA** stands for **Mixed Martial Arts**.
+
+- **Mixed**: Blending multiple distinct fighting disciplines rather than adhering to a single traditional style.
+- **Martial**: Pertaining to military combat, warfare, and martial fighting systems.
+- **Arts**: Refined physical disciplines, philosophies, and codified techniques.
+
+In everyday media, **MMA** refers to any sanctioned sporting contest where competitors utilize hybrid striking (punches, kicks, knees, elbows) and grappling (takedowns, throws, joint locks, chokes) under strict athletic regulatory commission rules.
+
+## The History & Evolution of Mixed Martial Arts
+
+The desire to test which fighting style works best in a real contest spans millennia:
+
+### 1. Ancient Pankration (648 BCE)
+In the ancient Olympic Games of 648 BCE, the Greeks introduced **Pankration** (meaning "all powers"), a brutal hybrid contest combining boxing and wrestling with almost no rules except banning eye-gouging and biting.
+
+### 2. Vale Tudo in Brazil (1920s–1990s)
+In the early 20th century, the legendary Gracie family popularized **Vale Tudo** ("anything goes") challenge matches in Brazil. Carlos and Hélio Gracie developed **Brazilian Jiu-Jitsu (BJJ)** to demonstrate that smaller, technically skilled ground fighters could submit larger, aggressive punchers.
+
+### 3. UFC 1 & The Birth of Modern MMA (November 12, 1993)
+The Ultimate Fighting Championship (UFC) was founded as an 8-man, single-elimination tournament in Denver, Colorado. The goal was to answer the timeless martial arts debate: *Can a boxer beat a wrestler? Can karate defeat jiu-jitsu?*
+Royce Gracie shocked global audiences by defeating three opponents in one night using submissions from his back, permanently disproving the myth that fights stay standing.
+
+### 4. The Unified Rules of MMA (2000–Present)
+Early events lacked weight classes, rounds, and gloves, causing political backlash. In 2000, the New Jersey State Athletic Control Board codified the **Unified Rules of Mixed Martial Arts**, mandating 4-ounce padded open-fingered gloves, weight categories, round timers, and strict illegal strike restrictions. This paved the way for global government regulation and Olympic-caliber professionalism.
+
+[AD]
+
+## How Does MMA Work? The 3 Phases of Combat
+
+Modern mixed martial arts contests unfold across three tactical domains:
+
+### Phase 1: The Striking Range (Stand-Up)
+Fighters begin every round on their feet. Stand-up combat combines:
+- **Boxing**: Jabs, crosses, hooks, uppercuts, footwork, and head movement.
+- **Muay Thai & Kickboxing**: Roundhouse leg kicks, calf kicks, spinning backfists, flying knees, and elbows.
+- **Distance Control**: Managing range to land strikes while avoiding incoming counterpunches.
+
+### Phase 2: The Clinch & Takedown Phase (The Fence / Wall-Wrestling)
+When fighters collide, the battle moves into the clinch:
+- **Wrestling Takedowns**: Double-leg and single-leg takedowns to bring the opponent down to the canvas.
+- **Judo Throws & Trips**: Hip tosses, foot sweeps, and upper-body leverage.
+- **Cage Mechanics (Wall-Walk)**: Using the perimeter wire fence to push back to a standing base or pin an opponent against the cage to score control time.
+
+### Phase 3: The Ground Game (Grappling & Submissions)
+Once on the canvas, the fight enters a high-speed chess match:
+- **Ground-and-Pound**: Striking from top position while avoiding the opponent's submission attempts.
+- **Positional Hierarchy**: Mount, Back Control, Side Control, and Guard.
+- **Submissions**: Rear-naked chokes, armbars, guillotine chokes, and leg locks designed to force an opponent to tap out.
+
+[AD]
+
+## How Are MMA Fights Judged and Scored?
+
+Bouts are evaluated by three neutral ringside judges who score each round independently using the **10-Point Must System**:
+
+- **10–9 Round**: The standard score. The round winner receives 10 points; the other fighter receives 9 points.
+- **10–8 Round**: Awarded when one fighter dominates the round with overwhelming damage, near-finishes, and heavy top control.
+- **10–7 Round**: An exceedingly rare round where one fighter inflicts catastrophic, completely one-sided damage.
+
+### Priority Judging Criteria (Unified Rules Hierarchy)
+1. **Effective Striking / Grappling (Top Priority)**: Number of heavy, impactful strikes landed, potential fight-ending maneuvers, and submission attempts.
+2. **Effective Aggressiveness**: Pressing the action and attempting fight-ending techniques (only considered if striking/grappling is equal).
+3. **Fighting Area Control**: Dictating the center of the cage and pace (the last tiebreaker criteria).
+
+## Ways an MMA Fight Can End
+
+| Finish Type | Full Name | How It Happens |
+| :--- | :--- | :--- |
+| **KO** | Knockout | A legal strike renders a fighter unconscious. |
+| **TKO** | Technical Knockout | The referee, ringside physician, or corner stops the bout because a fighter cannot intelligently defend themselves. |
+| **SUB** | Submission | A fighter taps the mat/opponent or verbally yields due to a choke or joint lock. |
+| **UD** | Unanimous Decision | All three judges score the bout in favor of the same fighter (e.g., 30-27, 29-28, 29-28). |
+| **SD** | Split Decision | Two judges score the fight for Fighter A, while one judge scores for Fighter B. |
+| **MD** | Majority Decision | Two judges score the bout for Fighter A, while the third judge scores it a draw. |
+| **DQ** | Disqualification | An intentional illegal strike (e.g., grointest strike, illegal knee) prevents the opponent from continuing. |
+| **NC** | No Contest | An accidental foul (e.g., accidental eye poke) stops the fight before minimum completed rounds. |
+
+[AD]
+
+## Essential Combat Sports & MMA Abbreviations Guide
+
+- **MMA**: Mixed Martial Arts
+- **UFC**: Ultimate Fighting Championship
+- **BJJ**: Brazilian Jiu-Jitsu
+- **P4P**: Pound-for-Pound (ranking fighters regardless of weight class)
+- **TKO**: Technical Knockout
+- **KO**: Knockout
+- **SUB**: Submission
+- **RNC**: Rear-Naked Choke
+- **UD**: Unanimous Decision
+- **SD**: Split Decision
+- **MD**: Majority Decision
+- **NC**: No Contest
+- **DQ**: Disqualification
+- **WMMA**: Women's Mixed Martial Arts
+- **GOAT**: Greatest Of All Time (e.g., Jon Jones, Georges St-Pierre, Demetrious Johnson)
+
+## 5 Fascinating Facts About MMA
+
+1. **4-Ounce Gloves Protect the Hand, Not the Head**: MMA gloves are much lighter and smaller than 10oz boxing gloves. Their primary purpose is protecting the tiny bones in a fighter's hand, allowing them to open their fingers for grappling.
+2. **The 10-Point Must System Came from Boxing**: Athletic commissions adopted boxing's scoring system in 2000 to streamline judge certifications.
+3. **The Octagon Was Patented by UFC**: The 8-sided fenced structure was designed so fighters would not get trapped in 90-degree corners like traditional boxing rings.
+4. **No 12-to-6 Elbows**: Historically, downward straight vertical elbows were banned under early Unified Rules due to athletic commissioners watching karate demonstrations of breaking bricks. (Recent 2024 rule revisions have begun legalizing them).
+5. **Fastest Knockout in UFC History**: Jorge Masvidal knocked out Ben Askren in just **5 seconds** with a flying knee at UFC 239 in 2019.
+
+[AD]
+
+## Frequently Asked Questions (FAQ)
+
+### Q: What is the main difference between MMA and UFC?
+**MMA** is the name of the sport itself (like soccer or basketball). The **UFC** (Ultimate Fighting Championship) is a private company and the world's premier sports league where professional MMA athletes compete (like the English Premier League or NBA).
+
+### Q: What strikes are illegal in MMA?
+Under the Unified Rules, illegal actions include: eye-gouging, biting, hair pulling, groin strikes, headbutts, strikes to the spine or back of the head (rabbit punches), throat strikes, small joint manipulation (fingers/toes), and kicking/kneeing the head of a grounded opponent.
+
+### Q: How many weight classes exist in modern MMA?
+The Unified Rules recognize nine standard men's weight divisions: Flyweight (125 lbs), Bantamweight (135 lbs), Featherweight (145 lbs), Lightweight (155 lbs), Welterweight (170 lbs), Middleweight (185 lbs), Light Heavyweight (205 lbs), Heavyweight (265 lbs), and Super Heavyweight (>265 lbs). Women's divisions include Strawweight (115 lbs), Flyweight (125 lbs), Bantamweight (135 lbs), and Featherweight (145 lbs).
+
+---
+*Explore more athletic definitions and sports slang in the [whatsthatmean Sports Directory](https://www.whatsthatmean.com/browse?cat=sports).*`,
+    cat: "sports",
+    seoTitle: "What Does MMA Stand For & How Does It Work? Rules, Scoring & Facts",
+    metaDescription: "What does MMA stand for? Learn how Mixed Martial Arts works, from history and Unified Rules to scoring, weight classes, and essential combat acronyms.",
+    keywords: "what does mma stand for, how does mma work, mixed martial arts facts, mma history, what is mma, mma acronym, ufc vs mma",
+    draft: true,
+    imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1000&auto=format&fit=crop&q=80",
+    imageAlt: "Mixed martial arts fighters training in an octagon ring with focus pads and combat gear",
+    createdAtSeconds: Math.floor(Date.now() / 1000) - 1000
   }
 ];

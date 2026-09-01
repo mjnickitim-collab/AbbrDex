@@ -158,5 +158,32 @@ export const SPORTS_TERMS: Term[] = [
   { code: "GRE", full: "Greece (FIFA 3-Letter Country Code)", cat: "countries", ex: "GRE pulled off the biggest Cinderella story in football history by winning Euro 2004." },
   { code: "NOR", full: "Norway (FIFA 3-Letter Country Code)", cat: "countries", ex: "NOR features world-class superstars Erling Haaland and Martin Ødegaard." },
   { code: "CZE", full: "Czech Republic / Czechia (FIFA 3-Letter Country Code)", cat: "countries", ex: "CZE reached the final of Euro 1996 and semifinals in 2004." },
-  { code: "HUN", full: "Hungary (FIFA 3-Letter Country Code)", cat: "countries", ex: "HUN the Magical Magyars revolutionized world football tactics in the 1950s." }
+  { code: "HUN", full: "Hungary (FIFA 3-Letter Country Code)", cat: "countries", ex: "HUN the Magical Magyars revolutionized world football tactics in the 1950s." },
+
+  // 4. MMA & Combat Sports Acronyms & Terminology
+  { code: "MMA", full: "Mixed Martial Arts (Combat Sport)", cat: "sports", ex: "MMA combines striking disciplines like Muay Thai and boxing with grappling arts like Brazilian Jiu-Jitsu and wrestling." },
+  { code: "UFC", full: "Ultimate Fighting Championship (Premier MMA Promotion)", cat: "sports", ex: "The UFC hosts premier championship fight cards broadcast globally to millions of pay-per-view fans." },
+  { code: "KO", full: "Knockout (Combat Sports Finish)", cat: "sports", ex: "A clean head kick secured an explosive first-round KO victory." },
+  { code: "TKO", full: "Technical Knockout (Referee or Doctor Stoppage)", cat: "sports", ex: "The referee stepped in to declare a TKO after unanswered ground-and-pound strikes." },
+  { code: "UD", full: "Unanimous Decision (Judges' Verdict)", cat: "sports", ex: "All three ringside judges scored the five-round war 49-46 for a clear UD win." },
+  { code: "SD", full: "Split Decision (Judges' Verdict)", cat: "sports", ex: "Two judges awarded the bout to the challenger while one scored it for the defending champion in a narrow SD." },
+  { code: "MD", full: "Majority Decision (Judges' Verdict)", cat: "sports", ex: "Two judges scored the contest for the victor while the third ruled it a draw (MD)." },
+  { code: "NC", full: "No Contest (Bout Nullified Due to Accidental Foul)", cat: "sports", ex: "An accidental eye poke in round two forced the ringside physician to wave off the bout as a No Contest (NC)." },
+  { code: "DQ", full: "Disqualification (Illegal Strike or Infraction)", cat: "sports", ex: "Landing an intentional knee to a grounded opponent resulted in an immediate DQ." },
+  { code: "SUB", full: "Submission (Tapout or Chokehold Finish)", cat: "sports", ex: "The grappling specialist locked in a rear-naked choke to secure the SUB victory." },
+  { code: "BJJ", full: "Brazilian Jiu-Jitsu (Ground Grappling Martial Art)", cat: "sports", ex: "BJJ black belts excel at joint locks, positional control, and sweep submissions from the guard." },
+  { code: "P4P", full: "Pound-for-Pound (Fighter Ranking Across Weight Classes)", cat: "sports", ex: "Holding world titles across two separate weight divisions vaulted the champion to #1 on the P4P rankings." },
+
+  // 5. Football, World Cup & Match Screen Statistics
+  { code: "GA", full: "Goals Against (Soccer & World Cup Standings)", cat: "sports", ex: "The tournament champions conceded only 2 GA across all seven knockout fixtures." },
+  { code: "MP", full: "Matches Played (Tournament & League Tables)", cat: "sports", ex: "With 38 MP, the league leaders finished at the summit of the table with 90 points." },
+  { code: "GF", full: "Goals For (Total Goals Scored in Standings)", cat: "sports", ex: "Their dynamic attacking front line led the tournament with 18 GF in group play." },
+  { code: "GD", full: "Goal Difference (Goals For minus Goals Against)", cat: "sports", ex: "A superior +12 GD allowed the team to clinch first place in the group tiebreaker." },
+  { code: "APPS", full: "Appearances (Player Career & Season Matches)", cat: "sports", ex: "The veteran midfielder reached 500 club APPS across all competitions." },
+  { code: "AET", full: "After Extra Time (120-Minute Match Result)", cat: "sports", ex: "The quarterfinal clash finished 2-2 AET before proceeding to a penalty shootout." },
+  { code: "FT", full: "Full Time (End of 90-Minute Regulation)", cat: "sports", ex: "The referee blew the final whistle at FT with the scoreboard reading 3-1." },
+  { code: "HT", full: "Half Time (45-Minute Interval)", cat: "sports", ex: "Both teams entered the dressing rooms locked at 0-0 at HT." },
+  { code: "OG", full: "Own Goal (Accidental Defensive Deflection)", cat: "sports", ex: "An unfortunate OG gave the away side an early lead in the derby." },
+  { code: "VAR", full: "Video Assistant Referee (Officiating Review System)", cat: "sports", ex: "A quick VAR check overturned the offside flag to validate the opening goal." },
+  { code: "SAOT", full: "Semi-Automated Offside Technology (Optical Tracking)", cat: "sports", ex: "SAOT provided real-time 3D limb tracking to deliver precise millimeter offside decisions." }
 ];
