@@ -91,5 +91,77 @@ export const CHAT_SLANG_TERMS: Term[] = [
     full: "In The Dark (Uninformed / Kept Secret)",
     cat: "texting",
     ex: "Management kept the entire team ITD about the upcoming merger."
+  },
+
+  // Google #1 Rank Celebration & Expansion: WTA Multi-Context Meanings
+  {
+    code: "WTA",
+    full: "Want To Ask / Willing To Accept / Winner Takes All (Slang & Tennis)",
+    cat: "texting",
+    ex: "WTA: Can anyone recommend a fast laptop for video editing? (Want To Ask) / My lowest WTA price is $120. (Willing To Accept)"
+  },
+
+  // Trending Number Codes & Secret Chat Slang (Instagram, TikTok, WhatsApp)
+  {
+    code: "953",
+    full: "Thinking of You / I Won't Leave You (Romantic Chat Code & Secret Texting Slang)",
+    cat: "texting",
+    ex: "Sending a quick '953' before bed as a sweet code for 'thinking of you'."
+  },
+  {
+    code: "947",
+    full: "Always and Forever / I Will Never Stop Loving You (Secret TikTok & Chat Love Code)",
+    cat: "texting",
+    ex: "They have '947' written in their status to represent unbreakable affection."
+  },
+  {
+    code: "1046",
+    full: "Thank You / Thinking of You (Chat & Messaging Secret Code from a Girl)",
+    cat: "texting",
+    ex: "She replied with '1046' after the thoughtful birthday surprise."
+  },
+  {
+    code: "23",
+    full: "Whatever / Not My Problem / Jordan Greatness (Chat Slang & SMS Code)",
+    cat: "texting",
+    ex: "If they don't want to come that's 23, we are going to the festival anyway."
+  },
+  {
+    code: "99",
+    full: "Nighty Night / Sleeping / Done for the Night (Texting & Chat Shorthand)",
+    cat: "texting",
+    ex: "Eyes are closing, logging off now — 99 to everyone in the group!"
+  },
+  {
+    code: "94",
+    full: "Just Because / Okay (Chat Shorthand & Phonetic Slang)",
+    cat: "texting",
+    ex: "Why did I buy sneakers today? 94, felt like treating myself."
+  },
+
+  // Additional High-Velocity Trending Chat Queries
+  {
+    code: "BRYG",
+    full: "Blue, Red, Yellow, Green / Be Ready, Your Game (Gaming & Discord Slang)",
+    cat: "internet",
+    ex: "Championship lobby starting in 3 minutes, BRYG squad!"
+  },
+  {
+    code: "BYR",
+    full: "Buyer / Be You, Real (Marketplace & Text Slang)",
+    cat: "texting",
+    ex: "Serious BYR only please, no lowball offers."
+  },
+  {
+    code: "NW",
+    full: "No Worries (Everyday Texting & Chat Abbreviation)",
+    cat: "texting",
+    ex: "Thanks for the heads-up about running late, NW!"
+  },
+  {
+    code: "ACTLY",
+    full: "Actually (Texting & Chat Shorthand)",
+    cat: "texting",
+    ex: "I thought our reservation was at 7, but actly it is at 8."
   }
 ];
