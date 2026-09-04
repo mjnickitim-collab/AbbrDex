@@ -15,11 +15,23 @@ import { PUBLISHED_BLOGS } from "./data/publishedBlogs";
 import { TERMS } from "./data/seedData";
 
 // Define rich initial state fallbacks to achieve instant rendering for crawlers & zero-layout shift
-const initialTerms: Term[] = TERMS.slice(0, 60).map((t, idx) => ({
-  ...t,
-  id: `init-${idx}`,
-  trending: ["FOMO", "GG", "ASAP", "HMU", "SNAFU", "DM", "WFH", "POV", "GOAT", "FR", "NO CAP", "BUSSIN", "TLDR", "AFK", "BRB", "ROI", "KPI"].includes(t.code.toUpperCase())
-}));
+const initialTerms: Term[] = (() => {
+  const seen = new Set<string>();
+  const list: Term[] = [];
+  for (const t of TERMS) {
+    const key = `${(t.code || "").toUpperCase().trim()}_${(t.cat || "").toLowerCase().trim()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push(t);
+    }
+    if (list.length >= 60) break;
+  }
+  return list.map((t, idx) => ({
+    ...t,
+    id: `init-${idx}`,
+    trending: ["FOMO", "GG", "ASAP", "HMU", "SNAFU", "DM", "WFH", "POV", "GOAT", "FR", "NO CAP", "BUSSIN", "TLDR", "AFK", "BRB", "ROI", "KPI"].includes(t.code.toUpperCase())
+  }));
+})();
 
 const initialBlogs: BlogPost[] = PUBLISHED_BLOGS;
 

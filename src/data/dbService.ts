@@ -325,10 +325,22 @@ export async function fetchTerms(): Promise<Term[]> {
   const termsCol = collection(db, "terms");
   const q = query(termsCol, orderBy("code", "asc"));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  })) as Term[];
+  const seen = new Set<string>();
+  const uniqueTerms: Term[] = [];
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    const code = (data.code || "").toUpperCase().trim();
+    const cat = (data.cat || "").toLowerCase().trim();
+    const key = `${code}_${cat}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueTerms.push({
+        id: doc.id,
+        ...data
+      } as Term);
+    }
+  });
+  return uniqueTerms;
 }
 
 export async function addTerm(term: Omit<Term, "id">): Promise<string> {

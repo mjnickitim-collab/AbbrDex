@@ -110,7 +110,17 @@ export default function HomeView({
     const sourceList = explicit.length >= 8 ? explicit : pool;
     
     const shuffled = [...sourceList].sort(() => 0.5 - (Math.random() + randomSeed * 0.01));
-    return shuffled.slice(0, 8);
+    const seen = new Set<string>();
+    const distinct: Term[] = [];
+    for (const item of shuffled) {
+      const code = (item.code || "").toUpperCase().trim();
+      if (!seen.has(code)) {
+        seen.add(code);
+        distinct.push(item);
+      }
+      if (distinct.length >= 8) break;
+    }
+    return distinct;
   }, [terms, randomSeed]);
 
   // Categories sorted by popularity (term count)
@@ -426,12 +436,12 @@ export default function HomeView({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {trendingTerms.map((term) => {
+          {trendingTerms.map((term, idx) => {
             const catMeta = CATEGORIES.find(c => c.id === term.cat) || CATEGORIES[0];
             const termUrl = `/term/${encodeURIComponent(term.code)}`;
             return (
               <a
-                key={`trending-${term.code}`}
+                key={`trending-${term.code}-${term.id || idx}`}
                 href={termUrl}
                 onClick={(e) => {
                   e.preventDefault();
@@ -541,9 +551,18 @@ export default function HomeView({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {sortedCategories.map((c) => {
             const catIntro = CATEGORY_INTROS[c.id] || "Curated reference entries and usage guides.";
-            // Filter 6-8 representative top terms for this category
+            // Filter 6-8 representative distinct top terms for this category
             const categoryTerms = terms.filter((t) => t.cat === c.id);
-            const representativeTerms = categoryTerms.slice(0, 7);
+            const seenCodes = new Set<string>();
+            const representativeTerms: Term[] = [];
+            for (const t of categoryTerms) {
+              const code = (t.code || "").toUpperCase().trim();
+              if (!seenCodes.has(code)) {
+                seenCodes.add(code);
+                representativeTerms.push(t);
+              }
+              if (representativeTerms.length >= 7) break;
+            }
 
             return (
               <div
@@ -572,9 +591,9 @@ export default function HomeView({
                       Representative Acronyms:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {representativeTerms.map((t) => (
+                      {representativeTerms.map((t, idx) => (
                         <button
-                          key={`rep-${c.id}-${t.code}`}
+                          key={`rep-${c.id}-${t.code}-${t.id || idx}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectTerm(t);

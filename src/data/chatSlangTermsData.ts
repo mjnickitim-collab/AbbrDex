@@ -163,5 +163,85 @@ export const CHAT_SLANG_TERMS: Term[] = [
     full: "Actually (Texting & Chat Shorthand)",
     cat: "texting",
     ex: "I thought our reservation was at 7, but actly it is at 8."
+  },
+
+  // TikTok & Messaging Number Chat Codes (New Trending Queries)
+  {
+    code: "103",
+    full: "I Love You / Always Thinking of You (Viral TikTok & Chat Secret Code)",
+    cat: "texting",
+    ex: "Leaving a quiet '103' note on their desk to say I love you."
+  },
+  {
+    code: "901",
+    full: "I Love You / I Forgive You (Secret DM & Texting Love Code)",
+    cat: "texting",
+    ex: "After resolving our disagreement, she sent '901' with a heart."
+  },
+  {
+    code: "115",
+    full: "I Need You / Thinking About You (Instagram Note & Chat Code)",
+    cat: "texting",
+    ex: "Posted '115' in my status hoping they would realize I need them."
+  },
+  {
+    code: "1031",
+    full: "I Love You / Always & Forever (Romantic Chat & Secret Number Slang)",
+    cat: "texting",
+    ex: "1031 is our special anniversary reminder and secret love code."
+  },
+  {
+    code: "154",
+    full: "I Still Love You (TikTok & WhatsApp Secret Love Shorthand)",
+    cat: "texting",
+    ex: "Even after years apart, sending '154' showed feelings never faded."
+  },
+  {
+    code: "105",
+    full: "You Are My Everything / I Love You (Texting & Social Media Code)",
+    cat: "texting",
+    ex: "Dropping '105' in their comments as a secret romantic gesture."
+  },
+  {
+    code: "102",
+    full: "I Miss You / Back Off (Dual Context Secret Chat Slang)",
+    cat: "texting",
+    ex: "Late night texts with '102' simply mean 'I really miss you'."
+  },
+  {
+    code: "1003",
+    full: "I Love You So Much / Always By Your Side (Chat Status Code)",
+    cat: "texting",
+    ex: "Adding '1003' to the bio represents unwavering support and love."
+  },
+  {
+    code: "128",
+    full: "I Love You (1 Word, 2 Syllables, 8 Letters / Secret TikTok Code)",
+    cat: "texting",
+    ex: "A subtle '128' in the caption is a classic way to express affection."
+  },
+  {
+    code: "1030",
+    full: "Never Let You Go / Sweet Dreams & Love (Secret Messaging Code)",
+    cat: "texting",
+    ex: "Goodnight, 1030 — see you in the morning!"
+  },
+  {
+    code: "133",
+    full: "I Miss You / Please Don't Go (Chat & Texting Secret Code)",
+    cat: "texting",
+    ex: "Saw their story and replied with '133' to let them know they are missed."
+  },
+  {
+    code: "SOMT",
+    full: "Something (Everyday Chat & Texting Shorthand)",
+    cat: "texting",
+    ex: "Let's grab somt to eat before the movie starts."
+  },
+  {
+    code: "DEF",
+    full: "Definitely (Everyday Messaging & Chat Slang)",
+    cat: "texting",
+    ex: "Are you coming to the match tonight? Def, wouldn't miss it!"
   }
 ];
