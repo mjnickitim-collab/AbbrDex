@@ -223,17 +223,29 @@ export default function FooterPagesModal({ activePage, onClose }: FooterPagesMod
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-base text-ink">3. Advertising and Third-Party Services</h3>
-                  <p className="text-xs sm:text-sm text-ink-soft mt-1">
-                    We use third-party services to operate and monetize this site, including:
+                  <h3 className="font-bold text-base text-ink">3. Advertising, Google AdSense & DoubleClick Cookies</h3>
+                  <p className="text-xs sm:text-sm text-ink-soft mt-1 leading-relaxed">
+                    We use third-party services to operate and monetize this site, primarily <strong>Google AdSense</strong>. Third-party vendors, including Google, use cookies (including the DoubleClick DART cookie) to serve ads based on a user's prior visits to this website or other websites on the Internet.
                   </p>
-                  <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm text-ink-soft mt-2 pl-2">
-                    <li><strong>Google Analytics</strong>, to understand site traffic and usage</li>
-                    <li><strong>Google AdSense</strong>, to display advertising</li>
-                  </ul>
-                  <p className="text-xs sm:text-sm text-ink-soft mt-2">
-                    Google and its partners may use cookies to serve ads based on a user's prior visits to this or other websites. Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noreferrer" className="text-indigo underline font-medium">Google's Ads Settings</a> or <a href="https://www.aboutads.info" target="_blank" rel="noreferrer" className="text-indigo underline font-medium">www.aboutads.info</a>. Third-party vendors, including Google, may also use cookies to serve ads based on someone's visits to this site and/or other sites on the Internet.
+                  <p className="text-xs sm:text-sm text-ink-soft mt-2 leading-relaxed">
+                    Google's use of advertising cookies enables it and its partners to serve personalized ads to our users based on their visits to our site and/or other sites across the World Wide Web.
                   </p>
+                  <div className="mt-3 p-3 bg-card border border-line rounded-xl space-y-2">
+                    <p className="text-xs font-bold text-ink">How to Opt Out of Personalized Advertising:</p>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <a href="https://adssettings.google.com" target="_blank" rel="noreferrer" className="text-indigo underline font-medium">
+                        Google Ads Settings ↗
+                      </a>
+                      <span className="text-line">•</span>
+                      <a href="https://www.aboutads.info/choices" target="_blank" rel="noreferrer" className="text-indigo underline font-medium">
+                        AboutAds.info Choices ↗
+                      </a>
+                      <span className="text-line">•</span>
+                      <a href="https://optout.networkadvertising.org" target="_blank" rel="noreferrer" className="text-indigo underline font-medium">
+                        Network Advertising Initiative ↗
+                      </a>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

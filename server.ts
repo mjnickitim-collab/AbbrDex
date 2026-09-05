@@ -289,15 +289,130 @@ async function getSeoMetadata(urlPath: string) {
     } else if (pathname === "/about") {
       title = "About Us | whatsthatmean - Modern Digital Reference Platform";
       desc = "Learn about whatsthatmean.com, an independent digital reference platform dedicated to decoding acronyms, slang, emojis, and modern internet expressions.";
+      bodyArticleHtml = `
+        <div id="ssr-about-article" style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1e293b;">
+          <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">About Whatsthatmean</h1>
+          <p style="color: #64748b; font-size: 15px; margin-bottom: 24px;">Human-Curated Digital Reference Portal • Established 2026</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            <strong>Whatsthatmean.com</strong> was founded with a singular educational mission: to provide clear, verified, and culturally accurate interpretations of modern digital shorthand, online slang, gaming abbreviations, and corporate acronyms.
+          </p>
+          <h2 style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 28px; margin-bottom: 12px;">Our Lexicographical Approach</h2>
+          <p style="font-size: 15px; color: #334155; margin-bottom: 16px;">
+            Unlike automated scraper sites, every entry in our 4,400+ abbreviation dictionary is manually evaluated by human lexicographers. We cross-reference conversational data across digital platforms (TikTok, Discord, Reddit, corporate Slack channels) to capture tone, nuances, and generational shifts.
+          </p>
+          <h2 style="font-size: 22px; font-weight: 700; color: #0f172a; margin-top: 28px; margin-bottom: 12px;">Contact Our Editorial Team</h2>
+          <p style="font-size: 15px; color: #334155;">
+            Have questions, feedback, or need a correction? Reach us directly at <a href="mailto:contact@whatsthatmean.com" style="color: #4f46e5; font-weight: 600;">contact@whatsthatmean.com</a> or visit our <a href="/contact" style="color: #4f46e5; font-weight: 600;">Contact Us page</a>.
+          </p>
+        </div>
+      `;
     } else if (pathname === "/editorial") {
       title = "Editorial Policy | whatsthatmean - Quality & Verification Standards";
       desc = "Read our editorial standards ensuring all definitions, etymologies, and usage examples published on whatsthatmean.com are accurate, human-written, and neutral.";
+      bodyArticleHtml = `
+        <div id="ssr-editorial-article" style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1e293b;">
+          <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Editorial Standards & Fact-Checking Policy</h1>
+          <p style="color: #64748b; font-size: 15px; margin-bottom: 24px;">Ensuring High Utility, Original Research & Neutrality</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            Whatsthatmean.com maintains rigorous editorial oversight across our entire lexicographical repository. We prioritize reader trust and factual reliability through a 5-step verification workflow:
+          </p>
+          <ol style="padding-left: 24px; font-size: 15px; color: #334155; margin-bottom: 24px;">
+            <li style="margin-bottom: 8px;"><strong>Corpus Cross-Referencing:</strong> Verification against conversational corpora and digital messaging archives.</li>
+            <li style="margin-bottom: 8px;"><strong>Contextual Distinction:</strong> Distinguishing between sincere, sarcastic, and platform-specific meanings.</li>
+            <li style="margin-bottom: 8px;"><strong>Original Explanations:</strong> Comprehensive breakdowns of pronunciation, nuance, and grammatical category written by human authors.</li>
+            <li style="margin-bottom: 8px;"><strong>Regular Auditing:</strong> Bi-weekly reviews of trending slang and changing meanings.</li>
+            <li style="margin-bottom: 8px;"><strong>Reader Corrections SLA:</strong> Community correction inquiries addressed within 24 to 48 hours.</li>
+          </ol>
+        </div>
+      `;
     } else if (pathname === "/privacy") {
-      title = "Privacy Policy | whatsthatmean - Data Protection & Privacy";
-      desc = "Privacy Policy for whatsthatmean.com. Learn how we handle technical data, cookies, and privacy rights in compliance with GDPR and CCPA.";
+      title = "Privacy Policy & Advertising Disclosures | whatsthatmean";
+      desc = "Privacy Policy for whatsthatmean.com. Details our data handling, Google AdSense cookies, third-party advertising partners, opt-out choices, GDPR, and CCPA.";
+      bodyArticleHtml = `
+        <div id="ssr-privacy-article" style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1e293b;">
+          <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Privacy Policy</h1>
+          <p style="color: #64748b; font-size: 15px; margin-bottom: 24px;">Last Updated: September 2026 • Legal & Advertising Disclosure</p>
+
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            This Privacy Policy explains how <strong>Whatsthatmean.com</strong> collects, uses, and safeguards information when you visit our website.
+          </p>
+
+          <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 24px; margin-bottom: 12px;">1. Information We Collect & Log Files</h2>
+          <p style="font-size: 15px; color: #334155; margin-bottom: 16px;">
+            Whatsthatmean.com uses standard web server log files. The information gathered includes Internet Protocol (IP) addresses, browser type, Internet Service Provider (ISP), date/time stamps, referring/exit pages, and click statistics. This technical data is not linked to personally identifiable information.
+          </p>
+
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 24px; margin: 24px 0;">
+            <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">2. Google AdSense & Third-Party Advertising Disclosures</h2>
+            <p style="font-size: 15px; color: #334155; line-height: 1.6; margin-bottom: 12px;">
+              Whatsthatmean.com is funded by third-party advertising partners, primarily <strong>Google AdSense</strong>.
+            </p>
+            <ul style="padding-left: 20px; font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 16px;">
+              <li style="margin-bottom: 8px;"><strong>Third-party vendors, including Google, use cookies</strong> to serve ads based on a user's prior visits to Whatsthatmean.com or other websites.</li>
+              <li style="margin-bottom: 8px;"><strong>Google's use of advertising cookies (including the DoubleClick DART cookie)</strong> enables it and its partners to serve ads to our users based on their visits to our site and/or other sites on the Internet.</li>
+              <li style="margin-bottom: 8px;">Whatsthatmean.com has no control over these third-party advertiser cookies.</li>
+            </ul>
+            <p style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">How Users Can Opt Out of Personalized Advertising:</p>
+            <p style="font-size: 14px; color: #334155; margin-bottom: 12px;">
+              You may opt out of personalized advertising by visiting:
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+              <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 8px 14px; background: #e0e7ff; color: #4338ca; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;">Google Ads Settings (adssettings.google.com) ↗</a>
+              <a href="https://www.aboutads.info/choices" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 8px 14px; background: #e0e7ff; color: #4338ca; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;">AboutAds.info Choices ↗</a>
+              <a href="https://optout.networkadvertising.org" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 8px 14px; background: #e0e7ff; color: #4338ca; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;">Network Advertising Initiative Opt-Out ↗</a>
+            </div>
+          </div>
+
+          <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 24px; margin-bottom: 12px;">3. GDPR, CCPA & Data Rights</h2>
+          <p style="font-size: 15px; color: #334155; margin-bottom: 16px;">
+            We respect the privacy rights of all users, including European GDPR rights and California CCPA rights. We do not sell or rent personal information. To request data deletion or inquire about our privacy policies, contact <a href="mailto:privacy@whatsthatmean.com" style="color: #4f46e5; font-weight: 600;">privacy@whatsthatmean.com</a>.
+          </p>
+
+          <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 24px; margin-bottom: 12px;">4. Contact Us</h2>
+          <p style="font-size: 15px; color: #334155;">
+            For privacy-related inquiries, reach out to our team at <a href="mailto:contact@whatsthatmean.com" style="color: #4f46e5; font-weight: 600;">contact@whatsthatmean.com</a>.
+          </p>
+        </div>
+      `;
     } else if (pathname === "/terms") {
       title = "Terms of Service | whatsthatmean - User Agreement";
       desc = "Terms of Service governing your access to and use of whatsthatmean.com dictionary portal and reference content.";
+      bodyArticleHtml = `
+        <div id="ssr-terms-article" style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1e293b;">
+          <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Terms of Service</h1>
+          <p style="color: #64748b; font-size: 15px; margin-bottom: 24px;">Effective Date: 2026 • Whatsthatmean Reference Portal</p>
+          <p style="font-size: 15px; color: #334155; margin-bottom: 16px;">
+            By accessing Whatsthatmean.com, you agree to these Terms of Service. Content is provided for educational and linguistic reference purposes. Unauthorized scraping, automated harvesting, or commercial replication of our proprietary definitions without written permission is strictly prohibited.
+          </p>
+          <p style="font-size: 15px; color: #334155;">
+            Questions regarding licensing or terms of use should be directed to <a href="mailto:contact@whatsthatmean.com" style="color: #4f46e5; font-weight: 600;">contact@whatsthatmean.com</a>.
+          </p>
+        </div>
+      `;
+    } else if (pathname === "/contact") {
+      title = "Contact Us | whatsthatmean - Editorial Office & Support";
+      desc = "Contact the editorial team at whatsthatmean.com for term suggestions, factual corrections, legal inquiries, advertising, and partnership opportunities.";
+      bodyArticleHtml = `
+        <div id="ssr-contact-article" style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1e293b;">
+          <h1 style="font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Contact Us</h1>
+          <p style="color: #64748b; font-size: 15px; margin-bottom: 24px;">Editorial Office, Term Corrections & Publisher Inquiries</p>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            We welcome inquiries, feedback, term corrections, and partnership proposals from our readers and industry partners.
+          </p>
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+            <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">Direct Inquiries</h2>
+            <ul style="list-style: none; padding-left: 0; font-size: 15px; color: #334155; line-height: 2;">
+              <li><strong>General & Editorial Desk:</strong> <a href="mailto:contact@whatsthatmean.com" style="color: #4f46e5; font-weight: 600;">contact@whatsthatmean.com</a></li>
+              <li><strong>Privacy & Compliance:</strong> <a href="mailto:privacy@whatsthatmean.com" style="color: #4f46e5; font-weight: 600;">privacy@whatsthatmean.com</a></li>
+              <li><strong>Advertising & Partnerships:</strong> <a href="mailto:ads@whatsthatmean.com" style="color: #4f46e5; font-weight: 600;">ads@whatsthatmean.com</a></li>
+            </ul>
+          </div>
+          <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 12px;">Editorial SLA</h2>
+          <p style="font-size: 15px; color: #334155;">
+            Our editorial staff reviews all incoming queries and factual correction requests within 24 to 48 business hours.
+          </p>
+        </div>
+      `;
     } else if (pathname === "/browse") {
       title = "Explore Dictionary | whatsthatmean - Find Abbreviations & Meanings";
       desc = "Browse through hundreds of curated acronyms, digital shorthand, and slang meanings. Filter by category or search terms instantly.";

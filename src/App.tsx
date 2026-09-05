@@ -120,6 +120,10 @@ export default function App() {
       setActiveView("terms");
       setSelectedBlogPost(null);
       setSelectedTerm(null);
+    } else if (pathname === "/contact") {
+      setActiveView("contact");
+      setSelectedBlogPost(null);
+      setSelectedTerm(null);
     } else if (pathname === "/quiz") {
       setActiveView("quiz");
       setSelectedBlogPost(null);
@@ -595,7 +599,7 @@ export default function App() {
                   </>
                 )}
 
-                {["about", "editorial", "privacy", "terms"].includes(activeView) && (
+                {["about", "editorial", "privacy", "terms", "contact"].includes(activeView) && (
                   <PolicyPagesView 
                     currentPage={activeView as PolicyPageType}
                     adSlots={adSlots}
@@ -699,6 +703,19 @@ export default function App() {
                 className="hover:text-indigo underline cursor-pointer"
               >
                 Terms of Service
+              </a>
+              <span>•</span>
+              <a 
+                href="/contact"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveView("contact");
+                  window.history.pushState(null, "", "/contact");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }} 
+                className="hover:text-indigo underline cursor-pointer"
+              >
+                Contact Us
               </a>
             </div>
 

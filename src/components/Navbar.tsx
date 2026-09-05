@@ -421,6 +421,38 @@ export default function Navbar({
               >
                 Blog
               </button>
+
+              <div className="pt-2 border-t border-line/60 flex items-center justify-between text-xs text-ink-soft px-2">
+                <button
+                  onClick={() => {
+                    setActiveView("about");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="hover:text-indigo underline cursor-pointer py-1"
+                >
+                  About Us
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => {
+                    setActiveView("privacy");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="hover:text-indigo underline cursor-pointer py-1"
+                >
+                  Privacy Policy
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => {
+                    setActiveView("contact");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="hover:text-indigo underline cursor-pointer py-1"
+                >
+                  Contact Us
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
