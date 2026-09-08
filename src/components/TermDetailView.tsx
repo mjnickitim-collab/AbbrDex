@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Term, AdSlot } from "../types";
+import { Term, AdSlot, BlogPost } from "../types";
 import { CATEGORIES } from "../data/seedData";
 import { generateTermArticle } from "../utils/termArticleGenerator";
+import { PUBLISHED_BLOGS } from "../data/publishedBlogs";
+import { findRelatedBlogForTerm } from "../utils/termBlogMatcher";
 import AdPlaceholder from "./AdPlaceholder";
 import { 
   BookOpen, 
@@ -11,24 +13,42 @@ import {
   ArrowLeft, 
   Search, 
   Tag,
-  ExternalLink
+  ExternalLink,
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 
 interface TermDetailViewProps {
   code: string;
   terms: Term[];
+  blogs?: BlogPost[];
   adSlots?: AdSlot[];
   isDbLoaded?: boolean;
   onSelectTerm: (term: Term) => void;
   onNavigate: (view: string) => void;
+  onSelectBlogPost?: (post: BlogPost) => void;
 }
 
-export default function TermDetailView({ code, terms, adSlots = [], isDbLoaded = true, onSelectTerm, onNavigate }: TermDetailViewProps) {
+export default function TermDetailView({ 
+  code, 
+  terms, 
+  blogs,
+  adSlots = [], 
+  isDbLoaded = true, 
+  onSelectTerm, 
+  onNavigate,
+  onSelectBlogPost 
+}: TermDetailViewProps) {
   const [copied, setCopied] = useState(false);
 
   // Find the exact term by code (case-insensitive)
   const currentCodeUpper = decodeURIComponent(code).toUpperCase().trim();
   const term = terms.find((t) => t.code.toUpperCase().trim() === currentCodeUpper);
+
+  // Match related editorial blog post
+  const allBlogs = blogs && blogs.length > 0 ? blogs : PUBLISHED_BLOGS;
+  const relatedBlog = findRelatedBlogForTerm(term, allBlogs);
+  const sidebarBlog = relatedBlog || (allBlogs.length > 0 ? allBlogs[0] : null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -181,6 +201,69 @@ export default function TermDetailView({ code, terms, adSlots = [], isDbLoaded =
             </div>
           </div>
         )}
+        {/* Related In-Depth Editorial Masterclass Guide Banner */}
+        {relatedBlog && (
+          <div className="bg-gradient-to-r from-indigo-50/90 via-sky-50/60 to-indigo-50/90 border-2 border-indigo/30 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-indigo font-mono font-bold text-xs uppercase tracking-wider">
+                <Sparkles className="w-4 h-4 text-indigo" />
+                <span>Deep-Dive Editorial Reference Guide Available</span>
+              </div>
+              <span className="text-[11px] font-semibold text-indigo-700 bg-white/90 px-2.5 py-0.5 rounded-full border border-indigo/20 shadow-2xs">
+                Comprehensive Research Analysis
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {relatedBlog.imageUrl && (
+                <div className="w-full sm:w-36 h-24 rounded-xl overflow-hidden shrink-0 border border-line/70 bg-paper">
+                  <img
+                    src={relatedBlog.imageUrl}
+                    alt={relatedBlog.imageAlt || relatedBlog.title}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      const fallback = "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80";
+                      if (target.src !== fallback) {
+                        target.src = fallback;
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              <div className="space-y-1.5 flex-1">
+                <h3 className="font-display font-bold text-base sm:text-lg text-ink leading-snug">
+                  {relatedBlog.title}
+                </h3>
+                <p className="text-xs text-ink-soft line-clamp-2 leading-relaxed">
+                  {relatedBlog.excerpt}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-indigo/20 text-xs">
+              <span className="text-ink-soft font-medium">
+                Researched & fact-checked by our editorial team • {relatedBlog.date}
+              </span>
+              <a
+                href={`/blog/${relatedBlog.slug}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onSelectBlogPost) {
+                    onSelectBlogPost(relatedBlog);
+                  }
+                  window.history.pushState(null, "", `/blog/${relatedBlog.slug}`);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="btn btn-solid font-display font-bold text-xs py-2 px-4 rounded-xl flex items-center justify-center gap-1.5 no-underline cursor-pointer shadow-xs"
+              >
+                <span>Read Full In-Depth Guide</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Top Ad Banner Slot for AdSense */}
@@ -288,6 +371,63 @@ export default function TermDetailView({ code, terms, adSlots = [], isDbLoaded =
             
             {/* Sidebar Ad Unit */}
             <AdPlaceholder slotName="Sidebar" adSlots={adSlots} isDbLoaded={isDbLoaded} />
+
+            {/* Featured In-Depth Editorial Guide Card */}
+            {sidebarBlog && (
+              <div className="bg-card border border-line rounded-2xl p-5 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-line pb-3">
+                  <BookOpen className="w-4 h-4 text-indigo" />
+                  <h3 className="font-display font-bold text-base text-ink">
+                    Featured Editorial Guide
+                  </h3>
+                </div>
+
+                {sidebarBlog.imageUrl && (
+                  <div className="w-full h-32 rounded-xl overflow-hidden border border-line/70 bg-paper">
+                    <img
+                      src={sidebarBlog.imageUrl}
+                      alt={sidebarBlog.imageAlt || sidebarBlog.title}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        const fallback = "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80";
+                        if (target.src !== fallback) {
+                          target.src = fallback;
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo bg-indigo/10 px-2 py-0.5 rounded">
+                    Editorial Analysis
+                  </span>
+                  <h4 className="font-display font-bold text-sm text-ink leading-snug">
+                    {sidebarBlog.title}
+                  </h4>
+                  <p className="text-xs text-ink-soft line-clamp-2 leading-relaxed">
+                    {sidebarBlog.excerpt}
+                  </p>
+                </div>
+
+                <a
+                  href={`/blog/${sidebarBlog.slug}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onSelectBlogPost) {
+                      onSelectBlogPost(sidebarBlog);
+                    }
+                    window.history.pushState(null, "", `/blog/${sidebarBlog.slug}`);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="w-full py-2.5 text-center bg-indigo text-white hover:bg-indigo-dark font-bold text-xs rounded-xl transition cursor-pointer block no-underline shadow-2xs"
+                >
+                  Read Editorial Deep Dive →
+                </a>
+              </div>
+            )}
 
             {/* Related Terms Card */}
             {relatedTerms.length > 0 && (

@@ -144,6 +144,13 @@ export default function BlogView({
                 alt={selectedPost.imageAlt || selectedPost.title}
                 className="w-full h-auto max-h-[380px] object-cover"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fallback = "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80";
+                  if (target.src !== fallback) {
+                    target.src = fallback;
+                  }
+                }}
               />
             </div>
           )}
@@ -233,6 +240,13 @@ export default function BlogView({
                         loading="lazy"
                         className="w-full h-full object-cover transition duration-300 hover:scale-105"
                         referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const fallback = "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80";
+                          if (target.src !== fallback) {
+                            target.src = fallback;
+                          }
+                        }}
                       />
                     </div>
                   )}

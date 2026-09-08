@@ -7,6 +7,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc, where, limit } from "firebase/firestore";
 import { generateTermArticle } from "./src/utils/termArticleGenerator";
 import { PUBLISHED_BLOGS } from "./src/data/publishedBlogs";
+import { findRelatedBlogForTerm } from "./src/utils/termBlogMatcher";
 import { TERMS } from "./src/data/seedData";
 
 dotenv.config();
@@ -159,11 +160,14 @@ async function getBlogsFromFirestore() {
     draft: b.draft || false,
     excerpt: b.excerpt || "",
     content: b.body || "",
+    body: b.body || "",
     seoTitle: b.seoTitle || "",
     metaDescription: b.metaDescription || "",
     category: b.cat || "General",
     date: b.date || "",
     slug: b.slug || "",
+    imageUrl: b.imageUrl || "",
+    imageAlt: b.imageAlt || b.title || "",
     createdAt: { seconds: (b as any).createdAtSeconds || 0 }
   }));
 
@@ -175,17 +179,35 @@ async function getBlogsFromFirestore() {
     }
     const list = snapshot.docs.map(doc => {
       const data = doc.data();
+      const slug = data.slug || "";
+      const title = data.title || "";
+      let imageUrl = data.imageUrl || "";
+      let imageAlt = data.imageAlt || data.title || "";
+
+      const matched = PUBLISHED_BLOGS.find(
+        b => b.slug === slug || (b.title && b.title.toLowerCase() === title.toLowerCase())
+      );
+      if (matched && matched.imageUrl) {
+        if (!imageUrl || !imageUrl.startsWith("https://images.unsplash.com/") || imageUrl.includes("/download?force=true") || matched.slug === slug) {
+          imageUrl = matched.imageUrl;
+          imageAlt = matched.imageAlt || matched.title || title;
+        }
+      }
+
       return {
         id: doc.id,
-        title: data.title || "",
+        title,
         draft: data.draft || false,
         excerpt: data.excerpt || "",
         content: data.body || data.content || "",
+        body: data.body || data.content || "",
         seoTitle: data.seoTitle || "",
         metaDescription: data.metaDescription || "",
         category: data.cat || data.category || "General",
         date: data.date || "",
-        slug: data.slug || "",
+        slug,
+        imageUrl,
+        imageAlt,
         createdAt: data.createdAt
       };
     });
@@ -510,7 +532,8 @@ async function getSeoMetadata(urlPath: string) {
           "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": `https://www.whatsthatmean.com/blog/${slug}`
-          }
+          },
+          ...(foundBlog.imageUrl ? { "image": foundBlog.imageUrl } : {})
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(blogSchema)}</script>`;
 
@@ -523,9 +546,10 @@ async function getSeoMetadata(urlPath: string) {
                 <h1 style="font-size: 32px; margin: 12px 0;">${foundBlog.title}</h1>
                 <p style="color: #64748b; font-size: 14px;">Published on ${foundBlog.date || 'whatsthatmean'}</p>
               </header>
+              ${foundBlog.imageUrl ? `<div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;"><img src="${foundBlog.imageUrl}" alt="${foundBlog.imageAlt || foundBlog.title}" style="width: 100%; height: auto; max-height: 400px; object-fit: cover;" /></div>` : ''}
               ${foundBlog.excerpt ? `<p style="font-size: 18px; color: #334155; font-weight: 500; margin: 16px 0;">${foundBlog.excerpt}</p>` : ''}
               <div style="font-size: 16px; color: #1e293b; margin-top: 20px;">
-                ${(foundBlog.content || '').split('\n\n').map((p: string) => `<p style="margin-bottom: 16px;">${p}</p>`).join('')}
+                ${(foundBlog.body || foundBlog.content || '').split('\n\n').map((p: string) => `<p style="margin-bottom: 16px;">${p}</p>`).join('')}
               </div>
             </article>
           </div>
@@ -598,6 +622,16 @@ async function getSeoMetadata(urlPath: string) {
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(termSchema)}</script>`;
 
+        const matchedBlog = findRelatedBlogForTerm(foundTerm, PUBLISHED_BLOGS);
+        const relatedBlogHtml = matchedBlog ? `
+          <h2>Related In-Depth Editorial Guide</h2>
+          <div style="background: #f8fafc; border: 1px solid #c7d2fe; border-radius: 12px; padding: 18px; margin: 24px 0;">
+            <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #4338ca; text-transform: uppercase; letter-spacing: 0.05em;">Featured In-Depth Masterclass Guide Available</p>
+            <p style="margin: 0 0 8px 0;"><a href="https://www.whatsthatmean.com/blog/${matchedBlog.slug}" style="color: #4f46e5; font-size: 18px; font-weight: 700; text-decoration: underline;">${matchedBlog.title}</a></p>
+            <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.5;">${matchedBlog.excerpt}</p>
+          </div>
+        ` : "";
+
         // Build SSR HTML text block for AdSense and search engine crawlers
         bodyArticleHtml = `
           <div id="ssr-term-article">
@@ -605,6 +639,7 @@ async function getSeoMetadata(urlPath: string) {
               <h1 style="font-size: 32px; margin-bottom: 12px;">What Does ${foundTerm.code} Mean? Definition, Origin & Usage</h1>
               <p><strong>Spelled-out phrase:</strong> ${foundTerm.full}</p>
               <p><strong>Category:</strong> ${categoryName}</p>
+              ${relatedBlogHtml}
               <h2>Overview</h2>
               <p>${articleData.overview}</p>
               <h2>Etymology & History</h2>

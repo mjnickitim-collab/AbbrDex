@@ -577,9 +577,15 @@ export default function App() {
                   <TermDetailView 
                     code={selectedTerm ? selectedTerm.code : selectedTermCode}
                     terms={terms}
+                    blogs={blogs.filter(b => !b.draft)}
                     adSlots={adSlots}
                     isDbLoaded={isDbLoaded}
                     onSelectTerm={handleSelectTerm}
+                    onSelectBlogPost={(post) => {
+                      setSelectedBlogPost(post);
+                      setActiveView("blog");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
                     onNavigate={(view) => {
                       setActiveView(view);
                       setSelectedTerm(null);

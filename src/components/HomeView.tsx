@@ -208,7 +208,202 @@ export default function HomeView({
         </div>
       </section>
 
-      {/* 2. Featured Word Analysis / Editorial Entry Spotlight */}
+      {/* 2. Digital Insights & In-Depth Editorial Masterclass Guides Section */}
+      <section className="px-6 max-w-[1080px] mx-auto space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 bg-indigo/10 text-indigo rounded-lg">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-display font-bold text-2xl text-ink">Digital Insights & Editorial Guides</h2>
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Peer Reviewed
+                </span>
+              </div>
+              <p className="text-xs text-ink-soft font-medium">In-depth reference articles, cultural investigations, and expert educational masterclasses</p>
+            </div>
+          </div>
+          
+          <a
+            href="/blog"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onViewAllBlogs) {
+                onViewAllBlogs();
+              } else if (blogs.length > 0) {
+                onSelectBlogPost(blogs[0]);
+              }
+              window.history.pushState(null, "", "/blog");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition cursor-pointer no-underline"
+          >
+            <span>Explore All 50+ Editorial Guides</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
+        {blogs.length === 0 ? (
+          <div className="text-center py-8 text-ink-soft text-sm">
+            No articles published yet.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Featured Editorial Spotlight Banner (First Article) */}
+            {blogs[0] && (() => {
+              const firstPost = blogs[0];
+              const firstSlug = firstPost.slug || generateSlug(firstPost.title || "");
+              const firstUrl = `/blog/${firstSlug}`;
+              return (
+                <a
+                  href={firstUrl}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onSelectBlogPost(firstPost);
+                    window.history.pushState(null, "", firstUrl);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="bg-card border-2 border-indigo/30 hover:border-indigo rounded-2xl overflow-hidden text-left transition shadow-xs hover:shadow-md grid grid-cols-1 lg:grid-cols-12 cursor-pointer group no-underline"
+                >
+                  {firstPost.imageUrl && (
+                    <div className="lg:col-span-5 h-56 lg:h-auto overflow-hidden bg-line/20 relative">
+                      <img
+                        src={firstPost.imageUrl}
+                        alt={firstPost.imageAlt || firstPost.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          const fallback = "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80";
+                          if (target.src !== fallback) {
+                            target.src = fallback;
+                          }
+                        }}
+                      />
+                      <div className="absolute top-3 left-3 bg-ink/85 backdrop-blur-xs text-white px-2.5 py-1 rounded-md text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>Editor's Spotlight Guide</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={`${firstPost.imageUrl ? 'lg:col-span-7' : 'lg:col-span-12'} p-6 sm:p-8 flex flex-col justify-between space-y-4`}>
+                    <div className="space-y-2.5">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-soft font-semibold">
+                        <span className="flex items-center gap-1.5 text-indigo">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>{firstPost.date}</span>
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-line" />
+                        <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-indigo/10 text-indigo border border-indigo/20">
+                          {CATEGORIES.find(c => c.id === firstPost.cat)?.name || "Masterclass"}
+                        </span>
+                        <span className="w-1 h-1 rounded-full bg-line" />
+                        <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Comprehensive Analysis</span>
+                        </span>
+                      </div>
+
+                      <h3 className="font-display font-bold text-xl sm:text-2xl text-ink leading-snug group-hover:text-indigo transition">
+                        {firstPost.title}
+                      </h3>
+
+                      <p className="text-xs sm:text-sm text-ink-soft line-clamp-3 leading-relaxed">
+                        {firstPost.excerpt}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark transition">
+                      <span className="flex items-center gap-1.5 font-display">
+                        Read In-Depth Editorial Investigation
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                      </span>
+                      <span className="text-ink-soft text-[11px] font-normal">8-12 min comprehensive read</span>
+                    </div>
+                  </div>
+                </a>
+              );
+            })()}
+
+            {/* Grid for Subsequent Guides */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {blogs.slice(1, 7).map((post, idx) => {
+                const slug = post.slug || generateSlug(post.title || "");
+                const postUrl = `/blog/${slug}`;
+                return (
+                  <a
+                    key={post.id ? `home-blog-${post.id}` : `home-blog-${idx}-${post.title}`}
+                    href={postUrl}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onSelectBlogPost(post);
+                      window.history.pushState(null, "", postUrl);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="bg-card border border-line rounded-2xl overflow-hidden text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-2xs flex flex-col justify-between cursor-pointer h-full group no-underline"
+                  >
+                    <div className="w-full">
+                      {post.imageUrl && (
+                        <div className="w-full h-40 overflow-hidden border-b border-line bg-line/20">
+                          <img
+                            src={post.imageUrl}
+                            alt={post.imageAlt || post.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              const fallback = "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80";
+                              if (target.src !== fallback) {
+                                target.src = fallback;
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div className="p-5 space-y-2.5">
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-indigo" />
+                            <span>{post.date}</span>
+                          </span>
+                          {post.cat && (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-line" />
+                              <span className="px-1.5 py-0.5 rounded font-bold text-[9px] bg-indigo/5 text-indigo border border-indigo/10">
+                                {CATEGORIES.find(c => c.id === post.cat)?.name || "Insights"}
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        <h3 className="font-display font-bold text-base text-ink line-clamp-2 leading-[1.3] group-hover:text-indigo transition">
+                          {post.title}
+                        </h3>
+
+                        <p className="text-xs text-ink-soft line-clamp-2 leading-relaxed">
+                          {post.excerpt}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="px-5 pb-5 pt-3 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark transition">
+                      <span>Read Editorial Guide</span>
+                      <span className="text-base group-hover:translate-x-1 transition">→</span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 3. Featured Word Analysis / Editorial Entry Spotlight */}
       <section className="px-6 max-w-[1080px] mx-auto">
         <div className="bg-gradient-to-br from-card via-card to-indigo-50/30 border border-indigo-100 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
@@ -308,108 +503,6 @@ export default function HomeView({
             </div>
           )}
         </div>
-      </section>
-
-      {/* 3. Digital Insights & Editorial Articles Section */}
-      <section className="px-6 max-w-[1080px] mx-auto space-y-6">
-        <div className="flex items-center justify-between border-b border-line pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 bg-indigo/10 text-indigo rounded-lg">
-              <BookOpen className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="font-display font-bold text-2xl text-ink">Digital Insights & Editorial Guides</h2>
-              <p className="text-xs text-ink-soft font-medium">In-depth reference articles, internet culture trends, and expert educational guides</p>
-            </div>
-          </div>
-          
-          <a
-            href="/blog"
-            onClick={(e) => {
-              e.preventDefault();
-              if (onViewAllBlogs) {
-                onViewAllBlogs();
-              } else if (blogs.length > 0) {
-                onSelectBlogPost(blogs[0]);
-              }
-              window.history.pushState(null, "", "/blog");
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-indigo hover:text-indigo-dark transition cursor-pointer no-underline"
-          >
-            <span>View All Insights</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </a>
-        </div>
-
-        {blogs.length === 0 ? (
-          <div className="text-center py-8 text-ink-soft text-sm">
-            No articles published yet.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {blogs.slice(0, 3).map((post, idx) => {
-              const slug = post.slug || generateSlug(post.title || "");
-              const postUrl = `/blog/${slug}`;
-              return (
-                <a
-                  key={post.id ? `home-blog-${post.id}` : `home-blog-${idx}-${post.title}`}
-                  href={postUrl}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onSelectBlogPost(post);
-                    window.history.pushState(null, "", postUrl);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="bg-card border border-line rounded-2xl overflow-hidden text-left transition hover:border-indigo hover:shadow-md hover:-translate-y-1 shadow-2xs flex flex-col justify-between cursor-pointer h-full group no-underline"
-                >
-                  <div className="w-full">
-                    {post.imageUrl && (
-                      <div className="w-full h-44 overflow-hidden border-b border-line bg-line/20">
-                        <img
-                          src={post.imageUrl}
-                          alt={post.imageAlt || post.title}
-                          loading="lazy"
-                          className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
-                          referrerPolicy="no-referrer"
-                        />
-                      </div>
-                    )}
-                    <div className="p-6 space-y-3">
-                      <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft uppercase tracking-wider">
-                        <span className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-indigo" />
-                          <span>{post.date}</span>
-                        </span>
-                        {post.cat && (
-                          <>
-                            <span className="w-1 h-1 rounded-full bg-line" />
-                            <span className="px-1.5 py-0.5 rounded font-bold text-[9px] bg-indigo/5 text-indigo border border-indigo/10">
-                              {CATEGORIES.find(c => c.id === post.cat)?.name || "Insights"}
-                            </span>
-                          </>
-                        )}
-                      </div>
-
-                      <h3 className="font-display font-bold text-lg text-ink line-clamp-2 leading-[1.3] group-hover:text-indigo transition">
-                        {post.title}
-                      </h3>
-
-                      <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">
-                        {post.excerpt}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="px-6 pb-6 pt-4 border-t border-line flex items-center justify-between text-xs font-bold text-indigo group-hover:text-indigo-dark transition">
-                    <span>Read Full Article</span>
-                    <span className="text-base group-hover:translate-x-1 transition">→</span>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-        )}
       </section>
 
       {/* 4. Trending Decoded Terms (Rich Cards with Text Content) */}

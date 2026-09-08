@@ -15,6 +15,97 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import { Term, BlogPost, AdSlot, UserProfile } from "../types";
+import { PUBLISHED_BLOGS } from "./publishedBlogs";
+
+export const DEFAULT_BLOG_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1200&q=80";
+
+export function getReliableBlogImage(
+  slug: string,
+  currentUrl?: string,
+  category?: string,
+  title?: string
+): { imageUrl: string; imageAlt?: string } {
+  // If currentUrl is already a verified direct images.unsplash.com CDN URL without download query
+  if (
+    currentUrl &&
+    currentUrl.startsWith("https://images.unsplash.com/") &&
+    !currentUrl.includes("/download?force=true")
+  ) {
+    return { imageUrl: currentUrl };
+  }
+
+  // Lookup in PUBLISHED_BLOGS
+  const matched = PUBLISHED_BLOGS.find(
+    b => b.slug === slug || (title && b.title.toLowerCase() === title.toLowerCase())
+  );
+  if (
+    matched &&
+    matched.imageUrl &&
+    matched.imageUrl.startsWith("https://images.unsplash.com/") &&
+    !matched.imageUrl.includes("/download?force=true")
+  ) {
+    return { imageUrl: matched.imageUrl, imageAlt: matched.imageAlt || matched.title };
+  }
+
+  // Category and keyword based fallbacks
+  const cat = (category || "").toLowerCase();
+  const lowerTitle = (title || slug).toLowerCase();
+  if (
+    cat === "sports" ||
+    lowerTitle.includes("cup") ||
+    lowerTitle.includes("soccer") ||
+    lowerTitle.includes("fifa") ||
+    lowerTitle.includes("football") ||
+    lowerTitle.includes("mma")
+  ) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1200&q=80",
+      imageAlt: title || "Sports competition and tournament pitch"
+    };
+  }
+  if (
+    cat === "finance" ||
+    cat === "business" ||
+    lowerTitle.includes("bond") ||
+    lowerTitle.includes("stock") ||
+    lowerTitle.includes("sop") ||
+    lowerTitle.includes("roi") ||
+    lowerTitle.includes("opex")
+  ) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80",
+      imageAlt: title || "Business financial analysis and trading charts"
+    };
+  }
+  if (
+    cat === "tech" ||
+    lowerTitle.includes("cloud") ||
+    lowerTitle.includes("edge") ||
+    lowerTitle.includes("ai") ||
+    lowerTitle.includes("wysiwyg") ||
+    lowerTitle.includes("gpt")
+  ) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1000&auto=format&fit=crop&q=80",
+      imageAlt: title || "Technology server data infrastructure"
+    };
+  }
+  if (
+    cat === "slang" ||
+    cat === "internet" ||
+    lowerTitle.includes("texting") ||
+    lowerTitle.includes("gen-z") ||
+    lowerTitle.includes("slang") ||
+    lowerTitle.includes("chat")
+  ) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1534536281715-e28d76689b4d?auto=format&fit=crop&w=1200&q=80",
+      imageAlt: title || "Digital communication and mobile messaging"
+    };
+  }
+
+  return { imageUrl: DEFAULT_BLOG_FALLBACK_IMAGE, imageAlt: title || "Editorial guide" };
+}
 
 // Helper to seed database if empty
 export async function seedDatabaseIfEmpty(): Promise<boolean> {
@@ -229,13 +320,19 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
           const originalSlug = data.slug || "";
           const expectedSlug = generateSlug(newTitle || originalTitle);
 
+          const rawUrl = data.imageUrl || "";
+          const rawAlt = data.imageAlt || "";
+          const reliable = getReliableBlogImage(originalSlug, rawUrl, data.cat, newTitle || originalTitle);
+          const needsImageFix = rawUrl !== reliable.imageUrl;
+
           if (
             newTitle !== originalTitle ||
             newExcerpt !== originalExcerpt ||
             newBody !== originalBody ||
             newSeoTitle !== originalSeoTitle ||
             newMetaDescription !== originalMetaDescription ||
-            !originalSlug
+            !originalSlug ||
+            needsImageFix
           ) {
             updateBatch.update(doc(db, "blogs", docSnap.id), {
               title: newTitle,
@@ -243,7 +340,9 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
               excerpt: newExcerpt,
               body: newBody,
               seoTitle: newSeoTitle,
-              metaDescription: newMetaDescription
+              metaDescription: newMetaDescription,
+              imageUrl: reliable.imageUrl,
+              imageAlt: rawAlt || reliable.imageAlt || newTitle || originalTitle
             });
             hasUpdates = true;
           }
@@ -380,12 +479,23 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
     // Fetch all blogs without strict order requirement to avoid index failures, then sort in memory
     const snapshot = await getDocs(blogsCol);
     if (!snapshot.empty) {
-      const list = snapshot.docs.map(doc => {
-        const data = doc.data();
+      const list = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
         const title = data.title || "";
         const slug = data.slug || generateSlug(title);
+        const rawUrl = data.imageUrl || "";
+        const rawAlt = data.imageAlt || "";
+        const reliable = getReliableBlogImage(slug, rawUrl, data.cat, title);
+        const imageUrl = reliable.imageUrl;
+        const imageAlt = rawAlt || reliable.imageAlt || title;
+
+        // If firestore data had broken or empty URL, trigger healing update in background
+        if (rawUrl !== imageUrl) {
+          updateDoc(doc(db, "blogs", docSnap.id), { imageUrl, imageAlt }).catch(() => {});
+        }
+
         return {
-          id: doc.id,
+          id: docSnap.id,
           title,
           slug,
           date: data.date || "Just now",
@@ -396,8 +506,8 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
           metaDescription: data.metaDescription || "",
           keywords: data.keywords || "",
           draft: data.draft || false,
-          imageUrl: data.imageUrl || "",
-          imageAlt: data.imageAlt || "",
+          imageUrl,
+          imageAlt,
           createdAt: data.createdAt
         };
       }) as (BlogPost & { createdAt?: any })[];
@@ -425,12 +535,19 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((p: BlogPost) => {
+          const reliable = getReliableBlogImage(p.slug, p.imageUrl, p.cat, p.title);
+          return {
+            ...p,
+            imageUrl: reliable.imageUrl,
+            imageAlt: p.imageAlt || reliable.imageAlt || p.title
+          };
+        });
       }
     }
   } catch (_) {}
 
-  return [];
+  return PUBLISHED_BLOGS;
 }
 
 export async function addBlogPost(post: Omit<BlogPost, "id">): Promise<string> {
