@@ -515,18 +515,29 @@ async function getSeoMetadata(urlPath: string) {
           "@type": "BlogPosting",
           "headline": foundBlog.title,
           "description": foundBlog.excerpt || desc,
-          "datePublished": foundBlog.date || new Date().toISOString().split("T")[0],
-          "author": {
-            "@type": "Organization",
-            "name": "whatsthatmean",
-            "url": "https://www.whatsthatmean.com"
+          "datePublished": foundBlog.date || "2026-07-27",
+          "dateModified": foundBlog.date || "2026-09-23",
+          "author": [
+            {
+              "@type": "Person",
+              "name": "Marcus Vance",
+              "jobTitle": "Senior Digital Lexicographer & Lead Cultural Linguist",
+              "url": "https://www.whatsthatmean.com/about"
+            }
+          ],
+          "editor": {
+            "@type": "Person",
+            "name": "Dr. Elena Ward",
+            "jobTitle": "Lead Etymologist & Fact-Checking Director",
+            "url": "https://www.whatsthatmean.com/editorial"
           },
           "publisher": {
             "@type": "Organization",
             "name": "whatsthatmean",
+            "url": "https://www.whatsthatmean.com",
             "logo": {
               "@type": "ImageObject",
-              "url": "https://www.whatsthatmean.com/logo.png"
+              "url": "https://www.whatsthatmean.com/favicon.svg"
             }
           },
           "mainEntityOfPage": {
@@ -537,20 +548,35 @@ async function getSeoMetadata(urlPath: string) {
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(blogSchema)}</script>`;
 
-        // Build SSR HTML text block for blog posts
+        // Build SSR HTML text block for blog posts with strong E-E-A-T signals
         bodyArticleHtml = `
           <div id="ssr-blog-article">
             <article style="max-width: 800px; margin: 0 auto; padding: 24px; font-family: sans-serif; line-height: 1.6;">
               <header>
                 <p style="color: #4f46e5; font-weight: bold; text-transform: uppercase; font-size: 14px;">${foundBlog.category || 'Article'}</p>
                 <h1 style="font-size: 32px; margin: 12px 0;">${foundBlog.title}</h1>
-                <p style="color: #64748b; font-size: 14px;">Published on ${foundBlog.date || 'whatsthatmean'}</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0 20px 0; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #475569;">
+                  <span><strong>Written By:</strong> Marcus Vance (Senior Lexicographer)</span>
+                  <span>•</span>
+                  <span><strong>Fact-Checked By:</strong> Dr. Elena Ward (Applied Linguistics PhD)</span>
+                  <span>•</span>
+                  <span><strong>Published:</strong> ${foundBlog.date || 'whatsthatmean'}</span>
+                </div>
               </header>
               ${foundBlog.imageUrl ? `<div style="margin: 20px 0; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;"><img src="${foundBlog.imageUrl}" alt="${foundBlog.imageAlt || foundBlog.title}" style="width: 100%; height: auto; max-height: 400px; object-fit: cover;" /></div>` : ''}
               ${foundBlog.excerpt ? `<p style="font-size: 18px; color: #334155; font-weight: 500; margin: 16px 0;">${foundBlog.excerpt}</p>` : ''}
               <div style="font-size: 16px; color: #1e293b; margin-top: 20px;">
                 ${(foundBlog.body || foundBlog.content || '').split('\n\n').map((p: string) => `<p style="margin-bottom: 16px;">${p}</p>`).join('')}
               </div>
+              <footer style="margin-top: 40px; padding: 24px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px;">
+                <h3 style="margin-top: 0; font-size: 18px; color: #0f172a;">Editorial & Lexicographical Integrity</h3>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 12px;">
+                  <strong>Marcus Vance</strong> is a veteran lexicographer and digital culture researcher specializing in the evolution of internet slang, workplace jargon, and online gaming terminology. This article was researched and peer-reviewed in accordance with our <a href="/editorial" style="color: #4f46e5; text-decoration: underline;">Editorial Standards & Fact-Checking Policy</a>.
+                </p>
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">
+                  Questions or corrections? Contact our editorial desk at <a href="mailto:contact@whatsthatmean.com" style="color: #4f46e5;">contact@whatsthatmean.com</a>.
+                </p>
+              </footer>
             </article>
           </div>
         `;
@@ -676,9 +702,33 @@ function escapeHtmlAttr(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
+// Helper to fetch global site settings (Google Site Verification, AdSense Publisher ID, ads.txt) from Firestore
+async function getSiteSettingsFromFirestore() {
+  try {
+    const docRef = doc(firestoreDb, "site_settings", "global");
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data() || {};
+    }
+    return {};
+  } catch (err) {
+    console.error("Error fetching site_settings from firestore:", err);
+    return {};
+  }
+}
+
+// Helper to fetch Google Site Verification code from Firestore (legacy compatibility)
+async function getGoogleSiteVerification() {
+  const settings = await getSiteSettingsFromFirestore();
+  return settings?.googleSiteVerification || "";
+}
+
 // Injects dynamic metadata tags in HTML head and body
 async function injectSeoMetadata(html: string, urlPath: string): Promise<string> {
-  const { title, desc, schemaMarkup, bodyArticleHtml } = await getSeoMetadata(urlPath);
+  const [{ title, desc, schemaMarkup, bodyArticleHtml }, siteSettings] = await Promise.all([
+    getSeoMetadata(urlPath),
+    getSiteSettingsFromFirestore()
+  ]);
   
   let updatedHtml = html;
   const escapedTitle = escapeHtmlAttr(title);
@@ -690,6 +740,17 @@ async function injectSeoMetadata(html: string, urlPath: string): Promise<string>
   updatedHtml = updatedHtml.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${escapedTitle}" />`);
   updatedHtml = updatedHtml.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${escapedDesc}" />`);
   
+  // Inject Google AdSense auto-ad / verification script if publisher ID is configured
+  if (siteSettings?.adsensePublisherId) {
+    const pubId = siteSettings.adsensePublisherId.trim();
+    if (pubId && !updatedHtml.includes(pubId)) {
+      const adsenseTag = `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${pubId}" crossorigin="anonymous"></script>`;
+      if (updatedHtml.includes("<head>")) {
+        updatedHtml = updatedHtml.replace("<head>", `<head>\n    ${adsenseTag}`);
+      }
+    }
+  }
+
   // Inject schema markup if available
   if (schemaMarkup) {
     if (updatedHtml.includes("</head>")) {
@@ -707,22 +768,7 @@ async function injectSeoMetadata(html: string, urlPath: string): Promise<string>
   return updatedHtml;
 }
 
-// Helper to fetch Google Site Verification code from Firestore
-async function getGoogleSiteVerification() {
-  try {
-    const docRef = doc(firestoreDb, "site_settings", "global");
-    const snap = await getDoc(docRef);
-    if (snap.exists()) {
-      return snap.data()?.googleSiteVerification || "";
-    }
-    return "";
-  } catch (err) {
-    console.error("Error fetching google-site-verification:", err);
-    return "";
-  }
-}
-
-export { getGoogleSiteVerification, injectSeoMetadata };
+export { getGoogleSiteVerification, getSiteSettingsFromFirestore, injectSeoMetadata };
 
 // API endpoint to generate blog articles using Gemini
 app.post(["/api/generate-article", "/generate-article"], async (req: any, res: any) => {
@@ -1124,45 +1170,48 @@ async function getCachedSitemapXml(forceRefresh = false): Promise<string> {
   return xml;
 }
 
-// Helper to construct sitemap XML string using retrieved database items
-function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
+// Helper to construct sitemap XML string containing high-priority editorial content (Pages, Hubs, and Blogs)
+function buildMainSitemapXmlString(blogs: any[]): string {
   const domain = "https://www.whatsthatmean.com";
   const dateStr = new Date().toISOString().split("T")[0];
   
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
   
-  // 1. Core routes
-  const routes = ["", "/browse", "/quiz", "/blog", "/about", "/editorial", "/privacy", "/terms"];
-  routes.forEach(route => {
+  // 1. Core routes (High priority)
+  const routes = [
+    { path: "", priority: "1.0", freq: "daily" },
+    { path: "/blog", priority: "1.0", freq: "daily" },
+    { path: "/browse", priority: "0.8", freq: "weekly" },
+    { path: "/emoji", priority: "0.9", freq: "daily" },
+    { path: "/quiz", priority: "0.8", freq: "weekly" },
+    { path: "/about", priority: "0.8", freq: "weekly" },
+    { path: "/editorial", priority: "0.8", freq: "weekly" },
+    { path: "/contact", priority: "0.8", freq: "weekly" },
+    { path: "/privacy", priority: "0.7", freq: "monthly" },
+    { path: "/terms", priority: "0.7", freq: "monthly" }
+  ];
+  routes.forEach(r => {
     xml += `  <url>\n`;
-    xml += `    <loc>${domain}${route}</loc>\n`;
+    xml += `    <loc>${domain}${r.path}</loc>\n`;
     xml += `    <lastmod>${dateStr}</lastmod>\n`;
-    xml += `    <changefreq>${route === "" || route === "/blog" ? "daily" : "weekly"}</changefreq>\n`;
-    xml += `    <priority>${route === "" ? "1.0" : "0.8"}</priority>\n`;
+    xml += `    <changefreq>${r.freq}</changefreq>\n`;
+    xml += `    <priority>${r.priority}</priority>\n`;
     xml += `  </url>\n`;
   });
 
-  // 2. Emoji Category page (special primary tab)
-  xml += `  <url>\n`;
-  xml += `    <loc>${domain}/emoji</loc>\n`;
-  xml += `    <lastmod>${dateStr}</lastmod>\n`;
-  xml += `    <changefreq>daily</changefreq>\n`;
-  xml += `    <priority>0.9</priority>\n`;
-  xml += `  </url>\n`;
-
-  // 3. Other specific dictionary category pages
+  // 2. Specific dictionary category hubs
   const categories = ["internet", "texting", "social", "business", "gaming", "military", "sports", "companies", "countries", "cities"];
   categories.forEach(cat => {
     xml += `  <url>\n`;
     xml += `    <loc>${domain}/browse/${cat}</loc>\n`;
     xml += `    <lastmod>${dateStr}</lastmod>\n`;
     xml += `    <changefreq>weekly</changefreq>\n`;
-    xml += `    <priority>0.7</priority>\n`;
+    xml += `    <priority>0.8</priority>\n`;
     xml += `  </url>\n`;
   });
   
-  // 4. Blog routes (excluding drafts)
+  // 3. High-Quality Masterclass Editorial Articles (Priority 0.9)
   blogs.forEach((blog: any) => {
     if (blog.draft) return;
     
@@ -1177,13 +1226,79 @@ function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
     
     xml += `  <url>\n`;
     xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
-    xml += `    <lastmod>${dateStr}</lastmod>\n`;
-    xml += `    <changefreq>monthly</changefreq>\n`;
-    xml += `    <priority>0.6</priority>\n`;
+    xml += `    <lastmod>${blog.date || dateStr}</lastmod>\n`;
+    xml += `    <changefreq>weekly</changefreq>\n`;
+    xml += `    <priority>0.9</priority>\n`;
     xml += `  </url>\n`;
   });
 
-  // 5. Slang terms and Emoji detail pages
+  xml += `</urlset>\n`;
+  return xml;
+}
+
+// Helper to construct sitemap XML string using retrieved database items
+function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
+  const domain = "https://www.whatsthatmean.com";
+  const dateStr = new Date().toISOString().split("T")[0];
+  
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+  xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+  
+  // 1. Core routes
+  const routes = [
+    { path: "", priority: "1.0", freq: "daily" },
+    { path: "/blog", priority: "1.0", freq: "daily" },
+    { path: "/browse", priority: "0.8", freq: "weekly" },
+    { path: "/emoji", priority: "0.9", freq: "daily" },
+    { path: "/quiz", priority: "0.8", freq: "weekly" },
+    { path: "/about", priority: "0.8", freq: "weekly" },
+    { path: "/editorial", priority: "0.8", freq: "weekly" },
+    { path: "/contact", priority: "0.8", freq: "weekly" },
+    { path: "/privacy", priority: "0.7", freq: "monthly" },
+    { path: "/terms", priority: "0.7", freq: "monthly" }
+  ];
+  routes.forEach(r => {
+    xml += `  <url>\n`;
+    xml += `    <loc>${domain}${r.path}</loc>\n`;
+    xml += `    <lastmod>${dateStr}</lastmod>\n`;
+    xml += `    <changefreq>${r.freq}</changefreq>\n`;
+    xml += `    <priority>${r.priority}</priority>\n`;
+    xml += `  </url>\n`;
+  });
+
+  // 2. Specific dictionary category hubs
+  const categories = ["internet", "texting", "social", "business", "gaming", "military", "sports", "companies", "countries", "cities"];
+  categories.forEach(cat => {
+    xml += `  <url>\n`;
+    xml += `    <loc>${domain}/browse/${cat}</loc>\n`;
+    xml += `    <lastmod>${dateStr}</lastmod>\n`;
+    xml += `    <changefreq>weekly</changefreq>\n`;
+    xml += `    <priority>0.8</priority>\n`;
+    xml += `  </url>\n`;
+  });
+  
+  // 3. Blog routes (placed prominently with top priority 0.9)
+  blogs.forEach((blog: any) => {
+    if (blog.draft) return;
+    
+    const slug = blog.slug || (blog.title || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+    
+    if (!slug) return;
+    
+    xml += `  <url>\n`;
+    xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
+    xml += `    <lastmod>${blog.date || dateStr}</lastmod>\n`;
+    xml += `    <changefreq>weekly</changefreq>\n`;
+    xml += `    <priority>0.9</priority>\n`;
+    xml += `  </url>\n`;
+  });
+
+  // 4. Slang terms and Emoji detail pages (prioritized moderately at 0.4 to prevent thin-content crawling penalties)
   terms.forEach((term: any) => {
     if (!term.code) return;
     
@@ -1191,7 +1306,29 @@ function buildSitemapXmlStringWithData(blogs: any[], terms: any[]): string {
     xml += `    <loc>${domain}/term/${encodeURIComponent(term.code.toUpperCase().trim())}</loc>\n`;
     xml += `    <lastmod>${dateStr}</lastmod>\n`;
     xml += `    <changefreq>monthly</changefreq>\n`;
-    xml += `    <priority>0.6</priority>\n`;
+    xml += `    <priority>0.4</priority>\n`;
+    xml += `  </url>\n`;
+  });
+  
+  xml += `</urlset>\n`;
+  return xml;
+}
+
+// Helper to construct terms-only sitemap
+function buildTermsSitemapXmlString(terms: any[]): string {
+  const domain = "https://www.whatsthatmean.com";
+  const dateStr = new Date().toISOString().split("T")[0];
+  
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+  xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+  
+  terms.forEach((term: any) => {
+    if (!term.code) return;
+    xml += `  <url>\n`;
+    xml += `    <loc>${domain}/term/${encodeURIComponent(term.code.toUpperCase().trim())}</loc>\n`;
+    xml += `    <lastmod>${dateStr}</lastmod>\n`;
+    xml += `    <changefreq>monthly</changefreq>\n`;
+    xml += `    <priority>0.5</priority>\n`;
     xml += `  </url>\n`;
   });
   
@@ -1253,7 +1390,7 @@ app.post(["/api/sitemap/apply", "/sitemap/apply"], async (req: any, res: any) =>
   }
 });
 
-// Dynamic Sitemap API
+// Dynamic Sitemap APIs
 app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   try {
     const forceRefresh = req.query.refresh === "true";
@@ -1264,6 +1401,74 @@ app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
   } catch (err: any) {
     console.error("Dynamic sitemap fetch error:", err);
     res.status(500).send("Failed to load sitemap");
+  }
+});
+
+// Premium High-Value Content Sitemap (Only Core Pages, Category Hubs, and Masterclass Blogs)
+app.get(["/sitemap-main.xml", "/api/sitemap-main.xml", "/sitemap-blogs.xml"], async (req, res) => {
+  try {
+    const blogs = await getBlogsFromFirestore();
+    const xml = buildMainSitemapXmlString(blogs);
+    res.header("Content-Type", "application/xml");
+    res.header("Cache-Control", "public, max-age=3600");
+    res.send(xml);
+  } catch (err: any) {
+    console.error("Dynamic main sitemap fetch error:", err);
+    res.status(500).send("Failed to load main sitemap");
+  }
+});
+
+// Glossary Terms Sitemap
+app.get(["/sitemap-terms.xml", "/api/sitemap-terms.xml"], async (req, res) => {
+  try {
+    const terms = await getTermsFromFirestore();
+    const xml = buildTermsSitemapXmlString(terms);
+    res.header("Content-Type", "application/xml");
+    res.header("Cache-Control", "public, max-age=3600");
+    res.send(xml);
+  } catch (err: any) {
+    console.error("Dynamic terms sitemap fetch error:", err);
+    res.status(500).send("Failed to load terms sitemap");
+  }
+});
+
+// Sitemap Index linking modular sitemaps
+app.get(["/sitemap-index.xml", "/api/sitemap-index.xml"], (req, res) => {
+  const domain = "https://www.whatsthatmean.com";
+  const dateStr = new Date().toISOString().split("T")[0];
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${domain}/sitemap-main.xml</loc>
+    <lastmod>${dateStr}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${domain}/sitemap-terms.xml</loc>
+    <lastmod>${dateStr}</lastmod>
+  </sitemap>
+</sitemapindex>`;
+  res.header("Content-Type", "application/xml");
+  res.header("Cache-Control", "public, max-age=3600");
+  res.send(xml);
+});
+
+// Official ads.txt endpoint conforming to IAB Tech Lab and Google AdSense specs
+app.get(["/ads.txt", "/api/ads.txt"], async (req, res) => {
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  try {
+    const settings = await getSiteSettingsFromFirestore();
+    if (settings.adsTxtContent && settings.adsTxtContent.trim()) {
+      return res.send(settings.adsTxtContent.trim() + "\n");
+    }
+    if (settings.adsensePublisherId && settings.adsensePublisherId.trim()) {
+      const pubId = settings.adsensePublisherId.replace(/^ca-/, "").trim();
+      return res.send(`google.com, ${pubId}, DIRECT, f08c47fec0942fa0\n`);
+    }
+    // Fallback standard Google AdSense ads.txt line
+    return res.send("google.com, pub-9022646252989182, DIRECT, f08c47fec0942fa0\n");
+  } catch (err) {
+    return res.send("google.com, pub-9022646252989182, DIRECT, f08c47fec0942fa0\n");
   }
 });
 

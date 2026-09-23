@@ -17,8 +17,8 @@ async function startDevServer() {
 
   // Fallback for all other GET requests (SPA client-side routing)
   app.get("*", async (req, res, next) => {
-    // Skip API routes and sitemap
-    if (req.url.startsWith("/api/") || req.url === "/sitemap.xml") {
+    // Skip API routes, ads.txt, and sitemaps
+    if (req.url.startsWith("/api/") || req.url.startsWith("/sitemap") || req.url === "/ads.txt") {
       return next();
     }
     try {

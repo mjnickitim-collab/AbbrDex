@@ -704,13 +704,19 @@ export async function recordQuizScore(uid: string, score: number, streak: number
   });
 }
 
-// Global Site Settings for SEO/Google Search Console
-export async function getSiteSettings(): Promise<{ googleSiteVerification?: string }> {
+// Global Site Settings for SEO/Google Search Console & Google AdSense
+export interface SiteSettings {
+  googleSiteVerification?: string;
+  adsensePublisherId?: string;
+  adsTxtContent?: string;
+}
+
+export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const docRef = doc(db, "site_settings", "global");
     const snap = await getDoc(docRef);
     if (snap.exists()) {
-      return snap.data() as { googleSiteVerification?: string };
+      return snap.data() as SiteSettings;
     }
     return {};
   } catch (err) {
@@ -719,7 +725,7 @@ export async function getSiteSettings(): Promise<{ googleSiteVerification?: stri
   }
 }
 
-export async function updateSiteSettings(settings: { googleSiteVerification: string }): Promise<void> {
+export async function updateSiteSettings(settings: Partial<SiteSettings>): Promise<void> {
   const docRef = doc(db, "site_settings", "global");
   await setDoc(docRef, settings, { merge: true });
 }

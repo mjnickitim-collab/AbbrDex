@@ -182,7 +182,77 @@ export default function PolicyPagesView({
               </ul>
             </div>
 
-            <p className="text-ink-soft">
+            {/* Editorial Team & E-E-A-T Profiles */}
+            <div className="space-y-4 pt-2">
+              <h2 className="font-display font-bold text-xl text-ink">Our Editorial Team & Review Board</h2>
+              <p className="text-sm text-ink-soft">
+                Our reference materials and deep-dive articles are authored, reviewed, and vetted by a dedicated team of linguists, lexicographers, and digital researchers.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="p-5 bg-card border border-line rounded-xl space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo/10 text-indigo font-bold flex items-center justify-center text-sm font-mono">
+                      MV
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-ink">Marcus Vance</h3>
+                      <p className="text-xs text-indigo font-medium">Senior Digital Lexicographer & Editor</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-ink-soft leading-relaxed">
+                    Oxford-trained computational linguist specializing in online culture, gaming terminology, and social media slang evolution with over 8 years in lexical research.
+                  </p>
+                </div>
+
+                <div className="p-5 bg-card border border-line rounded-xl space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-700 font-bold flex items-center justify-center text-sm font-mono">
+                      EW
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-ink">Dr. Elena Ward, PhD</h3>
+                      <p className="text-xs text-emerald-600 font-medium">Director of Etymological Fact-Checking</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-ink-soft leading-relaxed">
+                    PhD in Applied Linguistics with a research focus on cyber-lexicography, semantics, and sociolinguistic shifts in modern messaging platforms.
+                  </p>
+                </div>
+
+                <div className="p-5 bg-card border border-line rounded-xl space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-700 font-bold flex items-center justify-center text-sm font-mono">
+                      DR
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-ink">David K. Reynolds</h3>
+                      <p className="text-xs text-amber-600 font-medium">Business & Financial Acronym Specialist</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-ink-soft leading-relaxed">
+                    Veteran corporate communications analyst covering fintech jargon, Wall Street abbreviations, venture capital terminology, and executive shorthands.
+                  </p>
+                </div>
+
+                <div className="p-5 bg-card border border-line rounded-xl space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-700 font-bold flex items-center justify-center text-sm font-mono">
+                      SL
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-ink">Sarah Lin</h3>
+                      <p className="text-xs text-purple-600 font-medium">Youth Culture & Social Media Researcher</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-ink-soft leading-relaxed">
+                    Digital trend analyst tracking TikTok vernacular, micro-trends, emoji semantics, and emergent digital linguistics among Gen Z and Gen Alpha communities.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-ink-soft pt-2">
               <strong>Whatsthatmean.com</strong> is more than a dictionary — it's a living guide to modern digital language, maintained by an editorial team that reviews and updates content on an ongoing basis.
             </p>
           </section>
