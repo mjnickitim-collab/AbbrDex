@@ -30,14 +30,19 @@ app.use((req: any, res: any, next: any) => {
 
 // Path Normalization Middleware for Vercel Rewrites
 app.use((req, res, next) => {
-  if (req.url && req.url.startsWith("/api/index")) {
+  if (req.url && (req.url.startsWith("/api/index") || req.url.startsWith("/api/index.ts"))) {
     try {
       const urlObj = new URL(req.url, "http://localhost");
       const subPath = urlObj.searchParams.get("path");
       if (subPath) {
-        req.url = subPath.startsWith("/") ? `/api${subPath}` : `/api/${subPath}`;
+        // If subPath is sitemap, ads.txt, or download, route to root or api
+        if (subPath.startsWith("sitemap") || subPath === "ads.txt" || subPath.startsWith("download/")) {
+          req.url = subPath.startsWith("/") ? subPath : `/${subPath}`;
+        } else {
+          req.url = subPath.startsWith("/") ? `/api${subPath}` : `/api/${subPath}`;
+        }
       } else {
-        const restored = req.url.replace(/^\/api\/index/, "");
+        const restored = req.url.replace(/^\/api\/index(\.ts)?/, "");
         req.url = restored ? (restored.startsWith("/") ? `/api${restored}` : `/api/${restored}`) : "/api";
       }
     } catch (_) {
@@ -1483,7 +1488,11 @@ if (!process.env.VERCEL && process.env.NODE_ENV === "production") {
   const distPath = path.join(process.cwd(), "dist");
   app.use(express.static(distPath, { index: false })); // don't serve index.html directly
   
-  app.get("*", async (req, res) => {
+  app.get("*", async (req, res, next) => {
+    // Never fallback to index.html for sitemaps, ads.txt, or api endpoints
+    if (req.path.startsWith("/sitemap") || req.path === "/ads.txt" || req.path.startsWith("/api/")) {
+      return next();
+    }
     try {
       const indexHtmlPath = path.join(distPath, "index.html");
       let html = await fs.promises.readFile(indexHtmlPath, "utf-8");

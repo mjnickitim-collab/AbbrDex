@@ -5,27 +5,49 @@
       "maxDuration": 60
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index?path=$1"
+      "src": "/ads.txt",
+      "dest": "/api/index.ts?path=ads.txt"
     },
     {
-      "source": "/generate-article",
-      "destination": "/api/index?path=generate-article"
+      "src": "/sitemap-main.xml",
+      "dest": "/api/index.ts?path=sitemap-main.xml"
     },
     {
-      "source": "/search-unsplash",
-      "destination": "/api/index?path=search-unsplash"
+      "src": "/sitemap.xml",
+      "dest": "/api/index.ts?path=sitemap.xml"
     },
     {
-      "source": "/sitemap.xml",
-      "destination": "/api/index?path=sitemap.xml"
+      "src": "/sitemap-terms.xml",
+      "dest": "/api/index.ts?path=sitemap-terms.xml"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/sitemap-index.xml",
+      "dest": "/api/index.ts?path=sitemap-index.xml"
+    },
+    {
+      "src": "/download/(.*)",
+      "dest": "/api/index.ts?path=download/$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.ts?path=$1"
+    },
+    {
+      "src": "/generate-article",
+      "dest": "/api/index.ts?path=generate-article"
+    },
+    {
+      "src": "/search-unsplash",
+      "dest": "/api/index.ts?path=search-unsplash"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
-
