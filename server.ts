@@ -1391,11 +1391,14 @@ app.post(["/api/sitemap/apply", "/sitemap/apply"], async (req: any, res: any) =>
 });
 
 // Dynamic Sitemap APIs
-app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
+app.get(["/sitemap.xml", "/api/sitemap.xml", "/download/sitemap.xml"], async (req, res) => {
   try {
     const forceRefresh = req.query.refresh === "true";
     const xml = await getCachedSitemapXml(forceRefresh);
-    res.header("Content-Type", "application/xml");
+    res.header("Content-Type", "application/xml; charset=utf-8");
+    if (req.query.download === "true" || req.path.startsWith("/download/")) {
+      res.header("Content-Disposition", 'attachment; filename="sitemap.xml"');
+    }
     res.header("Cache-Control", "public, max-age=0, must-revalidate");
     res.send(xml);
   } catch (err: any) {
@@ -1405,11 +1408,14 @@ app.get(["/sitemap.xml", "/api/sitemap.xml"], async (req, res) => {
 });
 
 // Premium High-Value Content Sitemap (Only Core Pages, Category Hubs, and Masterclass Blogs)
-app.get(["/sitemap-main.xml", "/api/sitemap-main.xml", "/sitemap-blogs.xml"], async (req, res) => {
+app.get(["/sitemap-main.xml", "/api/sitemap-main.xml", "/sitemap-blogs.xml", "/download/sitemap-main.xml"], async (req, res) => {
   try {
     const blogs = await getBlogsFromFirestore();
     const xml = buildMainSitemapXmlString(blogs);
-    res.header("Content-Type", "application/xml");
+    res.header("Content-Type", "application/xml; charset=utf-8");
+    if (req.query.download === "true" || req.path.startsWith("/download/")) {
+      res.header("Content-Disposition", 'attachment; filename="sitemap-main.xml"');
+    }
     res.header("Cache-Control", "public, max-age=3600");
     res.send(xml);
   } catch (err: any) {

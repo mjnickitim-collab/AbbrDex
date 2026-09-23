@@ -1392,24 +1392,110 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
     return xml;
   };
 
-  const handleGenerateSitemap = () => {
+  const generateMainSitemapXmlContent = () => {
+    const domain = "https://www.whatsthatmean.com";
+    const dateStr = new Date().toISOString().split("T")[0];
+    
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+    
+    const routes = [
+      { path: "", priority: "1.0", freq: "daily" },
+      { path: "/blog", priority: "1.0", freq: "daily" },
+      { path: "/browse", priority: "0.8", freq: "weekly" },
+      { path: "/emoji", priority: "0.9", freq: "daily" },
+      { path: "/quiz", priority: "0.8", freq: "weekly" },
+      { path: "/about", priority: "0.8", freq: "weekly" },
+      { path: "/editorial", priority: "0.8", freq: "weekly" },
+      { path: "/contact", priority: "0.8", freq: "weekly" },
+      { path: "/privacy", priority: "0.7", freq: "monthly" },
+      { path: "/terms", priority: "0.7", freq: "monthly" }
+    ];
+    routes.forEach(r => {
+      xml += `  <url>\n`;
+      xml += `    <loc>${domain}${r.path}</loc>\n`;
+      xml += `    <lastmod>${dateStr}</lastmod>\n`;
+      xml += `    <changefreq>${r.freq}</changefreq>\n`;
+      xml += `    <priority>${r.priority}</priority>\n`;
+      xml += `  </url>\n`;
+    });
+
+    const categories = ["internet", "texting", "social", "business", "gaming", "military", "sports", "companies", "countries", "cities"];
+    categories.forEach(cat => {
+      xml += `  <url>\n`;
+      xml += `    <loc>${domain}/browse/${cat}</loc>\n`;
+      xml += `    <lastmod>${dateStr}</lastmod>\n`;
+      xml += `    <changefreq>weekly</changefreq>\n`;
+      xml += `    <priority>0.8</priority>\n`;
+      xml += `  </url>\n`;
+    });
+    
+    blogs.forEach((blog) => {
+      if (blog.draft) return;
+      const slug = (blog.title || "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-");
+      if (!slug) return;
+      xml += `  <url>\n`;
+      xml += `    <loc>${domain}/blog/${slug}</loc>\n`;
+      xml += `    <lastmod>${blog.date || dateStr}</lastmod>\n`;
+      xml += `    <changefreq>weekly</changefreq>\n`;
+      xml += `    <priority>0.9</priority>\n`;
+      xml += `  </url>\n`;
+    });
+
+    xml += `</urlset>\n`;
+    return xml;
+  };
+
+  const triggerXmlDownload = (xmlText: string, filename: string) => {
+    const blob = new Blob([xmlText], { type: "application/xml;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const handleDownloadSitemapMain = async () => {
     try {
-      const xml = generateSitemapXmlContent();
-      const blob = new Blob([xml], { type: "application/xml;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "sitemap.xml");
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      alert("sitemap.xml generated and downloaded successfully! Place this file in your website's root public directory to serve it under /sitemap.xml.");
-    } catch (err) {
-      console.error("Error generating sitemap:", err);
-      alert("Failed to generate sitemap.");
+      const res = await fetch("/sitemap-main.xml");
+      if (res.ok) {
+        const text = await res.text();
+        triggerXmlDownload(text, "sitemap-main.xml");
+        return;
+      }
+    } catch (e) {
+      console.warn("Direct fetch of /sitemap-main.xml failed, using client generator", e);
     }
+    const xml = generateMainSitemapXmlContent();
+    triggerXmlDownload(xml, "sitemap-main.xml");
+  };
+
+  const handleDownloadSitemapAll = async () => {
+    try {
+      const res = await fetch("/sitemap.xml");
+      if (res.ok) {
+        const text = await res.text();
+        triggerXmlDownload(text, "sitemap.xml");
+        return;
+      }
+    } catch (e) {
+      console.warn("Direct fetch of /sitemap.xml failed, using client generator", e);
+    }
+    const xml = generateSitemapXmlContent();
+    triggerXmlDownload(xml, "sitemap.xml");
+  };
+
+  const handleGenerateSitemap = () => {
+    handleDownloadSitemapAll();
   };
 
   const handleCopyRawXml = () => {
@@ -1605,62 +1691,163 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
 
 
             {/* Google Search Console & Dynamic Sitemap Suite */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Dynamic Sitemap card */}
-              <div className="bg-card border-1.5 border-line rounded-xl p-6 shadow-sm space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-emerald/10 text-emerald rounded-lg">
-                    <Globe className="w-5 h-5 text-emerald-600" />
+            <div className="space-y-6">
+              {/* Dynamic Sitemap Card with separate downloads for sitemap-main.xml and sitemap.xml */}
+              <div className="bg-card border-1.5 border-line rounded-xl p-6 shadow-sm space-y-6">
+                <div className="flex items-center justify-between gap-3 flex-wrap border-b border-line pb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-emerald/10 text-emerald rounded-lg">
+                      <Globe className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <div className="font-display font-bold text-lg text-ink">XML Sitemap 다운로드 및 관리 센터</div>
+                      <p className="text-xs text-ink-soft">
+                        구글 서치콘솔 제출용 <strong>sitemap-main.xml (애드센스 클린 심사용)</strong> 및 <strong>sitemap.xml (전체)</strong>을 즉시 다운로드하거나 확인할 수 있습니다.
+                      </p>
+                    </div>
                   </div>
-                  <div className="font-display font-bold text-lg text-ink">Dynamic SEO XML Sitemap</div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={handleDownloadSitemapMain}
+                      className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-3.5 py-1.5 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>sitemap-main.xml 다운로드</span>
+                    </button>
+                    <button
+                      onClick={handleDownloadSitemapAll}
+                      className="btn btn-ghost border border-line text-ink font-bold hover:bg-line/40 px-3.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer bg-paper"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>sitemap.xml 다운로드</span>
+                    </button>
+                  </div>
                 </div>
-                <p className="text-xs text-ink-soft leading-relaxed">
-                  이제 sitemap.xml을 수동으로 다운로드하고 업로드하실 필요가 없습니다! 블로그 글을 발행하거나 삭제할 때마다 실시간으로 반영되는 <strong>실시간 동적 Sitemap</strong> 기능이 서버에 적용되었습니다.
-                </p>
-                <div className="bg-paper p-3.5 rounded-lg border border-line text-xs font-mono break-all flex justify-between items-center gap-2 text-ink">
-                  <span>https://www.whatsthatmean.com/sitemap.xml</span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText("https://www.whatsthatmean.com/sitemap.xml");
-                      alert("Sitemap URL copied to clipboard!");
-                    }}
-                    className="text-[10px] font-sans font-bold text-indigo hover:text-indigo-dark whitespace-nowrap cursor-pointer underline"
-                  >
-                    Copy URL
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <a
-                    href="/sitemap.xml"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
-                  >
-                    <span>Open Live Sitemap</span>
-                    <span>↗</span>
-                  </a>
-                  <button
-                    onClick={handleCopyRawXml}
-                    className="btn btn-ghost border border-line text-ink-soft hover:bg-line/40 px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer bg-card"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Copy Raw XML</span>
-                  </button>
-                  <button
-                    onClick={handleGenerateSitemap}
-                    className="btn btn-ghost border border-line text-ink-soft hover:bg-line/40 px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer bg-card"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download XML</span>
-                  </button>
-                  <button
-                    onClick={handleApplySitemapChanges}
-                    disabled={isApplyingSitemap}
-                    className="btn btn-solid bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isApplyingSitemap ? "animate-spin" : ""}`} />
-                    <span>{isApplyingSitemap ? "적용 중..." : "Sitemap 변경 적용 (서버 저장)"}</span>
-                  </button>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* 1. sitemap-main.xml Card */}
+                  <div className="p-5 bg-paper/90 rounded-xl border-2 border-indigo/30 space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-indigo text-white font-bold text-[11px] font-mono">
+                          1. sitemap-main.xml
+                        </span>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                          ★ 애드센스 심사 강력 추천
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-indigo">111개 고품질 색인 URL</span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-sm text-ink">클린 고품질 심사용 사이트맵</h4>
+                      <p className="text-xs text-ink-soft leading-relaxed mt-1">
+                        얇은 단어 템플릿 페이지를 배제하고, <strong>71편 이상의 심층 장문 분석 블로그</strong> 및 주요 카테고리 허브, 정책 페이지만을 담았습니다. 애드센스 '가치가 별로 없는 콘텐츠' 사유를 방지합니다.
+                      </p>
+                    </div>
+
+                    <div className="bg-card p-3 rounded-lg border border-line text-xs font-mono break-all flex justify-between items-center gap-2 text-ink">
+                      <span>https://www.whatsthatmean.com/sitemap-main.xml</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText("https://www.whatsthatmean.com/sitemap-main.xml");
+                          alert("sitemap-main.xml URL이 클립보드에 복사되었습니다!");
+                        }}
+                        className="text-[11px] font-sans font-bold text-indigo hover:underline whitespace-nowrap cursor-pointer"
+                      >
+                        Copy URL
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        onClick={handleDownloadSitemapMain}
+                        className="btn btn-solid bg-indigo hover:bg-indigo-dark text-white px-4 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>sitemap-main.xml 다운로드</span>
+                      </button>
+                      <a
+                        href="/sitemap-main.xml"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-ghost border border-line text-ink-soft hover:bg-line/40 px-3.5 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer bg-card"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>새 탭에서 보기</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* 2. sitemap.xml Card */}
+                  <div className="p-5 bg-paper/90 rounded-xl border border-line space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-line/60 text-ink font-bold text-[11px] font-mono">
+                          2. sitemap.xml
+                        </span>
+                        <span className="text-[10px] bg-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded">
+                          전체 데이터
+                        </span>
+                      </div>
+                      <span className="text-xs font-bold text-ink-soft">4,500+개 전체 URL</span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold text-sm text-ink">전체 통합 사전 사이트맵</h4>
+                      <p className="text-xs text-ink-soft leading-relaxed mt-1">
+                        사이트의 전체 슬랭/약어 단어(4,400+개)와 이모지, 블로그 아티클, 모든 카테고리를 총망라한 전체 색인용 사이트맵입니다.
+                      </p>
+                    </div>
+
+                    <div className="bg-card p-3 rounded-lg border border-line text-xs font-mono break-all flex justify-between items-center gap-2 text-ink">
+                      <span>https://www.whatsthatmean.com/sitemap.xml</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText("https://www.whatsthatmean.com/sitemap.xml");
+                          alert("sitemap.xml URL이 클립보드에 복사되었습니다!");
+                        }}
+                        className="text-[11px] font-sans font-bold text-indigo hover:underline whitespace-nowrap cursor-pointer"
+                      >
+                        Copy URL
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <button
+                        onClick={handleDownloadSitemapAll}
+                        className="btn btn-solid bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>sitemap.xml 다운로드</span>
+                      </button>
+                      <a
+                        href="/sitemap.xml"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-ghost border border-line text-ink-soft hover:bg-line/40 px-3.5 py-2 text-xs font-semibold flex items-center gap-1.5 cursor-pointer bg-card"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>새 탭에서 보기</span>
+                      </a>
+                      <button
+                        onClick={handleCopyRawXml}
+                        className="btn btn-ghost border border-line text-ink-soft hover:bg-line/40 px-3 py-2 text-xs font-semibold flex items-center gap-1 cursor-pointer bg-card"
+                      >
+                        <Upload className="w-3 h-3" />
+                        <span>XML 복사</span>
+                      </button>
+                      <button
+                        onClick={handleApplySitemapChanges}
+                        disabled={isApplyingSitemap}
+                        className="btn btn-solid bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-xs font-semibold flex items-center gap-1 cursor-pointer shadow-sm disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isApplyingSitemap ? "animate-spin" : ""}`} />
+                        <span>{isApplyingSitemap ? "저장 중..." : "서버 저장"}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1684,7 +1871,21 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={handleDownloadSitemapMain}
+                      className="text-xs font-bold text-white bg-indigo hover:bg-indigo-dark flex items-center gap-1 px-3 py-1.5 rounded-lg transition shadow-xs cursor-pointer"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>sitemap-main.xml 다운로드</span>
+                    </button>
+                    <button
+                      onClick={handleDownloadSitemapAll}
+                      className="text-xs font-bold text-ink bg-paper hover:bg-line/40 border border-line flex items-center gap-1 px-3 py-1.5 rounded-lg transition cursor-pointer"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>sitemap.xml 다운로드</span>
+                    </button>
                     <a
                       href="/ads.txt"
                       target="_blank"
@@ -1692,15 +1893,6 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
                       className="text-xs font-bold text-indigo hover:text-indigo-dark flex items-center gap-1 px-3 py-1.5 rounded-lg border border-indigo/20 hover:bg-indigo/5 transition"
                     >
                       <span>ads.txt 확인</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                    <a
-                      href="/sitemap-main.xml"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition"
-                    >
-                      <span>클린 사이트맵 확인</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
