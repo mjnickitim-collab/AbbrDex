@@ -185,57 +185,11 @@ function parseInlineStyles(text: string): React.ReactNode {
           </span>
         );
       } else {
-        const isInternal = 
-          url.startsWith("/") || 
-          url.startsWith("https://whatsthatmean.com") || 
-          url.startsWith("https://www.whatsthatmean.com") ||
-          url.startsWith("http://whatsthatmean.com") ||
-          url.startsWith("http://www.whatsthatmean.com") ||
-          (!url.includes("://") && !url.startsWith("mailto:") && !url.startsWith("tel:"));
-
-        let finalUrl = url;
-        const domains = [
-          "https://whatsthatmean.com",
-          "https://www.whatsthatmean.com",
-          "http://whatsthatmean.com",
-          "http://www.whatsthatmean.com"
-        ];
-        for (const dom of domains) {
-          if (url.startsWith(dom)) {
-            finalUrl = url.substring(dom.length);
-            break;
-          }
-        }
-        if (isInternal && !finalUrl.startsWith("/") && !finalUrl.startsWith("mailto:") && !finalUrl.startsWith("tel:")) {
-          finalUrl = "/" + finalUrl;
-        }
-
-        const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-          if (isInternal) {
-            e.preventDefault();
-            // Dispatch custom SPA navigation event
-            const navEvent = new CustomEvent("spa-navigate", { detail: { path: finalUrl } });
-            window.dispatchEvent(navEvent);
-          }
-        };
-
+        // Strip out both internal and external links completely, rendering only the clean text label
         elements.push(
-          <a 
-            key={`link-${key++}`} 
-            href={url} 
-            target={isInternal ? "_self" : "_blank"} 
-            rel={isInternal ? "" : "noopener noreferrer"}
-            onClick={handleClick}
-            className={`inline-flex items-center gap-0.5 font-semibold transition ${
-              isInternal 
-                ? "text-indigo hover:text-indigo-dark underline" 
-                : "text-blue-600 dark:text-blue-400 hover:underline inline-baseline"
-            }`}
-            title={isInternal ? `Internal Link: ${finalUrl}` : `External Reference: ${url}`}
-          >
-            <span>{parseInlineStyles(label)}</span>
-            {!isInternal && <ExternalLink className="w-3 h-3 inline-block shrink-0 opacity-80 ml-0.5" />}
-          </a>
+          <span key={`text-link-${key++}`} className="font-medium text-ink">
+            {parseInlineStyles(label)}
+          </span>
         );
       }
     } else if (match[4] !== undefined) {

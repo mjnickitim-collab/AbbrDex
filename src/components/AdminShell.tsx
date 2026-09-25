@@ -1050,20 +1050,23 @@ TARGET LENGTH: 1,800 to 2,500 WORDS (strictly measured by WORD COUNT, NOT charac
        You can follow authoritative industry sources and explore our dictionary portal...
 
 ================================================================================
-6. LINKING & ADSENSE ADS PLACEMENT
+6. ZERO LINKS POLICY & ADSENSE ADS PLACEMENT
 ================================================================================
-- Internal Links (STRICT CONTEXTUAL RELEVANCE RULES):
-  * Do NOT force unnatural or irrelevant internal links. Include internal links ONLY if they naturally fit the article context.
-  * ABSOLUTE RESTRICTION FOR GENERAL TOPICS: If "${keyword}" is a general topic (e.g., sports events like World Cup, financial markets, technology, health, news) and NOT an internet slang term or acronym, you MUST NOT include links to Slang/Acronym Quizzes (/quiz), Emoji Dictionaries (/emoji), or slang reference pages.
-  * Allowed optional internal links ONLY when relevant:
-    - Main Blog Hub: [whatsthatmean Blog](https://www.whatsthatmean.com/blog)
-    - Term Search (only if search/lookup is genuinely applicable): [Search "${keyword}"](https://www.whatsthatmean.com/?search=${encodeURIComponent(keyword)})
-  * If no internal link fits naturally without feeling forced, do NOT include any internal link.
-- External Links (1–2 authoritative, relevant HTTPS links):
-  - Must point to an established domain matching the topic (e.g. https://www.fifa.com, https://en.wikipedia.org, https://www.investopedia.com, https://www.cdc.gov, https://developer.mozilla.org, https://www.merriam-webster.com).
+- ABSOLUTELY NO INTERNAL OR EXTERNAL LINKS:
+  * Do NOT include any hyperlinks in the article whatsoever!
+  * Strictly FORBIDDEN from generating markdown links like [Text](url) or HTML links like <a href="...">.
+  * Mention terms, brand names, platforms, books, or resources as plain text only (using **bold** or regular text).
+  * No links to dictionary, no links to quiz, no links to blog, and no links to Wikipedia, official sites, or any external URLs.
 - AdSense Ad Placeholders:
   - Insert EXACTLY THREE (3) "[AD]" placeholders on empty lines between major sections (e.g., after the intro summary, after section 3, and before the FAQ). Strictly format as "[AD]" on its own line.
 - AdSense Policy Compliance: Zero ad click incentive phrases, zero clickbait or exaggerated claims.
+
+================================================================================
+7. NO AUTHOR BYLINES OR AUTHOR BIOS
+================================================================================
+- Strictly FORBIDDEN from including any author bylines, names, or credentials anywhere in the article (e.g., "Written by...", "Fact-Checked by...", "Peer-Reviewed", "X min read").
+- Strictly FORBIDDEN from generating an author bio or author introduction card at the bottom of the article.
+- Output ONLY the article title, excerpt, and body content without author information.
 
 Return ONLY a raw valid JSON object matching the requested schema.`;
 
@@ -1083,7 +1086,7 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
           },
           body: {
             type: Type.STRING,
-            description: "In-depth, rich markdown article (1,800 to 2,500 words) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, summary bullet list, blockquotes, internal links, external authoritative links, and 3 [AD] tags (no disclaimer)."
+            description: "In-depth, rich markdown article (1,800 to 2,500 words) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, summary bullet list, blockquotes, 3 [AD] tags, and ZERO internal or external links (no disclaimer)."
           },
           seoTitle: {
             type: Type.STRING,
@@ -1973,8 +1976,8 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
                     <div className="p-3 bg-card border border-line rounded-lg flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-bold text-ink">1. E-E-A-T 공인 전문가 저자 & 감수자 탑재</div>
-                        <div className="text-[11px] text-ink-soft mt-0.5">Marcus Vance(수석 사전편찬자), Dr. Elena Ward(응용언어학 박사) 바이라인, 감수 뱃지, Schema.org Person 구조화 데이터 완료</div>
+                        <div className="font-bold text-ink">1. E-E-A-T 편집 가이드라인 및 발행 표준 준수</div>
+                        <div className="text-[11px] text-ink-soft mt-0.5">전문 사전 편찬 기준, 고품질 검증 프로세스, Schema.org 구조화 데이터 완료</div>
                       </div>
                     </div>
 

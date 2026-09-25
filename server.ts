@@ -522,19 +522,10 @@ async function getSeoMetadata(urlPath: string) {
           "description": foundBlog.excerpt || desc,
           "datePublished": foundBlog.date || "2026-07-27",
           "dateModified": foundBlog.date || "2026-09-23",
-          "author": [
-            {
-              "@type": "Person",
-              "name": "Marcus Vance",
-              "jobTitle": "Senior Digital Lexicographer & Lead Cultural Linguist",
-              "url": "https://www.whatsthatmean.com/about"
-            }
-          ],
-          "editor": {
-            "@type": "Person",
-            "name": "Dr. Elena Ward",
-            "jobTitle": "Lead Etymologist & Fact-Checking Director",
-            "url": "https://www.whatsthatmean.com/editorial"
+          "author": {
+            "@type": "Organization",
+            "name": "whatsthatmean",
+            "url": "https://www.whatsthatmean.com"
           },
           "publisher": {
             "@type": "Organization",
@@ -553,7 +544,7 @@ async function getSeoMetadata(urlPath: string) {
         };
         schemaMarkup = `<script type="application/ld+json">${JSON.stringify(blogSchema)}</script>`;
 
-        // Build SSR HTML text block for blog posts with strong E-E-A-T signals
+        // Build SSR HTML text block for blog posts
         bodyArticleHtml = `
           <div id="ssr-blog-article">
             <article style="max-width: 800px; margin: 0 auto; padding: 24px; font-family: sans-serif; line-height: 1.6;">
@@ -561,10 +552,6 @@ async function getSeoMetadata(urlPath: string) {
                 <p style="color: #4f46e5; font-weight: bold; text-transform: uppercase; font-size: 14px;">${foundBlog.category || 'Article'}</p>
                 <h1 style="font-size: 32px; margin: 12px 0;">${foundBlog.title}</h1>
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0 20px 0; padding: 12px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; color: #475569;">
-                  <span><strong>Written By:</strong> Marcus Vance (Senior Lexicographer)</span>
-                  <span>•</span>
-                  <span><strong>Fact-Checked By:</strong> Dr. Elena Ward (Applied Linguistics PhD)</span>
-                  <span>•</span>
                   <span><strong>Published:</strong> ${foundBlog.date || 'whatsthatmean'}</span>
                 </div>
               </header>
@@ -573,15 +560,6 @@ async function getSeoMetadata(urlPath: string) {
               <div style="font-size: 16px; color: #1e293b; margin-top: 20px;">
                 ${(foundBlog.body || foundBlog.content || '').split('\n\n').map((p: string) => `<p style="margin-bottom: 16px;">${p}</p>`).join('')}
               </div>
-              <footer style="margin-top: 40px; padding: 24px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px;">
-                <h3 style="margin-top: 0; font-size: 18px; color: #0f172a;">Editorial & Lexicographical Integrity</h3>
-                <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 12px;">
-                  <strong>Marcus Vance</strong> is a veteran lexicographer and digital culture researcher specializing in the evolution of internet slang, workplace jargon, and online gaming terminology. This article was researched and peer-reviewed in accordance with our <a href="/editorial" style="color: #4f46e5; text-decoration: underline;">Editorial Standards & Fact-Checking Policy</a>.
-                </p>
-                <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">
-                  Questions or corrections? Contact our editorial desk at <a href="mailto:contact@whatsthatmean.com" style="color: #4f46e5;">contact@whatsthatmean.com</a>.
-                </p>
-              </footer>
             </article>
           </div>
         `;
@@ -882,20 +860,23 @@ TARGET LENGTH: 1,800 to 2,500 WORDS (strictly measured by WORD COUNT, NOT charac
        You can follow authoritative industry sources and explore our dictionary portal...
 
 ================================================================================
-6. LINKING & ADSENSE ADS PLACEMENT
+6. ZERO LINKS POLICY & ADSENSE ADS PLACEMENT
 ================================================================================
-- Internal Links (STRICT CONTEXTUAL RELEVANCE RULES):
-  * Do NOT force unnatural or irrelevant internal links. Include internal links ONLY if they naturally fit the article context.
-  * ABSOLUTE RESTRICTION FOR GENERAL TOPICS: If "${keyword}" is a general topic (e.g., sports events like World Cup, financial markets, technology, health, news) and NOT an internet slang term or acronym, you MUST NOT include links to Slang/Acronym Quizzes (/quiz), Emoji Dictionaries (/emoji), or slang reference pages.
-  * Allowed optional internal links ONLY when relevant:
-    - Main Blog Hub: [whatsthatmean Blog](https://www.whatsthatmean.com/blog)
-    - Term Search (only if search/lookup is genuinely applicable): [Search "${keyword}"](https://www.whatsthatmean.com/?search=${encodeURIComponent(keyword)})
-  * If no internal link fits naturally without feeling forced, do NOT include any internal link.
-- External Links (1–2 authoritative, relevant HTTPS links):
-  - Must point to an established domain matching the topic (e.g. https://www.fifa.com, https://en.wikipedia.org, https://www.investopedia.com, https://www.cdc.gov, https://developer.mozilla.org, https://www.merriam-webster.com).
+- ABSOLUTELY NO INTERNAL OR EXTERNAL LINKS:
+  * Do NOT include any hyperlinks in the article whatsoever!
+  * Strictly FORBIDDEN from generating markdown links like [Text](url) or HTML links like <a href="...">.
+  * Mention terms, brand names, platforms, books, or resources as plain text only (using **bold** or regular text).
+  * No links to dictionary, no links to quiz, no links to blog, and no links to Wikipedia, official sites, or any external URLs.
 - AdSense Ad Placeholders:
   - Insert EXACTLY THREE (3) "[AD]" placeholders on empty lines between major sections (e.g., after the intro summary, after section 3, and before the FAQ). Strictly format as "[AD]" on its own line.
 - AdSense Policy Compliance: Zero ad click incentive phrases, zero clickbait or exaggerated claims.
+
+================================================================================
+7. NO AUTHOR BYLINES OR AUTHOR BIOS
+================================================================================
+- Strictly FORBIDDEN from including any author bylines, names, or credentials anywhere in the article (e.g., "Written by...", "Fact-Checked by...", "Peer-Reviewed", "X min read").
+- Strictly FORBIDDEN from generating an author bio or author introduction card at the bottom of the article.
+- Output ONLY the article title, excerpt, and body content without author information.
 
 Return ONLY a raw valid JSON object matching the requested schema.`;
 
@@ -915,7 +896,7 @@ Return ONLY a raw valid JSON object matching the requested schema.`;
           },
           body: {
             type: Type.STRING,
-            description: "In-depth, rich markdown article (1,800 to 2,500 words) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, summary bullet list, blockquotes, internal links, external authoritative links, and 3 [AD] tags (no disclaimer)."
+            description: "In-depth, rich markdown article (1,800 to 2,500 words) with custom topic-tailored H2/H3 subheadings, detailed paragraphs, summary bullet list, blockquotes, 3 [AD] tags, and ZERO internal or external links (no disclaimer)."
           },
           seoTitle: {
             type: Type.STRING,

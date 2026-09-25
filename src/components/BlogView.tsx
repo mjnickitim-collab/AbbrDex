@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BlogPost, AdSlot, UserProfile } from "../types";
-import { Calendar, ChevronLeft, BookOpen, Edit3, ShieldCheck, CheckCircle2, UserCheck, Clock } from "lucide-react";
+import { Calendar, ChevronLeft, BookOpen, Edit3 } from "lucide-react";
 import { renderBlogPostContent } from "../utils/blogParser";
 import { CATEGORIES } from "../data/seedData";
 import { generateSlug } from "../data/dbService";
@@ -133,29 +133,6 @@ export default function BlogView({
               {selectedPost.title}
             </h2>
 
-            {/* Credibility & E-E-A-T Byline Bar */}
-            <div className="flex flex-wrap items-center gap-y-2 gap-x-4 py-3 px-4 bg-paper/70 border border-line rounded-xl text-xs text-ink-soft">
-              <div className="flex items-center gap-1.5">
-                <UserCheck className="w-3.5 h-3.5 text-indigo" />
-                <span>Written by <strong className="text-ink">Marcus Vance</strong>, Senior Lexicographer</span>
-              </div>
-              <span className="hidden sm:inline w-1 h-1 rounded-full bg-line" />
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Fact-Checked by <strong className="text-ink">Dr. Elena Ward</strong></span>
-              </div>
-              <span className="hidden sm:inline w-1 h-1 rounded-full bg-line" />
-              <div className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Peer-Reviewed</span>
-              </div>
-              <span className="hidden sm:inline w-1 h-1 rounded-full bg-line" />
-              <div className="flex items-center gap-1 text-[11px]">
-                <Clock className="w-3 h-3 text-ink-soft" />
-                <span>7 min read</span>
-              </div>
-            </div>
-
             <p className="text-base text-ink-soft italic border-l-2 border-indigo pl-4 leading-relaxed font-medium">
               "{selectedPost.excerpt}"
             </p>
@@ -188,38 +165,6 @@ export default function BlogView({
                 No detailed body available. Check back soon for the full article!
               </p>
             )}
-          </div>
-
-          {/* Author Bio & Editorial Review Card */}
-          <div className="my-10 p-6 sm:p-7 bg-card border border-line rounded-2xl shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 border-b border-line pb-4">
-              <div className="w-13 h-13 rounded-full bg-gradient-to-tr from-indigo to-indigo-light text-white font-display font-bold text-lg flex items-center justify-center shrink-0 shadow-inner">
-                MV
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-display font-bold text-base text-ink">Marcus Vance</h4>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo/10 text-indigo">
-                    Author
-                  </span>
-                </div>
-                <p className="text-xs text-ink-soft">
-                  Senior Digital Lexicographer & Lead Cultural Linguistics Editor
-                </p>
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-ink-soft leading-relaxed">
-              Marcus Vance specializes in computational linguistics, digital subcultures, and internet jargon evolution. He leads the research team at whatsthatmean, continuously monitoring social media corpora, online gaming vernacular, and modern workplace communication trends.
-            </p>
-            <div className="p-3.5 bg-paper rounded-xl border border-line/60 flex items-start gap-2.5 text-xs text-ink-soft">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div className="space-y-1 leading-normal">
-                <span className="font-bold text-ink">Editorial Integrity & Verification Guarantee:</span>
-                <div>
-                  This article was independently researched and verified against primary linguistics corpora and academic archives by our review board led by <strong>Dr. Elena Ward</strong>. Have a correction or insight? Contact our team at <a href="/contact" className="text-indigo underline font-medium">contact@whatsthatmean.com</a>.
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Back to Blog List & Edit Button at Bottom */}
